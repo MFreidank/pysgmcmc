@@ -1,0 +1,5 @@
+*.pyc
+*.sw[op]
+*.egg-info
+.ipynb_checkpoints
+notebooks/
