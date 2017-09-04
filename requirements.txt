@@ -1,0 +1,4 @@
+hypothesis==3.18.5
+numpy==1.11.0
+pytest==3.2.1
+tensorflow==1.2.1
