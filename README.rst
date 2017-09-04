@@ -9,6 +9,7 @@ Features
 ======
 * **Complex samplers as black boxes**, computing the next sample with 
 corresponding costs of any MCMC sampler is as easy as:
+
 .. code-block:: python
 
    sample, cost = next(sampler)
