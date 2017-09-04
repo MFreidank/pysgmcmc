@@ -18,6 +18,6 @@ nbval:
 	py.test --nbval-lax ../notebooks/bayesian_neural_network/sinc_example.ipynb
 
 doc:
-	make -C doc html
+	make -C ../docs html
 
 .PHONY: doc
