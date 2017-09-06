@@ -104,7 +104,7 @@ class SGLDSampler(BurnInMCMCSampler):
 
         #  }}} Initialize graph constants #
 
-        self.Cost = cost_fun(*params)
+        self.Cost = cost_fun(params)
 
         grads = [vectorize(gradient) for gradient in
                  tf.gradients(self.Cost, params)]
