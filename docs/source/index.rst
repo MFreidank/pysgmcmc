@@ -6,6 +6,7 @@ Stochastic Gradient Markov Chain Monte Carlo sampling methods.
 .. include:: description.rst
 
 .. toctree::
+   :caption: Contents:
    :maxdepth: 3
 
    intro
