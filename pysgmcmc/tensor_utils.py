@@ -19,19 +19,19 @@ def vectorize(tensor):
     Parameters
     ----------
 
-    tensor : `tensorflow.Variable` object or `tensorflow.Tensor` object
+    tensor : tensorflow.Variable object or tensorflow.Tensor object
         Input tensor to vectorize.
 
     Returns
     ----------
 
-    tensor_vectorized: `tensorflow.Variable` object or `tensorflow.Tensor` object
+    tensor_vectorized: tensorflow.Variable object or tensorflow.Tensor object
         Vectorized result for input `tensor`.
 
     Examples
     ----------
 
-    A `tensorflow.Variable` can be vectorized:
+    A tensorflow.Variable can be vectorized:
     (NOTE: the returned vectorized variable must be initialized before using
     it in `tensorflow` computations.)
 
@@ -94,15 +94,15 @@ def unvectorize(tensor, original_shape):
 
     Parameters
     ----------
-    tensor : `tensorflow.Variable` object or `tensorflow.Tensor` object
+    tensor : tensorflow.Variable object or tensorflow.Tensor object
         Input tensor to unvectorize.
 
-    original_shape : `tensorflow.Shape`
+    original_shape : tensorflow.Shape
         Original shape of `tensor` prior to its vectorization.
 
     Returns
     ----------
-    tensor_unvectorized : `tensorflow.Tensor` object
+    tensor_unvectorized : tensorflow.Tensor
         Tensor with the same values as `tensor` but reshaped back to
         shape `original_shape`.
 
@@ -184,23 +184,23 @@ def safe_divide(x, y, small_constant=1e-16, name=None):
 
     Parameters
     ----------
-    x : `tensorflow.Tensor`
+    x : tensorflow.Tensor
         Left-side operand of `tensorflow.divide`
 
-    y : `tensorflow.Tensor`
+    y : tensorflow.Tensor
         Right-side operand of `tensorflow.divide`
 
-    small_constant : `tensorflow.Tensor`
+    small_constant : tensorflow.Tensor
         Small constant tensor to add to/subtract from `y` before computing
         `x / y` to avoid division-by-zero.
 
-    name : `string` or `NoneType`, optional
+    name : string or NoneType, optional
         Name of the resulting node in a `tensorflow.Graph`.
         Defaults to `None`.
 
     Returns
     ----------
-    division_result : `tensorflow.Tensor`
+    division_result : tensorflow.Tensor
         Result of division `tf.divide(x, y)` after applying clipping to `y`.
 
     Examples
@@ -248,19 +248,19 @@ def safe_sqrt(x, clip_value_min=0., clip_value_max=float("inf"), name=None):
 
     Parameters
     ----------
-    x : `tensorflow.Tensor` or `tensorflow.SparseTensor`
+    x : tensorflow.Tensor or tensorflow.SparseTensor
         Operand of `tensorflow.sqrt`.
 
-    clip_value_min : 0-D (scalar) `tensorflow.Tensor`, optional
+    clip_value_min : 0-D (scalar) tensorflow.Tensor, optional
         The minimum value to clip by.
         Defaults to `0`
 
-    clip_value_max : 0-D (scalar) `tensorflow.Tensor`, optional
+    clip_value_max : 0-D (scalar) tensorflow.Tensor, optional
         The maximum value to clip by.
         Defaults to `float("inf")`
 
-    name : `string` or `NoneType`, optional
-        Name of the resulting node in a `tensorflow.Graph`.
+    name : string or NoneType, optional
+        Name of the resulting node in a tensorflow.Graph.
         Defaults to `None`.
 
     Returns
@@ -302,14 +302,14 @@ def pdist(tensor, metric="euclidean"):
 
     Parameters
     ----------
-    tensor : `tensorflow.Tensor`
-    metric : `DistanceMetric`, optional
+    tensor : tensorflow.Tensor
+    metric : string, optional
         Pairwise metric to apply.
-        Defaults to `DistanceMetric.Euclidean`.
+        Defaults to "euclidean".
 
     Returns
     ----------
-    Y : `tensorflow.Tensor`
+    Y : tensorflow.Tensor
         Returns a condensed distance matrix `Y` as `tensorflow.Tensor`.
         For each :math:`i` and :math:`j` (where :math:`i<j<m`),
         where m is the number of original observations.
