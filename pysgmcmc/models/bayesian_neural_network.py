@@ -646,4 +646,3 @@ class BayesianNeuralNetwork(object):
             v *= self.y_std ** 2
 
         return m, v
-

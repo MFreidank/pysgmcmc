@@ -35,7 +35,7 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
         Number of individual chains/traces to extract.
         Defaults to `2`.
 
-    samples_per_chain : TODO, optional
+    samples_per_chain : int, optional
         Number of samples each individual chain should contain.
         Defaults to `100`.
 
@@ -47,11 +47,11 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     ----------
     The diagnostic is computed as:
 
-    .. math:: \hat{n}_{eff} = \frac{mn}{1 + 2 \sum_{t=1}^T \hat{\rho}_t}
+    .. math:: \hat{n}_{eff} = \\frac{mn}{1 + 2 \sum_{t=1}^T \hat{\\rho}_t}
 
-    where :math:`\hat{\rho}_t` is the estimated autocorrelation at lag t, and T
+    where :math:`\hat{\\rho}_t` is the estimated autocorrelation at lag t, and T
     is the first odd positive integer for which the sum
-    :math:`\hat{\rho}_{T+1} + \hat{\rho}_{T+1}` is negative.
+    :math:`\hat{\\rho}_{T+1} + \hat{\\rho}_{T+1}` is negative.
 
     References
     ----------
@@ -105,7 +105,7 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
         Number of individual chains/traces to extract.
         Defaults to `2`.
 
-    samples_per_chain : TODO, optional
+    samples_per_chain : int, optional
         Number of samples each individual chain should contain.
         Defaults to `100`.
 
@@ -119,7 +119,7 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
 
     The diagnostic is computed by:
 
-      .. math:: \hat{R} = \frac{\hat{V}}{W}
+      .. math:: \hat{R} = \\frac{\hat{V}}{W}
 
     where :math:`W` is the within-chain variance and :math:`\hat{V}` is
     the posterior variance estimate for the pooled traces. This is the

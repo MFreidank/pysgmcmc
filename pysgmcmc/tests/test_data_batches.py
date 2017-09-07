@@ -46,7 +46,6 @@ class HypothesisTest(unittest.TestCase):
         self.rng = np.random.RandomState(self.seed)
 
         # For train, step burn-in/step
-        # XXX: Merge this into pysgmcmc
         self.X = init_random_uniform(lower=np.zeros(1),
                                      upper=np.ones(1),
                                      n_points=n_points,

@@ -155,7 +155,7 @@ class SGHMCSampler(BurnInMCMCSampler):
 
         #  }}} Initialize internal sampler parameters #
 
-        self.Minv_t = [None] * len(params)  # gets burned-in XXX Move to BurnInMCMCSampler?
+        self.Minv_t = [None] * len(params)  # gets burned-in
 
         # R_t = 1/ (Tau + 1), shouldn't it be: 1 / tau according to terms?
         # It is not, and changing it to that breaks everything!
