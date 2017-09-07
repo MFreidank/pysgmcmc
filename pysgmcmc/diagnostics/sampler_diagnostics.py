@@ -43,6 +43,20 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     ----------
     ess : dict
 
+    Notes
+    ----------
+    The diagnostic is computed as:
+
+    .. math:: \hat{n}_{eff} = \frac{mn}{1 + 2 \sum_{t=1}^T \hat{\rho}_t}
+
+    where :math:`\hat{\rho}_t` is the estimated autocorrelation at lag t, and T
+    is the first odd positive integer for which the sum
+    :math:`\hat{\rho}_{T+1} + \hat{\rho}_{T+1}` is negative.
+
+    References
+    ----------
+    Gelman et al. (2014)
+
     Examples
     ----------
     Simple (very arbitrary) example to showcase usage:
@@ -73,6 +87,13 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
     Calculate gelman_rubin metric for a sampler returned by callable `get_sampler`.
     To do so, extract `n_chains` traces with `samples_per_chain` samples each.
 
+    The Gelman-Rubin diagnostic tests for lack of convergence by comparing
+    the variance between multiple chains to the variance within each chain.
+    If convergence has been achieved, the between-chain and within-chain
+    variances should be identical. To be most effective in detecting evidence
+    for nonconvergence, each chain should have been initialized to starting
+    values that are dispersed relative to the target distribution.
+
     Parameters
     ----------
     get_sampler : callable
@@ -92,6 +113,24 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
     ----------
     gelman_rubin : dict
       Dictionary of the potential scale reduction factors, :math:`\hat{R}`.
+
+    Notes
+    ----------
+
+    The diagnostic is computed by:
+
+      .. math:: \hat{R} = \frac{\hat{V}}{W}
+
+    where :math:`W` is the within-chain variance and :math:`\hat{V}` is
+    the posterior variance estimate for the pooled traces. This is the
+    potential scale reduction factor, which converges to unity when each
+    of the traces is a sample from the target posterior. Values greater
+    than one indicate that one or more chains have not yet converged.
+
+    References
+    ----------
+    Brooks and Gelman (1998)
+    Gelman and Rubin (1992)
 
     Examples
     ----------
