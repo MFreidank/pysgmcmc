@@ -39,6 +39,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
     Examples
     -------
     Simple batch extraction example:
+
     >>> import numpy as np
     >>> import tensorflow as tf
     >>> N, D = 100, 3  # 100 datapoints with 3 features each
@@ -56,6 +57,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
     ((20, 3), (20, 1))
 
     Batch extraction resizes batch size if dataset is too small:
+
     >>> import numpy as np
     >>> import tensorflow as tf
     >>> N, D = 10, 3  # 10 datapoints with 3 features each
@@ -73,6 +75,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
     ((10, 3), (10, 1))
 
     In this case, the batches contain exactly all datapoints:
+
     >>> np.allclose(batch_dict[x_placeholder], X), np.allclose(batch_dict[y_placeholder].reshape(N,), y)
     (True, True)
 
