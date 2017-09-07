@@ -67,13 +67,15 @@ class MCMCSampler(object):
         self.batch_generator = batch_generator
         self.session = session
 
+        self.params = params
+
         # compute vectorized clones of all parameters
-        self.vectorized_params = [vectorize(param) for param in params]
+        self.vectorized_params = [vectorize(param) for param in self.params]
 
         # Initialize uninitialized parameters before usage in any sampler.
         init = tf.variables_initializer(
             uninitialized_params(
-                session=self.session, params=params + self.vectorized_params
+                session=self.session, params=self.params + self.vectorized_params
             )
         )
         self.session.run(init)
