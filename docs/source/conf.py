@@ -60,6 +60,7 @@ extensions = [
     'IPython.sphinxext.ipython_console_highlighting',
 ]
 
+
 numpydoc_show_inherited_class_members = False
 numpydoc_show_class_members = False
 
@@ -200,4 +201,7 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {
+    'https://docs.python.org/': None,
+    "tensorflow": ("https://www.tensorflow.org/api_docs/python/", "./tensorflow.inv")
+}
