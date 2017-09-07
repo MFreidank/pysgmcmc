@@ -45,7 +45,7 @@ class SGHMCSampler(BurnInMCMCSampler):
             Random seed to use.
             Defaults to `None`.
 
-        batch_generator : BatchGenerator, optional
+        batch_generator : iterable, optional
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
