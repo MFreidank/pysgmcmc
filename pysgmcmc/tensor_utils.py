@@ -296,13 +296,16 @@ def safe_sqrt(x, clip_value_min=0., clip_value_max=float("inf"), name=None):
 
 
 def pdist(tensor, metric="euclidean"):
-    """ Pairwise distances between observations in n-dimensional space.
-        Ported from `scipy.spatial.distance.pdist` @2f5aa264724099c03772ed784e7a947d2bea8398
-        for cherry-picked distance metrics.
+    """
+    Pairwise distances between observations in n-dimensional space.
+    Ported from `scipy.spatial.distance.pdist`
+    @2f5aa264724099c03772ed784e7a947d2bea8398
+    for cherry-picked distance metrics.
 
     Parameters
     ----------
     tensor : tensorflow.Tensor
+
     metric : string, optional
         Pairwise metric to apply.
         Defaults to "euclidean".
@@ -319,7 +322,8 @@ def pdist(tensor, metric="euclidean"):
     Examples
     ----------
     Gives equivalent results to `scipy.spatial.distance.pdist` but uses
-    `tensorflow.Tensor` objects:
+    tensorflow.Tensor objects:
+
     >>> import tensorflow as tf
     >>> import numpy as np
     >>> from scipy.spatial.distance import pdist as pdist_scipy
@@ -332,6 +336,7 @@ def pdist(tensor, metric="euclidean"):
     True
 
     Will raise a `NotImplementedError` for unsupported metric choices:
+
     >>> import tensorflow as tf
     >>> import numpy as np
     >>> input_scipy = np.array([[ 0.77228064,  0.09543156], [ 0.3918973 ,  0.96806584], [ 0.66008144,  0.22163063]])
@@ -343,6 +348,7 @@ def pdist(tensor, metric="euclidean"):
     NotImplementedError: tensor_utils.pdist: Metric 'lengthy_metric' currently not supported!
 
     Like `scipy.spatial.distance.pdist`, we fail for input that is not 2-d:
+
     >>> import tensorflow as tf
     >>> import numpy as np
     >>> input_scipy = np.random.rand(2, 2, 1)
@@ -353,8 +359,8 @@ def pdist(tensor, metric="euclidean"):
      ...
     ValueError: tensor_utils.pdist: A 2-d tensor must be passed.
 
-
     """
+
     assert(isinstance(tensor, tf.Tensor)), "tensor_utils.pdist: Input must be a `tensorflow.Tensor` instance."
 
     if len(tensor.shape.as_list()) != 2:
@@ -396,7 +402,6 @@ def squareform(tensor):
     ----------
     tensor : tensorflow.Tensor
 
-
     Returns
     ----------
     redundant_distance_tensor : tensorflow.Tensor
@@ -419,6 +424,7 @@ def squareform(tensor):
 
     Contrary to `scipy.spatial.squareform`, conversion of 2D input to
     a condensed distance vector is *not* supported:
+
     >>> import numpy as np
     >>> import tensorflow as tf
     >>> illegal_input = tf.constant(np.random.rand(4, 4))
@@ -545,7 +551,7 @@ def squareform(tensor):
 
 def uninitialized_params(params, session=None):
     """
-    Return the list containing all `tensorflow.Variable` objects present in
+    Return the list containing all tensorflow.Variable objects present in
     iterable `params` that are not yet initialized.
 
     Parameters
