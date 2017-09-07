@@ -31,7 +31,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     Yields
     -------
-    batch_dict: dict
+    batch_dict : dict
         A dictionary that maps `x_placeholder` and `y_placeholder`
         to `batch_size` sized minibatches of data (numpy.ndarrays)
         from the dataset `X`, `y`.
