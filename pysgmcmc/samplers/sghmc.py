@@ -89,7 +89,7 @@ class SGHMCSampler(BurnInMCMCSampler):
 
         See Also
         ----------
-        tensorflow_mcmc.sampling.mcmc_base_classes.BurnInMCMCSampler:
+        pysgmcmc.sampling.BurnInMCMCSampler:
             Base class for `SGHMCSampler` that specifies how actual sampling
             is performed (using iterator protocol, e.g. `next(sampler)`).
 

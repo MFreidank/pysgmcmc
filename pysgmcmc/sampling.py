@@ -104,6 +104,7 @@ class MCMCSampler(object):
         ----------
         Extracting batches without any `batch_generator` function simply
         returns an empty `dict`:
+
         >>> import tensorflow as tf
         >>> import numpy as np
         >>> from itertools import islice
@@ -117,6 +118,7 @@ class MCMCSampler(object):
         {}
 
         A simple case with batches would look like this:
+
         >>> import tensorflow as tf
         >>> from pysgmcmc.models.bayesian_neural_network import generate_batches
         >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
