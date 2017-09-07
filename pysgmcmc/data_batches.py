@@ -16,10 +16,10 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
     y : np.ndarray (N, 1)
         Training data labels
 
-    x_placeholder : tensorflow.Placeholder
+    x_placeholder : tensorflow.placeholder
         Placeholder for batches of data from `X`.
 
-    y_placeholder : tensorflow.Placeholder
+    y_placeholder : tensorflow.placeholder
         Placeholder for batches of data from `y`.
 
     batch_size : int, optional
@@ -134,10 +134,10 @@ def generate_shuffled_batches(X, y, x_placeholder, y_placeholder,
     y : np.ndarray (N, 1)
         Training data labels
 
-    x_placeholder : tensorflow.Placeholder
+    x_placeholder : tensorflow.placeholder
         Placeholder for batches of data from `X`.
 
-    y_placeholder : tensorflow.Placeholder
+    y_placeholder : tensorflow.placeholder
         Placeholder for batches of data from `y`.
 
     batch_size : int, optional
