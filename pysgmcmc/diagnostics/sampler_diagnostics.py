@@ -17,6 +17,8 @@ def _pymc3_diagnostic(get_sampler, pymc3_diagnostic_fun, n_chains=2,
     return pymc3_diagnostic_fun(multitrace)
 
 
+# XXX: More meaningful assertions in doctest
+# XXX: DOKU for return type
 def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     """
     Calculate ess metric for a sampler returned by callable `get_sampler`.
@@ -40,12 +42,10 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     Returns
     ----------
     ess : dict
-        TODO: DOKU
 
     Examples
     ----------
-    Simple (very arbitrary) example to showcase usage.
-    TODO: More meaningful assertions
+    Simple (very arbitrary) example to showcase usage:
 
     >>> import tensorflow as tf
     >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
@@ -66,6 +66,8 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     )
 
 
+# XXX: More meaningful assertions in doctest
+# XXX: DOKU from pymc3
 def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
     """
     Calculate gelman_rubin metric for a sampler returned by callable `get_sampler`.
@@ -93,8 +95,7 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
 
     Examples
     ----------
-    Simple (very arbitrary) example to showcase usage.
-    TODO: More meaningful assertions
+    Simple (very arbitrary) example to showcase usage:
 
     >>> import tensorflow as tf
     >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
