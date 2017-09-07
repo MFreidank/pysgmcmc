@@ -11,6 +11,6 @@ Samplers
 .. toctree::
    :maxdepth: 2
 
-   samplers/base_classes
    samplers/sghmc
    samplers/sgld
+   samplers/base_classes
