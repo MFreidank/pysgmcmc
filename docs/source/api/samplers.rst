@@ -4,6 +4,8 @@ Samplers
 .. currentmodule:: pysgmcmc.samplers
 
 .. automodule:: pysgmcmc.samplers
+   :private-members:
+   :special-members:
    :members:
 
 .. toctree::
