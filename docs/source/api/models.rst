@@ -4,16 +4,20 @@ Models
 .. currentmodule:: pysgmcmc.models
 
 .. automodule:: pysgmcmc.models
-   :members:
 
 Base Model
 ^^^^^^^^^^
 .. currentmodule:: pysgmcmc.models.base_model
-.. automodule:: pysgmcmc.models.base_model
+.. autoclass:: pysgmcmc.models.base_model.BaseModel
+   :private-members:
+   :special-members:
    :members:
 
 Bayesian Neural Network
 ^^^^^^^^^^^^^^^^^^^^^^^
 .. currentmodule:: pysgmcmc.models.bayesian_neural_network
-.. automodule:: pysgmcmc.models.bayesian_neural_network
-   :members:
+
+.. autoclass:: pysgmcmc.models.bayesian_neural_network.BayesianNeuralNetwork
+    :private-members:
+    :special-members:
+    :members:

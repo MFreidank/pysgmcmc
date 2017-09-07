@@ -6,6 +6,14 @@ with `tensorflow.Tensor` objects.
 import numpy as np
 import tensorflow as tf
 
+__all__ = (
+    "vectorize", "unvectorize", "median",
+    "safe_divide", "safe_sqrt",
+    "pdist", "squareform",
+    "uninitialized_params", "get_initializer",
+    "duplicate_variables",
+)
+
 
 def vectorize(tensor):
     """ Turn any matrix into a long vector by expanding it.

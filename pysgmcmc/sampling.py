@@ -7,6 +7,11 @@ import tensorflow as tf
 
 from pysgmcmc.tensor_utils import vectorize, uninitialized_params
 
+__all__ = (
+    "MCMCSampler",
+    "BurnInMCMCSampler"
+)
+
 
 class MCMCSampler(object):
     """ Generic base class for all MCMC samplers.  """

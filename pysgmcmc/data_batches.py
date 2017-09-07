@@ -1,6 +1,11 @@
 import numpy as np
 import logging
 
+__all__ = (
+    "generate_batches",
+    "generate_shuffled_batches",
+)
+
 
 def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=None):
     """ Infinite generator of random minibatches for a dataset.
