@@ -6,8 +6,9 @@ Diagnostics
 .. automodule:: pysgmcmc.diagnostics
    :members:
 
-ESS
-^^^
-.. currentmodule
+Sampler Diagnostics
+^^^^^^^^^^^^^^^^^^^
+.. currentmodule:: pysgmcmc.diagnostics.sampler_diagnostics
 
-.. XXX: Doku for chains and stuff
+.. automodule:: pysgmcmc.diagnostics.sampler_diagnostics
+   :members:
