@@ -394,17 +394,18 @@ def squareform(tensor):
 
     Parameters
     ----------
-    tensor : `tensorflow.Tensor`
+    tensor : tensorflow.Tensor
 
 
     Returns
     ----------
-    redundant_distance_tensor : `tensorflow.Tensor`
+    redundant_distance_tensor : tensorflow.Tensor
 
     Examples
     ----------
     May be used in conjunction with `tensor_utils.pdist` to obtain
     a redundant distance matrix:
+
     >>> import tensorflow as tf
     >>> import numpy as np
     >>> from scipy.spatial.distance import pdist as scipy_pdist, squareform as scipy_squareform
