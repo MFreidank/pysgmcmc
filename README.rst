@@ -3,6 +3,7 @@ PYSGMCMC
 ========
 |Build Status|
 |Health_|
+|Docs_|
 
 PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on 
 Stochastic Gradient Markov Chain Monte Carlo methods. 
@@ -30,3 +31,7 @@ Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
 .. |Health_| image:: https://landscape.io/github/MFreidank/pysgmcmc/master/landscape.svg?style=flat
    :target: https://landscape.io/github/MFreidank/pysgmcmc/master
    :alt: Code Health
+
+.. |Docs_| .. image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=latest
+   :target: http://prospector.landscape.io/
+   :alt: Documentation
