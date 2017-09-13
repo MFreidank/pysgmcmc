@@ -1,2 +1,11 @@
+doc-warnings: true
+test-warnings: true
+strictness: veryhigh
+max-line-length: 100
 pep8:
     full: true
+
+ignore-paths:
+    - docs
+python-targets:
+    -3
