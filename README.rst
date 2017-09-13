@@ -33,5 +33,5 @@ Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
    :alt: Code Health
 
 .. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=latest
-   :target: http://prospector.landscape.io/
+   :target: http://pysgmcmc.readthedocs.io/en/latest/
    :alt: Documentation
