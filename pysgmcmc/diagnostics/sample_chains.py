@@ -141,8 +141,10 @@ def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100, parameter_n
 
     Parameters
     ----------
-    sampler : pysgmcmc.sampling.MCMCSampler subclass
-        An instance of one of our samplers.
+    get_sampler : callable
+        A callable that takes a `tensorflow.Session` object as input
+        and returns a (possibly already burnt-in) instance of a
+        `pysgmcmc.sampling.MCMCSampler` subclass.
 
     parameter_names : List[String] or NoneType, optional
         List of names for each target parameter of the sampler.

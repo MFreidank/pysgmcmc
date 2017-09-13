@@ -315,7 +315,7 @@ class BurnInMCMCSampler(MCMCSampler):
 
         """
         # Sanitize inputs
-        assert(type(burn_in_steps) == int)
+        assert(isinstance(burn_in_steps, int))
 
         super().__init__(params=params, batch_generator=batch_generator,
                          seed=seed, dtype=dtype, session=session)

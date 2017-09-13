@@ -165,6 +165,7 @@ def generate_shuffled_batches(X, y, x_placeholder, y_placeholder,
     Examples
     -------
     TODO Add some test examples that demonstrate shuffling
+
     """
 
     # always use a seed in order to shuffle x and y in the same way

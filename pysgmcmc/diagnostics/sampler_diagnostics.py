@@ -9,6 +9,38 @@ from pysgmcmc.diagnostics.sample_chains import pymc3_multitrace
 
 def _pymc3_diagnostic(get_sampler, pymc3_diagnostic_fun, n_chains=2,
                       samples_per_chain=100):
+    """TODO: Docstring for _pymc3_diagnostic.
+
+    Parameters
+    ----------
+    get_sampler : callable
+        Callable that takes a `tensorflow.Session` as input and returns a
+        (possibly already "burnt-in")
+        `pysgmcmc.sampling.MCMCSampler` subclass instance.
+
+    pymc3_diagnostic_fun : callable
+        Callable that takes a `pymc3.MultiTrace` object as input and
+        returns some diagnostic value for the chains in that `pymc3.MultiTrace`.
+
+    n_chains : int, optional
+        Number of individual chains/traces to extract.
+        Defaults to `2`.
+
+    samples_per_chain : int, optional
+        Number of samples each individual chain should contain.
+        Defaults to `100`.
+
+    Returns
+    ----------
+    diagnostic_output
+        TODO: DOKU
+
+
+    Examples
+    ----------
+    TODO
+
+    """
 
     multitrace = pymc3_multitrace(
         get_sampler, n_chains=n_chains, samples_per_chain=samples_per_chain
@@ -81,7 +113,6 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
 
 
 # XXX: More meaningful assertions in doctest
-# XXX: DOKU from pymc3
 def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
     """
     Calculate gelman_rubin metric for a sampler returned by callable `get_sampler`.
