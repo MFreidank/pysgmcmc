@@ -27,6 +27,6 @@ Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
 .. |Build Status| image:: https://travis-ci.org/pymc-devs/pymc3.png?branch=master
    :target: https://travis-ci.org/pymc-devs/pymc3
 
-.. |Health_| image:: https://travis-ci.org/pymc-devs/pymc3.png?branch=master
-   :target: https://travis-ci.org/pymc-devs/pymc3
-
+.. |Health_| image:: https://landscape.io/github/MFreidank/pysgmcmc/master/landscape.svg?style=flat
+   :target: https://landscape.io/github/MFreidank/pysgmcmc/master
+   :alt: Code Health
