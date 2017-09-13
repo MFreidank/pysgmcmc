@@ -2,8 +2,8 @@
 PYSGMCMC
 ========
 |Build Status|
-|Health_|
 |Docs_|
+|Health_|
 
 PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on 
 Stochastic Gradient Markov Chain Monte Carlo methods. 
