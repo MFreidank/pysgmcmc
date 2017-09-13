@@ -21,10 +21,6 @@ Features
     * flexible computation environments (CPU/GPU support, desktop/server/mobile device support)
     * Linear algebra operations
 
-Documentation
-=============
-Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
-
 .. |Build Status| image:: https://travis-ci.org/pymc-devs/pymc3.png?branch=master
    :target: https://travis-ci.org/pymc-devs/pymc3
 
@@ -35,3 +31,8 @@ Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
 .. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=latest
    :target: http://pysgmcmc.readthedocs.io/en/latest/
    :alt: Documentation
+
+Documentation
+=============
+Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
+
