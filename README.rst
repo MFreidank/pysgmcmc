@@ -1,8 +1,7 @@
 ========
 PYSGMCMC
 ========
-.. |Build Status| image:: https://travis-ci.org/pymc-devs/pymc3.png?branch=master
-   :target: https://travis-ci.org/pymc-devs/pymc3
+|Build Status|
 
 PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on 
 Stochastic Gradient Markov Chain Monte Carlo methods. 
@@ -23,3 +22,6 @@ Features
 Documentation
 =============
 Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
+
+.. |Build Status| image:: https://travis-ci.org/pymc-devs/pymc3.png?branch=master
+   :target: https://travis-ci.org/pymc-devs/pymc3
