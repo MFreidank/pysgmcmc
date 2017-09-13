@@ -60,7 +60,7 @@ class MCMCSampler(object):
         assert(batch_generator is None or hasattr(batch_generator, "__next__"))
         assert(seed is None or type(seed) == int)
 
-        assert(isinstance(session, tf.Session))
+        assert(isinstance(session, tf.Session) or isinstance(session, tf.InteractiveSession))
         assert(isinstance(dtype, tf.DType))
 
         self.dtype = dtype
