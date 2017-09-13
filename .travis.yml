@@ -1,0 +1,24 @@
+language: python
+python:
+    - "3.5"
+
+os:
+    - linux
+
+
+before_install:
+    - sudo apt-get update
+    - sudo apt-get install -q libatlas3gf-base libatlas-dev liblapack-dev gfortran
+
+
+install:
+  - pip install --upgrade pip
+  - pip install cython
+  - travis_wait pip install -r requirements.txt
+  - python setup.py install
+  - pip install coveralls 
+
+script: pytest -v --cov=pysgmcmc
+
+after_success:
+    - coveralls
