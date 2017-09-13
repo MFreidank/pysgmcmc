@@ -78,7 +78,6 @@ class HypothesisInvalidInputs(HypothesisTest):
     """ Property-based tests with invalid inputs"""
     @given(HypothesisTest.random_nonint_input_type_strategy())
     def test_invalid_input_types_batch_size(self, batch_size):
-        print(type(batch_size))
         with pytest.raises(AssertionError):
             next(self.batch_generator(batch_size=batch_size))
 
@@ -208,6 +207,4 @@ class HypothesisSeededBatches(HypothesisTest):
             reference = np.array(list(reference_batch.values()))
             for generator in generators[1:]:
                 batch = np.array(list(next(generator).values()))
-                print("REFERENCE:", reference)
-                print("BATCH:", reference)
                 assert(np.allclose(reference, batch, atol=1e-02))

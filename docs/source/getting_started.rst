@@ -5,7 +5,7 @@ Getting started
 ***************
 
 .. toctree::
-   notebooks/api_quickstart.ipynb
+    notebooks/api_quickstart.ipynb
 
 .. notebooks/getting_started.ipynb
    notebooks/variational_api_quickstart.ipynb
