@@ -1,6 +1,6 @@
 test:
-	# XXX: Coverage
-	py.test
+	py.test -v --cov=pysgmcmc
+	py.test --nbval-lax ../notebooks/api_quickstart.ipynb
 
 tests: test
 
@@ -12,10 +12,6 @@ mutation-tests:
 # XXX: limit to fast-running tests
 fast:
 	echo "fast tests not yet implemented"
-
-# XXX: Include more notebooks
-nbval:
-	py.test --nbval-lax ../notebooks/bayesian_neural_network/sinc_example.ipynb
 
 doc:
 	make -C ../docs html

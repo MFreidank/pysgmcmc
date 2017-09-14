@@ -8,6 +8,7 @@ our samplers.
 import tensorflow as tf
 import numpy as np
 import pymc3
+import logging
 
 
 class PYSGMCMCTrace(object):
@@ -16,12 +17,15 @@ class PYSGMCMCTrace(object):
     Represents a single chain/trace of samples obtained from a sgmcmc sampler.
     """
     def __init__(self, chain_id, samples, varnames=None):
-        """TODO: Docstring for __init__.
+        """ Set up a trace with given (unique) `chain_id` and sampled values
+            `samples` that each represent a full sampler iteration
+            sampling values for all variables with the given
+            `varnames`.
 
         Parameters
         ----------
         chain_id : int
-            TODO: doku
+            A numeric id that uniquely identifies this chain/trace.
 
         samples : List[List]
             Single chain of samples extracted from
@@ -32,23 +36,39 @@ class PYSGMCMCTrace(object):
 
         Examples
         ----------
-        TODO
+        The following example shows a simple construction of a
+        PYSGMCMCTrace from 2d dummy data:
+
+        >>> import tensorflow as tf
+        >>> params = [tf.Variable(0., name="x"), tf.Variable(0., name="y")]
+        >>> names = [variable.name for variable in params]
+        >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
+        >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=names)
+        >>> trace.n_vars, trace.varnames == names, len(trace.varnames) == trace.n_vars
+        (2, True, True)
 
         """
         self.chain = chain_id
 
-        assert(hasattr(samples, "__len__"))
-        assert(len(samples) >= 1)
+        assert(hasattr(samples, "__len__")), "Samples needs to have a __len__ attribute."
+        assert(len(samples) >= 1), "There needs to be at least one sample."
+
         self.samples = samples
 
         first_sample = self.samples[0]
         self.n_vars = len(first_sample)
 
+        assert(self.n_vars >= 1), "The first sample needs to have at least one variable."
+
         if varnames is None:
             # use anonymous variable names: enumerate
-            self.varnames = [
-                str(index) for index in range(self.n_vars)
-            ]
+            logging.warn(
+                "Variables in a trace were not named when instantiating "
+                "a `pysgmcmc.diagnostics.sample_chain.PYSGMCMCTrace` "
+                "from that trace. We will give them anonymous names "
+                "by enumerating all target parameter dimensions."
+            )
+            self.varnames = list(map(str, range(self.n_vars)))
         else:
             self.varnames = varnames
 
@@ -56,19 +76,20 @@ class PYSGMCMCTrace(object):
 
     @classmethod
     def from_sampler(cls, chain_id, sampler, n_samples, varnames=None):
-        """ Instantiate a trace with id `chain_id` by extracting `n_samples`
+        """
+        Instantiate a trace with id `chain_id` by extracting `n_samples`
         from `sampler`.
 
         Parameters
         ----------
         chain_id : int
-            TODO: DOKU
+            A numeric id that uniquely identifies this chain/trace.
 
         sampler : pysgmcmc.sampling.MCMCSampler subclass
-            TODO: DOKU
+            A sampler used to generate samples for this trace.
 
         n_samples : int
-            TODO: DOKU
+            Number of samples to extract from `sampler` for this chain/trace.
 
         varnames : List[String] or NoneType, optional
             TODO: DOKU
@@ -76,7 +97,9 @@ class PYSGMCMCTrace(object):
         Returns
         ----------
         trace : PYSGMCMCTrace
-            TODO: DOKU
+            A wrapper around `n_samples` samples for variables with names
+            `varnames` extracted from `sampler`.
+            Id of this trace will be `chain_id`.
 
         Examples
         ----------
@@ -97,7 +120,6 @@ class PYSGMCMCTrace(object):
             except AttributeError:
                 # could not read sampler parameters, passing `None`
                 # which will use enumerated names for the parameters
-                # XXX: Log that this happened
                 varnames = None
         return PYSGMCMCTrace(chain_id, samples, varnames)
 
@@ -112,21 +134,48 @@ class PYSGMCMCTrace(object):
         Parameters
         ----------
         varname : string
-            TODO:DOKU
+            Name of a given target parameter of the sampler.
+            Usually, this corresponds to the `name` attribute of the
+            `tensorflow.Variable` object for this target parameter.
 
         Returns
         ----------
         sampled_values : np.ndarray (N, D)
-            TODO: DOKU
+            All values for variable `varname` that were sampled
+            in this chain.
+            Formatted as (N, D) `numpy.ndarray` where
+            `N` is the number of sampler steps in this chain and
+            `D` is the dimensionality of variable `varname`.
+
 
         Examples
         ----------
-        TODO
+        This method makes each variable in a trace accessible by its name:
+
+        >>> import tensorflow as tf
+        >>> params = [tf.Variable(0., name="x"), tf.Variable(0., name="y")]
+        >>> params[0].name, params[1].name
+        ('x_1:0', 'y_1:0')
+
+        These names can be used to index the trace and obtain all sampled
+        values for the corresponding target parameter:
+
+        >>> names = [variable.name for variable in params]
+        >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
+        >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=names)
+        >>> trace.get_values(varname="x_1:0"), trace.get_values(varname="y_1:0")
+        (array([ 0. ,  0.2,  0.3,  0.1]), array([ 0. , -0.2, -0.5,  0. ]))
 
         """
-        # XXX: Error message
+
         if varname not in self.varnames:
-            raise ValueError
+            raise ValueError(
+                "Queried `PYSGMCMCTrace` for values of parameter with "
+                "name '{name}' but the trace does not contain any "
+                "parameter of that name. "
+                "Known variable names were: '{varnames}'"
+                .format(name=varname, varnames=self.varnames)
+            )
 
         var_index = self.varnames.index(varname)
 
@@ -135,9 +184,10 @@ class PYSGMCMCTrace(object):
         )
 
 
-def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100, parameter_names=None):
-    """ Extract chains from `sampler` and return them as `pymc3.MultiTrace`
-        object.
+def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100,
+                     parameter_names=None):
+    """
+    Extract chains from `sampler` and return them as `pymc3.MultiTrace` object.
 
     Parameters
     ----------
@@ -164,13 +214,19 @@ def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100, parameter_n
 
     """
 
-    straces = []
+    single_traces = []
 
     for chain_id in range(n_chains):
         with tf.Session() as session:
             sampler = get_sampler(session=session)
             session.run(tf.global_variables_initializer())
-            trace = PYSGMCMCTrace.from_sampler(chain_id=chain_id, sampler=sampler, n_samples=samples_per_chain, varnames=parameter_names)
-            straces.append(trace)
+            trace = PYSGMCMCTrace.from_sampler(
+                chain_id=chain_id,
+                sampler=sampler,
+                n_samples=samples_per_chain,
+                varnames=parameter_names
+            )
 
-    return pymc3.backends.base.MultiTrace(straces)
+            single_traces.append(trace)
+
+    return pymc3.backends.base.MultiTrace(single_traces)

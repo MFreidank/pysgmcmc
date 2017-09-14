@@ -19,7 +19,8 @@ install:
   - python setup.py install
   - pip install coveralls 
 
-script: pytest -v --cov=pysgmcmc
+script: 
+    make -C pysgmcmc tests
 
 after_success:
     - coveralls
