@@ -398,12 +398,12 @@ def pdist(tensor, metric="euclidean"):
     return metric_function(tensor)
 
 
-# XXX missing parts of docs (TODO below)
 def squareform(tensor):
-    """ TODO
-        Ported from `scipy.spatial.distance.squareform`
-        @2f5aa264724099c03772ed784e7a947d2bea8398, but supports only
-        1-d (vector) input
+    """
+    Converts a vector-form distance vector to a square-form distance matrix.
+    Ported from `scipy.spatial.distance.squareform`
+    @2f5aa264724099c03772ed784e7a947d2bea8398, but supports only
+    1-d (vector) input.
 
     Parameters
     ----------
