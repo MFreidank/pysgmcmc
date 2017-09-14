@@ -17,8 +17,8 @@ class MCMCSampler(object):
     """ Generic base class for all MCMC samplers.  """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, params, seed=None, batch_generator=None,
-                 dtype=tf.float64, session=tf.get_default_session()):
+    def __init__(self, params, batch_generator=None,
+                 session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """
         Initialize the sampler base class. Sets up member variables and
         initializes uninitialized target parameters in the current
@@ -29,23 +29,23 @@ class MCMCSampler(object):
         params : list of `tensorflow.Variable` objects
             Target parameters for which we want to sample new values.
 
-        seed : int, optional
-            Random seed to use.
-            Defaults to `None`.
-
         batch_generator : `BatchGenerator`, optional
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
 
-        dtype : tensorflow.DType, optional
-            Type of elements of `tensorflow.Tensor` objects used in this sampler.
-            Defaults to `tensorflow.float64`.
-
         session : `tensorflow.Session`, optional
             Session object which knows about the external part of the graph
             (which defines `Cost`, and possibly batches).
             Used internally to evaluate (burn-in/sample) the sampler.
+
+        dtype : tensorflow.DType, optional
+            Type of elements of `tensorflow.Tensor` objects used in this sampler.
+            Defaults to `tensorflow.float64`.
+
+        seed : int, optional
+            Random seed to use.
+            Defaults to `None`.
 
         See Also
         ------------
@@ -267,9 +267,8 @@ class BurnInMCMCSampler(MCMCSampler):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, params, burn_in_steps, seed=None,
-                 batch_generator=None, dtype=tf.float64,
-                 session=tf.get_default_session()):
+    def __init__(self, params, batch_generator=None, burn_in_steps=3000,
+                 session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """
         Initializes the corresponding MCMCSampler super object and
         sets member variables.
@@ -279,28 +278,28 @@ class BurnInMCMCSampler(MCMCSampler):
         params : list of `tensorflow.Variable` objects
             Target parameters for which we want to sample new values.
 
-        burn_in_steps: int
-            Number of burn-in steps to perform. In each burn-in step, this
-            sampler will adapt its own internal parameters to decrease its error.
-            For reference see: TODO ADD PAPER REFERENCE HERE
-
-        seed : int, optional
-            Random seed to use.
-            Defaults to `None`.
-
         batch_generator : `BatchGenerator`, optional
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
 
-        dtype : tensorflow.DType, optional
-            Type of elements of `tensorflow.Tensor` objects used in this sampler.
-            Defaults to `tensorflow.float64`.
+        burn_in_steps: int
+            Number of burn-in steps to perform. In each burn-in step, this
+            sampler will adapt its own internal parameters to decrease its error.
+            Defaults to `3000`.
 
         session : `tensorflow.Session`, optional
             Session object which knows about the external part of the graph
             (which defines `Cost`, and possibly batches).
             Used internally to evaluate (burn-in/sample) the sampler.
+
+        dtype : tensorflow.DType, optional
+            Type of elements of `tensorflow.Tensor` objects used in this sampler.
+            Defaults to `tensorflow.float64`.
+
+        seed : int, optional
+            Random seed to use.
+            Defaults to `None`.
 
         See also
         ----------

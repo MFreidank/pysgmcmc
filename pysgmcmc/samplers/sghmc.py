@@ -25,9 +25,9 @@ class SGHMCSampler(BurnInMCMCSampler):
             `Stochastic Gradient Hamiltonian Monte Carlo <https://arxiv.org/pdf/1402.4102.pdf>`_
     """
 
-    def __init__(self, params, cost_fun, seed=None, batch_generator=None, epsilon=0.01,
-                 session=tf.get_default_session(), burn_in_steps=3000,
-                 scale_grad=1.0, dtype=tf.float64, mdecay=0.05):
+    def __init__(self, params, cost_fun, batch_generator=None,
+                 epsilon=0.01, burn_in_steps=3000, mdecay=0.05, scale_grad=1.0,
+                 session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
             for later queries.
 
@@ -41,10 +41,6 @@ class SGHMCSampler(BurnInMCMCSampler):
             1-d `tensorflow.Tensor` that contains the cost-value.
             Frequently denoted with `U` in literature.
 
-        seed : int, optional
-            Random seed to use.
-            Defaults to `None`.
-
         batch_generator : iterable, optional
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
@@ -55,15 +51,16 @@ class SGHMCSampler(BurnInMCMCSampler):
             also denoted as discretization parameter in literature.
             Defaults to `0.01`.
 
-        session : tensorflow.Session, optional
-            Session object which knows about the external part of the graph
-            (which defines `Cost`, and possibly batches).
-            Used internally to evaluate (burn-in/sample) the sampler.
-
         burn_in_steps: int, optional
             Number of burn-in steps to perform. In each burn-in step, this
             sampler will adapt its own internal parameters to decrease its error.
             Defaults to `3000`.\n
+            For reference see:
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
+
+        mdecay : float, optional
+            (Constant) momentum decay per time-step.
+            Defaults to `0.05`.\n
             For reference see:
             `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
 
@@ -73,15 +70,18 @@ class SGHMCSampler(BurnInMCMCSampler):
             corresponds to the number of examples in the entire dataset.
             Defaults to `1.0` which corresponds to no scaling.
 
+        session : tensorflow.Session, optional
+            Session object which knows about the external part of the graph
+            (which defines `Cost`, and possibly batches).
+            Used internally to evaluate (burn-in/sample) the sampler.
+
         dtype : tensorflow.DType, optional
             Type of elements of `tensorflow.Tensor` objects used in this sampler.
             Defaults to `tensorflow.float64`.
 
-        mdecay : float, optional
-            (Constant) momentum decay per time-step.
-            Defaults to `0.05`.\n
-            For reference see:
-            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
+        seed : int, optional
+            Random seed to use.
+            Defaults to `None`.
 
         See Also
         ----------
