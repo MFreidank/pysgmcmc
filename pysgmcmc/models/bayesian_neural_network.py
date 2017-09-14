@@ -477,7 +477,7 @@ class BayesianNeuralNetwork(object):
         self.sampler = SamplingMethod.get_sampler(
             self.sampling_method,
             batch_generator=self.batch_generator(
-                X=self.X, x_placeholder=self.X_Minibatch,
+                x=self.X, x_placeholder=self.X_Minibatch,
                 y=self.y, y_placeholder=self.Y_Minibatch,
                 batch_size=self.batch_size,
                 seed=self.seed
