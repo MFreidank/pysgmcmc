@@ -67,7 +67,6 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pysgmcmc'
-copyright = '2017, Moritz Freidank'
 author = 'Moritz Freidank'
 
 # The version info for the project you're documenting, acts as replacement for
