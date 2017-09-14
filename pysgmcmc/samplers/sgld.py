@@ -17,16 +17,16 @@ class SGLDSampler(BurnInMCMCSampler):
         See [2] for more details on Stochastic Gradient Langevin Dynamics.
 
         [1] J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
-            Bayesian Optimization with Robust Bayesian Neural Networks.
-            In Advances in Neural Information Processing Systems 29 (2016).
+            In Advances in Neural Information Processing Systems 29 (2016).\n
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
 
         [2] M.Welling, Y. W. Teh
             Bayesian Learning via Stochastic Gradient Langevin Dynamics
     """
 
-    def __init__(self, params, cost_fun, seed=None, batch_generator=None,
-                 epsilon=0.01, session=tf.get_default_session(),
-                 burn_in_steps=3000, scale_grad=1.0, dtype=tf.float64, A=1.0):
+    def __init__(self, params, cost_fun, batch_generator=None,
+                 epsilon=0.01, burn_in_steps=3000, A=1.0, scale_grad=1.0,
+                 session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
             for later queries.
 
@@ -40,10 +40,6 @@ class SGLDSampler(BurnInMCMCSampler):
             1-d `tensorflow.Tensor` that contains the cost-value.
             Frequently denoted with `U` in literature.
 
-        seed : int, optional
-            Random seed to use.
-            Defaults to `None`.
-
         batch_generator : BatchGenerator, optional
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
@@ -54,24 +50,32 @@ class SGLDSampler(BurnInMCMCSampler):
             also denoted as discretization parameter in literature.
             Defaults to `0.01`.
 
-        session : tensorflow.Session, optional
-            Session object which knows about the external part of the graph
-            (which defines `Cost`, and possibly batches).
-            Used internally to evaluate (burn-in/sample) the sampler.
-
         burn_in_steps: int, optional
             Number of burn-in steps to perform. In each burn-in step, this
             sampler will adapt its own internal parameters to decrease its error.
             For reference see: TODO ADD PAPER REFERENCE HERE
+
+        A : float, optional
+            TODO XXX Doku
+            Defaults to `1.0`.
 
         scale_grad : float, optional
             Value that is used to scale the magnitude of the noise used
             during sampling. In a typical batches-of-data setting this usually
             corresponds to the number of examples in the entire dataset.
 
-        A : float, optional
-            TODO XXX Doku
-            Defaults to `1.0`.
+        session : tensorflow.Session, optional
+            Session object which knows about the external part of the graph
+            (which defines `Cost`, and possibly batches).
+            Used internally to evaluate (burn-in/sample) the sampler.
+
+        dtype : tensorflow.DType, optional
+            Type of elements of `tensorflow.Tensor` objects used in this sampler.
+            Defaults to `tensorflow.float64`.
+
+        seed : int, optional
+            Random seed to use.
+            Defaults to `None`.
 
         Examples
         ----------
