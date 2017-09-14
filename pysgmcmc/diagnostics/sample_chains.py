@@ -62,7 +62,7 @@ class PYSGMCMCTrace(object):
 
         if varnames is None:
             # use anonymous variable names: enumerate
-            logging.warn(
+            logging.warning(
                 "Variables in a trace were not named when instantiating "
                 "a `pysgmcmc.diagnostics.sample_chain.PYSGMCMCTrace` "
                 "from that trace. We will give them anonymous names "

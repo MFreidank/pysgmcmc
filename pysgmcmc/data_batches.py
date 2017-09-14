@@ -98,8 +98,11 @@ def generate_batches(x, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     n_examples = x.shape[0]
 
-    if seed is not None:
-        np.random.seed(seed)
+    if seed is None:
+        seed = np.random.randint(1, 100000)
+
+    rng = np.random.RandomState()
+    rng.seed(seed)
 
     # Check if we have enough data points to form a minibatch
     # otherwise set the batchsize equal to the number of input points
@@ -114,7 +117,7 @@ def generate_batches(x, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     while True:
         # `np.random.randint` is end-exclusive => for n_examples == batch_size, start == 0 holds
-        start = np.random.randint(0, (n_examples - batch_size + 1))
+        start = rng.randint(0, (n_examples - batch_size + 1))
 
         minibatch_x = x[start:start + batch_size]
         minibatch_y = y[start:start + batch_size, None]

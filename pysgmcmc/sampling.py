@@ -60,7 +60,7 @@ class MCMCSampler(object):
         assert(batch_generator is None or hasattr(batch_generator, "__next__"))
         assert(seed is None or type(seed) == int)
 
-        assert(isinstance(session, tf.Session) or isinstance(session, tf.InteractiveSession))
+        assert(isinstance(session, (tf.Session, tf.InteractiveSession)))
         assert(isinstance(dtype, tf.DType))
 
         self.dtype = dtype
@@ -201,7 +201,7 @@ class MCMCSampler(object):
         """
         return self
 
-    def __next__(self, feed_vals=dict()):
+    def __next__(self, feed_vals=None):
         """ Compute and return the next sample and
             next cost values for this sampler.
 
@@ -232,6 +232,9 @@ class MCMCSampler(object):
         >>> tf.reset_default_graph()  # to avoid polluting test environment
 
         """
+        if feed_vals is None:
+            feed_vals = dict()
+
         if not hasattr(self, "Theta_t") or not hasattr(self, "Cost"):
             # Ensure self.Theta_t and self.Cost are defined
             raise ValueError(
@@ -364,6 +367,6 @@ class BurnInMCMCSampler(MCMCSampler):
             )
             self.n_iterations += 1
             return params, cost
-        else:
-            # "standard" MCMC sampling
-            return super().__next__(feed_vals=dict(zip(self.Minv_t, self.minv)))
+
+        # "standard" MCMC sampling
+        return super().__next__(feed_vals=dict(zip(self.Minv_t, self.minv)))

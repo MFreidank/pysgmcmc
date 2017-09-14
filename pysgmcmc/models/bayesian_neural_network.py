@@ -496,7 +496,7 @@ class BayesianNeuralNetwork(object):
 
         logging.info("Starting sampling")
 
-        def log_full_training_error(is_sampling: bool):
+        def log_full_training_error(iteration_index, is_sampling: bool):
             """ Compute the error of our last sampled network parameters
                 on the full training dataset and use `logging.info` to
                 log it. The boolean flag `sampling` is used to determine
@@ -521,15 +521,15 @@ class BayesianNeuralNetwork(object):
             t = time() - start_time
             if is_sampling:
                 logging.info("Iter {:8d} : NLL = {:.4e} MSE = {:.4e} "
-                             "Time = {:5.2f}".format(i,
+                             "Time = {:5.2f}".format(iteration_index,
                                                      float(total_nll),
                                                      float(total_mse),
                                                      t))
             else:
                 logging.info("Iter {:8d} : NLL = {:.4e} MSE = {:.4e} "
                              "Samples = {} Time = {:5.2f}".format(
-                                 i, float(total_nll), float(total_mse),
-                                 len(self.samples), t))
+                                 iteration_index, float(total_nll),
+                                 float(total_mse), len(self.samples), t))
 
         logging_intervals = {"burn-in": 512, "sampling": self.sample_steps}
 
@@ -540,10 +540,10 @@ class BayesianNeuralNetwork(object):
             _, nll_value = next(self.sampler)
 
             if burning_in and i % logging_intervals["burn-in"] == 0:
-                log_full_training_error(is_sampling=False)
+                log_full_training_error(iteration_index=i, is_sampling=False)
 
             if not burning_in and i % logging_intervals["sampling"] == 0:
-                log_full_training_error(is_sampling=True)
+                log_full_training_error(iteration_index=i, is_sampling=True)
 
                 # collect sample
                 param_values = self.session.run(self.network_params)

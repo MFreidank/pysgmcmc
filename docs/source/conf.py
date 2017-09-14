@@ -22,17 +22,6 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join('..', '../')))
-# sys.path.insert(0, os.path.abspath('../../samplers'))
-# sys.path.insert(0, os.path.abspath('../../models'))
-# sys.path.insert(0, os.path.abspath('../../diagnostics'))
-
-"""
-MOCK_MODULES = [
-    "numpy", "tensorflow", "scipy",
-]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock(name=mod_name)
-"""
 
 
 # -- General configuration ------------------------------------------------

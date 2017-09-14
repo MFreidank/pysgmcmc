@@ -182,8 +182,8 @@ def median(tensor):
 
     if n_elements % 2 == 1:
         return sorted_tensor.values[mid_index]
-    else:
-        return (sorted_tensor.values[mid_index - 1] + sorted_tensor.values[mid_index]) / 2
+
+    return (sorted_tensor.values[mid_index - 1] + sorted_tensor.values[mid_index]) / 2
 
 
 def safe_divide(x, y, small_constant=1e-16, name=None):

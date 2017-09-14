@@ -201,6 +201,7 @@ class HypothesisSeededBatches(HypothesisTest):
                 seed=seed,
                 batch_size=batch_size
             )
+            for _ in range(n_generators)
         ]
 
         for reference_batch in islice(generators[0], n_batches):
