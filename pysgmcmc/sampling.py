@@ -133,7 +133,7 @@ class MCMCSampler(object):
         >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
         >>> x_placeholder, y_placeholder = tf.placeholder(dtype=tf.float64), tf.placeholder(dtype=tf.float64)
         >>> batch_size = 10
-        >>> batch_generator = generate_batches(X=X, y=y, x_placeholder=x_placeholder, y_placeholder=y_placeholder, batch_size=batch_size)
+        >>> batch_generator = generate_batches(x=X, y=y, x_placeholder=x_placeholder, y_placeholder=y_placeholder, batch_size=batch_size)
         >>> sampler = SGHMCSampler(params=[x], cost_fun=lambda x: x, session=session, dtype=tf.float32, batch_generator=batch_generator)  # cost function is just a dummy
         >>> batch_dict = sampler._next_batch()
         >>> session.close()

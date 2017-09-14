@@ -35,7 +35,7 @@ class HypothesisTest(unittest.TestCase):
 
     def batch_generator(self, X=None, y=None, x_placeholder=None,
                         y_placeholder=None, seed=None, batch_size=10):
-        return generate_batches(X=X, y=y,
+        return generate_batches(x=X, y=y,
                                 x_placeholder=x_placeholder,
                                 y_placeholder=y_placeholder,
                                 seed=seed,
@@ -111,7 +111,7 @@ class HypothesisTestSimpleBatches(HypothesisTest):
         batch_size = np.random.randint(1, n_points)
         self.setup_data(n_points=n_points, seed=seed)
         generator = self.batch_generator(
-            X=self.X, y=self.y,
+            x=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
             batch_size=batch_size
@@ -135,7 +135,7 @@ class HypothesisTestCornerCases(HypothesisTest):
         """ Extracting batches with batch_size == dataset size. """
         self.setup_data(n_points=n_points, seed=seed)
         generator = self.batch_generator(
-            X=self.X, y=self.y,
+            x=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
             batch_size=n_points
@@ -161,7 +161,7 @@ class HypothesisTestCornerCases(HypothesisTest):
 
         batch_size = np.random.randint(n_points + 1, n_points * 100)
         generator = self.batch_generator(
-            X=self.X, y=self.y,
+            x=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
             batch_size=batch_size
@@ -196,7 +196,7 @@ class HypothesisSeededBatches(HypothesisTest):
         self.setup_data(seed=seed, n_points=n_points)
         generators = [
             self.batch_generator(
-                X=self.X, y=self.y,
+                x=self.X, y=self.y,
                 x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
                 seed=seed,
                 batch_size=batch_size
