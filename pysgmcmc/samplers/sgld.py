@@ -21,7 +21,9 @@ class SGLDSampler(BurnInMCMCSampler):
             `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
 
         [2] M.Welling, Y. W. Teh
-            Bayesian Learning via Stochastic Gradient Langevin Dynamics
+            In International Conference on Machine Learning (ICML) 28 (2011).\n
+            `Bayesian Learning via Stochastic Gradient Langevin Dynamics. <https://www.ics.uci.edu/~welling/publications/papers/stoclangevin_v5.pdf>`
+
     """
 
     def __init__(self, params, cost_fun, batch_generator=None,
@@ -76,14 +78,6 @@ class SGLDSampler(BurnInMCMCSampler):
         seed : int, optional
             Random seed to use.
             Defaults to `None`.
-
-        Examples
-        ----------
-        Simple, plain example:
-        TODO: Add more samples
-
-        Simple example that uses batches:
-        TODO: Add simplified batch example here
 
         See Also
         ----------
