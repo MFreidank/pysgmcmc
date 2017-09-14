@@ -2,7 +2,6 @@
 import tensorflow as tf
 from pysgmcmc.sampling import BurnInMCMCSampler
 
-# safe operations for division and square root
 from pysgmcmc.tensor_utils import (
     vectorize, unvectorize, safe_divide, safe_sqrt,
 )
@@ -19,6 +18,7 @@ class SGHMCSampler(BurnInMCMCSampler):
         [1] J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
             Bayesian Optimization with Robust Bayesian Neural Networks.
             In Advances in Neural Information Processing Systems 29 (2016).
+            `http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf`
 
         [2] T. Chen, E. B. Fox, C. Guestrin
             Stochastic Gradient Hamiltonian Monte Carlo
@@ -63,7 +63,11 @@ class SGHMCSampler(BurnInMCMCSampler):
         burn_in_steps: int, optional
             Number of burn-in steps to perform. In each burn-in step, this
             sampler will adapt its own internal parameters to decrease its error.
-            For reference see: TODO ADD PAPER REFERENCE HERE
+            For reference see:
+                J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
+                Bayesian Optimization with Robust Bayesian Neural Networks.
+                In Advances in Neural Information Processing Systems 29 (2016).
+                `http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf`
 
         scale_grad : float, optional
             Value that is used to scale the magnitude of the noise used
@@ -78,14 +82,11 @@ class SGHMCSampler(BurnInMCMCSampler):
         mdecay : float, optional
             (Constant) momentum decay per time-step.
             Defaults to `0.05`.
-
-        Examples
-        ----------
-        Simple, plain example:
-        TODO: Add 2D Gaussian Case here
-
-        Simple example that uses batches:
-        TODO: Add simplified batch example here
+            For reference see:
+                J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
+                Bayesian Optimization with Robust Bayesian Neural Networks.
+                In Advances in Neural Information Processing Systems 29 (2016).
+                `http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf`
 
         See Also
         ----------
@@ -99,9 +100,11 @@ class SGHMCSampler(BurnInMCMCSampler):
         # initialize member variables common to all samplers
         # and run initializers for all uninitialized variables in `params`
         # (to avoid errors in the graph definitions below).
-        super().__init__(params=params, burn_in_steps=burn_in_steps,
-                         seed=seed, batch_generator=batch_generator,
-                         dtype=dtype, session=session)
+        super().__init__(
+            params=params, burn_in_steps=burn_in_steps,
+            batch_generator=batch_generator,
+            seed=seed, dtype=dtype, session=session
+        )
 
         #  Initialize graph constants {{{ #
 
