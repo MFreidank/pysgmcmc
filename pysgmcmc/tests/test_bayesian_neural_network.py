@@ -1,1 +1,1 @@
-# XXX: Tests for bnn (+ priors and stuff)
+# Tests for bnn (+ priors and stuff)

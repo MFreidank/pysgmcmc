@@ -1,1 +1,1 @@
-# XXX: Add diagnostics on models here (e.g. mean squared error of bnn etc.)
+# Add diagnostics on models here (e.g. mean squared error of bnn etc.)

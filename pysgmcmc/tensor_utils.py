@@ -168,7 +168,20 @@ def median(tensor):
 
     Examples
     ----------
-    XXX Use simple examples from python.statistics doku
+    When the number of data points is odd, return the middle data point:
+
+    >>> import tensorflow as tf
+    >>> t = tf.constant([1, 3, 5], dtype=tf.float64)
+    >>> with tf.Session() as session: session.run(median(t))
+    3.0
+
+    When the number of data points is even, the median is interpolated by
+    taking the average of the two middle values:
+
+    >>> import tensorflow as tf
+    >>> t = tf.constant([1, 3, 5, 7], dtype=tf.float64)
+    >>> with tf.Session() as session: session.run(median(t))
+    4.0
 
     """
     tensor_reshaped = tf.reshape(tensor, [-1])
@@ -246,8 +259,6 @@ def safe_divide(x, y, small_constant=1e-16, name=None):
     return tf.divide(x, y + (2. * tf.sign(y) * small_constant + small_constant), name=name)
 
 
-# XXX: Ensure that we only clip values that are close to zero already, and raise an error
-# otherwise?
 def safe_sqrt(x, clip_value_min=0., clip_value_max=float("inf"), name=None):
     """ Computes `tf.sqrt(x)` after clipping tensor `x` using
         `tf.clip_by_value(x, clip_value_min, clip_value_max)` to avoid

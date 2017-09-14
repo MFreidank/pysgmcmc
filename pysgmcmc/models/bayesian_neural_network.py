@@ -317,7 +317,6 @@ class BayesianNeuralNetwork(object):
 
         """
 
-        # XXX: Raise readable errors for all sanitizations when they fail
         # Sanitize inputs
         assert(isinstance(n_nets, int))
         assert(isinstance(n_iters, int))
@@ -444,7 +443,7 @@ class BayesianNeuralNetwork(object):
         # to train: Proposal = clear the whole preexisting graph?
         # Advantages over only setting up once is that we can use the same object
         # on different function successively which is a lot more flexible
-        # XXX: We might also want to move session construction here then
+        # We might also want to move session construction here then
 
         start_time = time()
         self.is_trained = False
