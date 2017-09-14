@@ -135,7 +135,7 @@ class HypothesisTestCornerCases(HypothesisTest):
         """ Extracting batches with batch_size == dataset size. """
         self.setup_data(n_points=n_points, seed=seed)
         generator = self.batch_generator(
-            x=self.X, y=self.y,
+            X=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
             batch_size=n_points
@@ -161,7 +161,7 @@ class HypothesisTestCornerCases(HypothesisTest):
 
         batch_size = np.random.randint(n_points + 1, n_points * 100)
         generator = self.batch_generator(
-            x=self.X, y=self.y,
+            X=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
             batch_size=batch_size
@@ -196,7 +196,7 @@ class HypothesisSeededBatches(HypothesisTest):
         self.setup_data(seed=seed, n_points=n_points)
         generators = [
             self.batch_generator(
-                x=self.X, y=self.y,
+                X=self.X, y=self.y,
                 x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
                 seed=seed,
                 batch_size=batch_size
