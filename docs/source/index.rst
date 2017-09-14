@@ -12,8 +12,8 @@ Stochastic Gradient Markov Chain Monte Carlo sampling methods.
 
    intro
    getting_started
-   examples
    api
+..   examples
 
 
 

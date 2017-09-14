@@ -40,8 +40,8 @@ Features
   problem.
 
 
-A small example
-===============
+.. A small example
+.. ===============
 .. XXX: How about this: show a small forward pass through a two-layer network
 .. (represented as tf.Variables that are our target params)
 .. working on some hpolib function and demonstrate how our sampling methods
