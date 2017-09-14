@@ -164,14 +164,35 @@ def generate_shuffled_batches(x, y, x_placeholder, y_placeholder,
 
     Examples
     -------
-    TODO Add some test examples that demonstrate shuffling
+
+    Simple shuffled batch extraction example:
+
+    >>> import numpy as np
+    >>> import tensorflow as tf
+    >>> N, D = 100, 3  # 100 datapoints with 3 features each
+    >>> x = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
+    >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
+    >>> x.shape, y.shape
+    ((100, 3), (100,))
+    >>> x_placeholder, y_placeholder = tf.placeholder(dtype=tf.float64), tf.placeholder(dtype=tf.float64)
+    >>> batch_size = 20
+    >>> gen = generate_shuffled_batches(x, y, x_placeholder, y_placeholder, batch_size)
+    >>> batch_dict = next(gen)  # extract a batch
+    >>> set(batch_dict.keys()) == set((x_placeholder, y_placeholder))
+    True
+    >>> batch_dict[x_placeholder].shape, batch_dict[y_placeholder].shape
+    ((20, 3), (20, 1))
+
+    TODO: Demonstrate that shuffled batches are shuffled correctly, e.g.
+    datapoint still matches corresponding label
 
     """
 
     # always use a seed in order to shuffle x and y in the same way
     if seed is None:
         seed = np.random.randint(1, 100000)
-    rng_x, rng_y = np.random.RandomState()
+
+    rng_x, rng_y = np.random.RandomState(), np.random.RandomState()
     rng_x.seed(seed)
     rng_y.seed(seed)
 
