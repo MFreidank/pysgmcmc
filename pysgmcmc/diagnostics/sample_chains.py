@@ -138,6 +138,14 @@ class PYSGMCMCTrace(object):
             Usually, this corresponds to the `name` attribute of the
             `tensorflow.Variable` object for this target parameter.
 
+        burn : int, optional
+            Discard the first `burn` sampled values from this chain.
+            Defaults to `0`.
+
+        thin : int, optional
+            Only return every `thin`th sampled value from this chain.
+            Defaults to `1`.
+
         Returns
         ----------
         sampled_values : np.ndarray (N, D)
@@ -180,7 +188,7 @@ class PYSGMCMCTrace(object):
         var_index = self.varnames.index(varname)
 
         return np.asarray(
-            [sample[var_index] for sample in self.samples]
+            [sample[var_index] for sample in self.samples[burn::thin]]
         )
 
 

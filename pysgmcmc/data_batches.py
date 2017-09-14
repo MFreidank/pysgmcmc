@@ -113,7 +113,7 @@ def generate_batches(x, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     if initial_batch_size != batch_size:
         logging.error("Not enough datapoints to form a minibatch. "
-                      "Batchsize was set to {}".format(batch_size))
+                      "Batchsize was set to %s", batch_size)
 
     while True:
         # `np.random.randint` is end-exclusive => for n_examples == batch_size, start == 0 holds
