@@ -22,7 +22,7 @@ class SGLDSampler(BurnInMCMCSampler):
 
         [2] M.Welling, Y. W. Teh
             In International Conference on Machine Learning (ICML) 28 (2011).\n
-            `Bayesian Learning via Stochastic Gradient Langevin Dynamics. <https://www.ics.uci.edu/~welling/publications/papers/stoclangevin_v5.pdf>`_
+            `Bayesian Learning via Stochastic Gradient Langevin Dynamics. <https://www.ics.uci.edu/~welling/publications/papers/stoclangevin_v6.pdf>`_
 
     """
 
