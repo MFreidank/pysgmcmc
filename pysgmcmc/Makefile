@@ -1,12 +1,15 @@
 test:
 	py.test -v --cov=pysgmcmc
-	py.test --nbval-lax ../notebooks/api_quickstart.ipynb
+	make test-notebooks
 
 tests: test
 
 # XXX: Mutation testing with cosmic ray
 mutation-tests:
 	echo "Mutation tests not yet implemented"
+
+test-notebooks:
+	py.test --nbval-lax ../notebooks/api_quickstart.ipynb
 
 
 # XXX: limit to fast-running tests
