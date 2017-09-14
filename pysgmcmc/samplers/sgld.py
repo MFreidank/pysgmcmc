@@ -55,10 +55,12 @@ class SGLDSampler(BurnInMCMCSampler):
         burn_in_steps: int, optional
             Number of burn-in steps to perform. In each burn-in step, this
             sampler will adapt its own internal parameters to decrease its error.
-            For reference see: TODO ADD PAPER REFERENCE HERE
+            Defaults to `3000`.\n
+            For reference see:
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
 
         A : float, optional
-            TODO XXX Doku
+            TODO Doku
             Defaults to `1.0`.
 
         scale_grad : float, optional

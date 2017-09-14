@@ -10,8 +10,7 @@ __all__ = (
     "vectorize", "unvectorize", "median",
     "safe_divide", "safe_sqrt",
     "pdist", "squareform",
-    "uninitialized_params", "get_initializer",
-    "duplicate_variables",
+    "uninitialized_params",
 )
 
 
@@ -583,29 +582,3 @@ def uninitialized_params(params, session=None):
     )
 
     return [param for param, flag in zip(params, init_flag) if not flag]
-
-
-def get_initializer(tensor_variable):
-    """
-    Return the initializer object that corresponds to
-    `tensorflow.Variable` instance `tensor_variable`.
-
-    Parameters
-    ----------
-    tensor_variable : tensorflow.Variable
-        Variable whose initializer we want to determine.
-
-    Returns
-    ----------
-    initializer : tensorflow.Tensor
-        Tensor that was used to initialize `tensor_variable`.
-        This tensor can be passed as `initializer` keyword-argument to
-        `tf.get_variable` to initialize new variables with the same initializer
-        as preexisting ones.
-
-    Examples
-    ----------
-    TODO EXAMPLE
-
-    """
-    return tensor_variable.initializer._inputs[1]
