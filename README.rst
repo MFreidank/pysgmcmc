@@ -25,16 +25,18 @@ Features
 .. |Build Status| image:: https://travis-ci.org/MFreidank/pysgmcmc.png?branch_master
    :target: https://travis-ci.org/MFreidank/pysgmcmc
 
+.. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=latest
+   :target: http://pysgmcmc.readthedocs.io/en/latest/
+   :alt: Docs
+
+.. |Coverage_| image:: https://coveralls.io/repos/github/MFreidank/pysgmcmc/badge.svg
+   :target: https://coveralls.io/github/MFreidank/pysgmcmc
+   :alt: Coverage
+
 .. |Health_| image:: https://landscape.io/github/MFreidank/pysgmcmc/master/landscape.svg?style=flat
    :target: https://landscape.io/github/MFreidank/pysgmcmc/master
    :alt: Code Health
 
-.. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=latest
-   :target: http://pysgmcmc.readthedocs.io/en/latest/
-   :alt: Documentation
-
-.. |Coverage_| image:: https://coveralls.io/repos/github/MFreidank/pysgmcmc/badge.svg
-   :target: https://coveralls.io/github/MFreidank/pysgmcmc
 
 Documentation
 =============

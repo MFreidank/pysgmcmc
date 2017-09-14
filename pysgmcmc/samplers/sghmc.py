@@ -12,17 +12,17 @@ class SGHMCSampler(BurnInMCMCSampler):
         procedure to adapt its own hyperparameters during the initial stages
         of sampling.
 
-        See [1] for more details on this burn-in procedure.
+        See [1] for more details on this burn-in procedure.\n
         See [2] for more details on Stochastic Gradient Hamiltonian Monte-Carlo.
 
         [1] J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
-            Bayesian Optimization with Robust Bayesian Neural Networks.
-            In Advances in Neural Information Processing Systems 29 (2016).
-            `PDF <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf/>`_
+            In Advances in Neural Information Processing Systems 29 (2016).\n
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
+
 
         [2] T. Chen, E. B. Fox, C. Guestrin
-            Stochastic Gradient Hamiltonian Monte Carlo
-            In Proceedings of Machine Learning Research 32 (2014).
+            In Proceedings of Machine Learning Research 32 (2014).\n
+            `Stochastic Gradient Hamiltonian Monte Carlo <https://arxiv.org/pdf/1402.4102.pdf>`_
     """
 
     def __init__(self, params, cost_fun, seed=None, batch_generator=None, epsilon=0.01,
@@ -63,11 +63,9 @@ class SGHMCSampler(BurnInMCMCSampler):
         burn_in_steps: int, optional
             Number of burn-in steps to perform. In each burn-in step, this
             sampler will adapt its own internal parameters to decrease its error.
+            Defaults to `3000`.\n
             For reference see:
-                J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
-                Bayesian Optimization with Robust Bayesian Neural Networks.
-                In Advances in Neural Information Processing Systems 29 (2016).
-                `PDF <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf/>`_
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
 
         scale_grad : float, optional
             Value that is used to scale the magnitude of the noise used
@@ -81,12 +79,9 @@ class SGHMCSampler(BurnInMCMCSampler):
 
         mdecay : float, optional
             (Constant) momentum decay per time-step.
-            Defaults to `0.05`.
+            Defaults to `0.05`.\n
             For reference see:
-                J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
-                Bayesian Optimization with Robust Bayesian Neural Networks.
-                In Advances in Neural Information Processing Systems 29 (2016).
-                `PDF <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf/>`_
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
 
         See Also
         ----------
