@@ -20,8 +20,8 @@ install:
   - pip install coveralls 
 
 script: 
-    make -C pysgmcmc test-notebooks
-    py.test -v --cov=pysgmcmc
+    - make -C pysgmcmc test-notebooks
+    - py.test -v --cov=pysgmcmc
 
 after_success:
     - coveralls
