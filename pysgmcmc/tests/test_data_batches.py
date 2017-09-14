@@ -65,7 +65,7 @@ class HypothesisTest(unittest.TestCase):
         self.Y_Placeholder = tf.placeholder(dtype=tf.float64, name="Y_Minibatch")
 
     def assert_batch_shapes(self, batch):
-        x_placeholder, y_placeholder = tuple(batch.keys())
+        x_placeholder, _ = tuple(batch.keys())
         X_batch, y_batch = tuple(batch.values())
         assert(X_batch.shape[1] == x_placeholder.shape[1])
         assert(y_batch.shape[0] == X_batch.shape[0] == y_batch.shape[0])

@@ -372,6 +372,8 @@ class BayesianNeuralNetwork(object):
         self.variance_prior = LogVariancePrior(mean=1e-6, var=0.01)
         self.weight_prior = WeightPrior()
 
+        self.is_trained = False
+
     def negative_log_likelihood(self, X, Y):
         """ Compute the negative log likelihood of the
             current network parameters with respect to inputs `X` with
@@ -446,7 +448,6 @@ class BayesianNeuralNetwork(object):
         # We might also want to move session construction here then
 
         start_time = time()
-        self.is_trained = False
 
         self.X, self.y = X, y
 

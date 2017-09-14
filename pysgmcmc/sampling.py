@@ -339,7 +339,7 @@ class BurnInMCMCSampler(MCMCSampler):
 
         return self.n_iterations < self.burn_in_steps
 
-    def __next__(self):
+    def __next__(self, feed_vals=None):
         """ Perform a sampler step:
             Compute and return the next sample and next cost values
             for this sampler.
@@ -358,11 +358,16 @@ class BurnInMCMCSampler(MCMCSampler):
             Current cost value of the last evaluated target parameter values.
 
         """
+        if feed_vals is None:
+            feed_vals = dict()
+
+        feed_vals.update(self._next_batch())
+
         if self.is_burning_in:
             # perform a burn-in step = adapt the samplers mass matrix inverse
             params, cost, self.minv = self.session.run(
                 [self.Theta_t, self.Cost, self.Minv_t],
-                feed_dict=self._next_batch()
+                feed_dict=feed_vals
             )
             self.n_iterations += 1
             return params, cost

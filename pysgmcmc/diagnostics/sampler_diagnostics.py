@@ -79,11 +79,11 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     ----------
     The diagnostic is computed as:
 
-    .. math:: \hat{n}_{eff} = \\frac{mn}{1 + 2 \sum_{t=1}^T \hat{\\rho}_t}
+    .. math:: \\hat{n}_{eff} = \\frac{mn}{1 + 2 \\sum_{t=1}^T  \\hat{\\rho}_t}
 
-    where :math:`\hat{\\rho}_t` is the estimated autocorrelation at lag t, and T
+    where :math:`\\hat{\\rho}_t` is the estimated autocorrelation at lag t, and T
     is the first odd positive integer for which the sum
-    :math:`\hat{\\rho}_{T+1} + \hat{\\rho}_{T+1}` is negative.
+    :math:`\\hat{\\rho}_{T+1} + \\hat{\\rho}_{T+1}` is negative.
 
     References
     ----------
@@ -143,16 +143,16 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
     Returns
     ----------
     gelman_rubin : dict
-      Dictionary of the potential scale reduction factors, :math:`\hat{R}`.
+      Dictionary of the potential scale reduction factors, :math:`\\hat{R}`.
 
     Notes
     ----------
 
     The diagnostic is computed by:
 
-      .. math:: \hat{R} = \\frac{\hat{V}}{W}
+      .. math:: \\hat{R} = \\frac{\\hat{V}}{W}
 
-    where :math:`W` is the within-chain variance and :math:`\hat{V}` is
+    where :math:`W` is the within-chain variance and :math:`\\hat{V}` is
     the posterior variance estimate for the pooled traces. This is the
     potential scale reduction factor, which converges to unity when each
     of the traces is a sample from the target posterior. Values greater
