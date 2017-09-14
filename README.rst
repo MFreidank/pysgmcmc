@@ -3,6 +3,7 @@ PYSGMCMC
 ========
 |Build Status|
 |Docs_|
+|Coverage_|
 |Health_|
 
 PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on 
@@ -31,6 +32,9 @@ Features
 .. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=latest
    :target: http://pysgmcmc.readthedocs.io/en/latest/
    :alt: Documentation
+
+.. |Coverage_| image:: https://coveralls.io/repos/github/MFreidank/pysgmcmc/badge.svg
+   :target: https://coveralls.io/github/MFreidank/pysgmcmc
 
 Documentation
 =============
