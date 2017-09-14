@@ -111,7 +111,7 @@ class HypothesisTestSimpleBatches(HypothesisTest):
         batch_size = np.random.randint(1, n_points)
         self.setup_data(n_points=n_points, seed=seed)
         generator = self.batch_generator(
-            x=self.X, y=self.y,
+            X=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
             batch_size=batch_size
