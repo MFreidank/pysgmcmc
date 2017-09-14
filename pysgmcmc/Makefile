@@ -8,8 +8,12 @@ tests: test
 mutation-tests:
 	echo "Mutation tests not yet implemented"
 
+# Use "nbval" py.test plugin to evaluate all notebooks and assert that
+# they run without any errors
 test-notebooks:
-	py.test --nbval-lax ../notebooks/api_quickstart.ipynb
+	for notebook in `find ../notebooks/* -name "*.ipynb"`; do \
+	    py.test --nbval-lax $$notebook ; \
+	done
 
 
 # XXX: limit to fast-running tests
