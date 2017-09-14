@@ -609,21 +609,3 @@ def get_initializer(tensor_variable):
 
     """
     return tensor_variable.initializer._inputs[1]
-
-
-# XXX: TODO DOKU
-def duplicate_variables(tensor_variables, session, name_suffix="_2"):
-    def duplicate_variable(tensor_variable):
-        return tf.get_variable(
-            name="{}{}".format(tensor_variable.name, name_suffix),
-            initializer=tensor_variable.initializer
-        )
-    new_variables = [
-        duplicate_variable(old_variable) for old_variable in tensor_variables
-    ]
-
-    # reiinitialize to obtain fresh random values in case some of the
-    # variables were randomly initialized
-    session.run([new_variable.initializer for new_variable in new_variables])
-
-    return new_variables
