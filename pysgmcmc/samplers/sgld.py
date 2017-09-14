@@ -89,9 +89,11 @@ class SGLDSampler(BurnInMCMCSampler):
 
         """
 
-        super().__init__(params=params, batch_generator=batch_generator,
-                         burn_in_steps=burn_in_steps,
-                         session=session, dtype=dtype)
+        super().__init__(
+            params=params, batch_generator=batch_generator,
+            burn_in_steps=burn_in_steps, seed=seed,
+            session=session, dtype=dtype
+        )
 
         n_params = len(params)
 
