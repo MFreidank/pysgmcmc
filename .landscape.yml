@@ -8,4 +8,4 @@ pep8:
 ignore-paths:
     - docs
 python-targets:
-    -3
+    - 3
