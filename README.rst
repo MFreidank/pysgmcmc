@@ -21,8 +21,8 @@ Features
     * flexible computation environments (CPU/GPU support, desktop/server/mobile device support)
     * Linear algebra operations
 
-.. |Build Status| image:: https://travis-ci.org/pymc-devs/pymc3.png?branch=master
-   :target: https://travis-ci.org/pymc-devs/pymc3
+.. |Build Status| image:: https://travis-ci.org/MFreidank/pysgmcmc.png?branch_master
+   :target: https://travis-ci.org/MFreidank/pysgmcmc
 
 .. |Health_| image:: https://landscape.io/github/MFreidank/pysgmcmc/master/landscape.svg?style=flat
    :target: https://landscape.io/github/MFreidank/pysgmcmc/master
