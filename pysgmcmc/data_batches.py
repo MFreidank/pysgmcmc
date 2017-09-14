@@ -7,7 +7,7 @@ __all__ = (
 )
 
 
-def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=None):
+def generate_batches(x, y, x_placeholder, y_placeholder, batch_size=20, seed=None):
     """ Infinite generator of random minibatches for a dataset.
 
         For general reference on (infinite) generators, see:
@@ -15,14 +15,14 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     Parameters
     ----------
-    X: np.ndarray (N, D)
+    x: np.ndarray (N, D)
         Training data points/features
 
     y : np.ndarray (N, 1)
         Training data labels
 
     x_placeholder : tensorflow.placeholder
-        Placeholder for batches of data from `X`.
+        Placeholder for batches of data from `x`.
 
     y_placeholder : tensorflow.placeholder
         Placeholder for batches of data from `y`.
@@ -39,7 +39,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
     batch_dict : dict
         A dictionary that maps `x_placeholder` and `y_placeholder`
         to `batch_size` sized minibatches of data (numpy.ndarrays)
-        from the dataset `X`, `y`.
+        from the dataset `x`, `y`.
 
     Examples
     -------
@@ -48,13 +48,13 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
     >>> import numpy as np
     >>> import tensorflow as tf
     >>> N, D = 100, 3  # 100 datapoints with 3 features each
-    >>> X = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
+    >>> x = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
     >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
-    >>> X.shape, y.shape
+    >>> x.shape, y.shape
     ((100, 3), (100,))
     >>> x_placeholder, y_placeholder = tf.placeholder(dtype=tf.float64), tf.placeholder(dtype=tf.float64)
     >>> batch_size = 20
-    >>> gen = generate_batches(X, y, x_placeholder, y_placeholder, batch_size)
+    >>> gen = generate_batches(x, y, x_placeholder, y_placeholder, batch_size)
     >>> batch_dict = next(gen)  # extract a batch
     >>> set(batch_dict.keys()) == set((x_placeholder, y_placeholder))
     True
@@ -66,13 +66,13 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
     >>> import numpy as np
     >>> import tensorflow as tf
     >>> N, D = 10, 3  # 10 datapoints with 3 features each
-    >>> X = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
+    >>> x = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
     >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
-    >>> X.shape, y.shape
+    >>> x.shape, y.shape
     ((10, 3), (10,))
     >>> x_placeholder, y_placeholder = tf.placeholder(dtype=tf.float64), tf.placeholder(dtype=tf.float64)
     >>> batch_size = 20
-    >>> gen = generate_batches(X, y, x_placeholder, y_placeholder, batch_size)
+    >>> gen = generate_batches(x, y, x_placeholder, y_placeholder, batch_size)
     >>> batch_dict = next(gen)  # extract a batch
     >>> set(batch_dict.keys()) == set((x_placeholder, y_placeholder))
     True
@@ -81,7 +81,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     In this case, the batches contain exactly all datapoints:
 
-    >>> np.allclose(batch_dict[x_placeholder], X), np.allclose(batch_dict[y_placeholder].reshape(N,), y)
+    >>> np.allclose(batch_dict[x_placeholder], x), np.allclose(batch_dict[y_placeholder].reshape(N,), y)
     (True, True)
 
     """
@@ -94,9 +94,9 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     assert(seed is None or (0 <= seed <= 2 ** 32 - 1))
 
-    assert(y.shape[0] == X.shape[0]), "Not exactly one label per datapoint!"
+    assert(y.shape[0] == x.shape[0]), "Not exactly one label per datapoint!"
 
-    n_examples = X.shape[0]
+    n_examples = x.shape[0]
 
     if seed is not None:
         np.random.seed(seed)
@@ -116,7 +116,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
         # `np.random.randint` is end-exclusive => for n_examples == batch_size, start == 0 holds
         start = np.random.randint(0, (n_examples - batch_size + 1))
 
-        minibatch_x = X[start:start + batch_size]
+        minibatch_x = x[start:start + batch_size]
         minibatch_y = y[start:start + batch_size, None]
 
         feed_dict = {
@@ -126,7 +126,7 @@ def generate_batches(X, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
         yield feed_dict
 
 
-def generate_shuffled_batches(X, y, x_placeholder, y_placeholder,
+def generate_shuffled_batches(x, y, x_placeholder, y_placeholder,
                               batch_size=20, seed=None):
 
     """ Infinite generator of shuffled random minibatches for a dataset.
@@ -136,14 +136,14 @@ def generate_shuffled_batches(X, y, x_placeholder, y_placeholder,
 
     Parameters
     ----------
-    X: np.ndarray (N, D)
+    x: np.ndarray (N, D)
         Training data points/features
 
     y : np.ndarray (N, 1)
         Training data labels
 
     x_placeholder : tensorflow.placeholder
-        Placeholder for batches of data from `X`.
+        Placeholder for batches of data from `x`.
 
     y_placeholder : tensorflow.placeholder
         Placeholder for batches of data from `y`.
@@ -160,7 +160,7 @@ def generate_shuffled_batches(X, y, x_placeholder, y_placeholder,
     batch_dict: dict
         A dictionary that maps `x_placeholder` and `y_placeholder`
         to `batch_size` sized minibatches of data (numpy.ndarrays)
-        from the dataset `X`, `y`.
+        from the dataset `x`, `y`.
 
     Examples
     -------
@@ -175,7 +175,7 @@ def generate_shuffled_batches(X, y, x_placeholder, y_placeholder,
     rng_x.seed(seed)
     rng_y.seed(seed)
 
-    for batch in generate_batches(X, y, x_placeholder, y_placeholder, batch_size, seed):
+    for batch in generate_batches(x, y, x_placeholder, y_placeholder, batch_size, seed):
         # shuffles x and y in the same way
         rng_x.shuffle(batch[x_placeholder])
         rng_y.shuffle(batch[y_placeholder])
