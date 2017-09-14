@@ -4,7 +4,7 @@
 #  Imports {{{ #
 from collections import deque
 from enum import Enum
-from itertools import islice
+import itertools
 import logging
 from time import time
 import numpy as np
@@ -534,9 +534,10 @@ class BayesianNeuralNetwork(object):
 
         logging_intervals = {"burn-in": 512, "sampling": self.sample_steps}
 
-        sample_chain = islice(self.sampler, self.n_iters)
+        sample_chain = itertools.islice(self.sampler, self.n_iters)
 
         for i, (parameter_values, _) in enumerate(sample_chain):
+
             burning_in = i <= self.burn_in_steps
 
             if burning_in and i % logging_intervals["burn-in"] == 0:
@@ -551,27 +552,6 @@ class BayesianNeuralNetwork(object):
                 if len(self.samples) == self.n_nets:
                     # collected enough sample networks, stop iterating
                     break
-
-        """
-        for i in range(self.n_iters):
-            # boolean that tracks whether our sampler is doing burn-in steps
-            burning_in = i <= self.burn_in_steps
-
-            param_values, _ = next(self.sampler)
-
-            if burning_in and i % logging_intervals["burn-in"] == 0:
-                log_full_training_error(iteration_index=i, is_sampling=False)
-
-            if not burning_in and i % logging_intervals["sampling"] == 0:
-                log_full_training_error(iteration_index=i, is_sampling=True)
-
-                # collect sample
-                self.samples.append(param_values)
-
-                if len(self.samples) == self.n_nets:
-                    # collected enough sample networks, stop iterating
-                    break
-        """
 
         self.is_trained = True
 
