@@ -21,7 +21,7 @@ install:
 
 script: 
     - make -C pysgmcmc test-notebooks
-    - py.test -v --cov=pysgmcmc
+    - py.test -v --doctest-modules --cov=pysgmcmc 
 
 after_success:
     - coveralls
