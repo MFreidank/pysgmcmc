@@ -17,7 +17,7 @@ class MCMCSampler(object):
     """ Generic base class for all MCMC samplers.  """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, params, batch_generator=None,
+    def __init__(self, params, cost_fun, batch_generator=None,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """
         Initialize the sampler base class. Sets up member variables and
@@ -28,6 +28,11 @@ class MCMCSampler(object):
         ------------
         params : list of `tensorflow.Variable` objects
             Target parameters for which we want to sample new values.
+
+        cost_fun : callable
+            Function that takes `params` as input and returns a
+            1-d `tensorflow.Tensor` that contains the cost-value.
+            Frequently denoted with `U` in literature.
 
         batch_generator : `BatchGenerator`, optional
             Iterable which returns dictionaries to feed into
@@ -63,6 +68,8 @@ class MCMCSampler(object):
         assert(isinstance(session, (tf.Session, tf.InteractiveSession)))
         assert(isinstance(dtype, tf.DType))
 
+        assert(hasattr(cost_fun, "__call__"))
+
         self.dtype = dtype
 
         self.n_iterations = 0
@@ -73,6 +80,10 @@ class MCMCSampler(object):
         self.session = session
 
         self.params = params
+
+        # set up costs
+        self.cost_fun = cost_fun
+        self.Cost = cost_fun(self.params)
 
         # compute vectorized clones of all parameters
         self.vectorized_params = [vectorize(param) for param in self.params]
@@ -267,7 +278,8 @@ class BurnInMCMCSampler(MCMCSampler):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, params, batch_generator=None, burn_in_steps=3000,
+    def __init__(self, params, cost_fun, batch_generator=None,
+                 burn_in_steps=3000,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """
         Initializes the corresponding MCMCSampler super object and
@@ -278,12 +290,17 @@ class BurnInMCMCSampler(MCMCSampler):
         params : list of `tensorflow.Variable` objects
             Target parameters for which we want to sample new values.
 
+        cost_fun : callable
+            Function that takes `params` as input and returns a
+            1-d `tensorflow.Tensor` that contains the cost-value.
+            Frequently denoted with `U` in literature.
+
         batch_generator : `BatchGenerator`, optional
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
 
-        burn_in_steps: int
+        burn_in_steps : int
             Number of burn-in steps to perform. In each burn-in step, this
             sampler will adapt its own internal parameters to decrease its error.
             Defaults to `3000`.
@@ -319,7 +336,8 @@ class BurnInMCMCSampler(MCMCSampler):
         # Sanitize inputs
         assert(isinstance(burn_in_steps, int))
 
-        super().__init__(params=params, batch_generator=batch_generator,
+        super().__init__(params=params, cost_fun=cost_fun,
+                         batch_generator=batch_generator,
                          seed=seed, dtype=dtype, session=session)
 
         self.burn_in_steps = burn_in_steps

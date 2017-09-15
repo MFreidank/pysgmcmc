@@ -90,7 +90,7 @@ class SGLDSampler(BurnInMCMCSampler):
         """
 
         super().__init__(
-            params=params, batch_generator=batch_generator,
+            params=params, cost_fun=cost_fun, batch_generator=batch_generator,
             burn_in_steps=burn_in_steps, seed=seed,
             session=session, dtype=dtype
         )
@@ -105,8 +105,6 @@ class SGLDSampler(BurnInMCMCSampler):
         Scale_grad = tf.constant(scale_grad, name="scale_grad", dtype=dtype)
 
         #  }}} Initialize graph constants #
-
-        self.Cost = cost_fun(params)
 
         grads = [vectorize(gradient) for gradient in
                  tf.gradients(self.Cost, params)]

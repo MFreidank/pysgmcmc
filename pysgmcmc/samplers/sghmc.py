@@ -96,7 +96,7 @@ class SGHMCSampler(BurnInMCMCSampler):
         # and run initializers for all uninitialized variables in `params`
         # (to avoid errors in the graph definitions below).
         super().__init__(
-            params=params, burn_in_steps=burn_in_steps,
+            params=params, cost_fun=cost_fun, burn_in_steps=burn_in_steps,
             batch_generator=batch_generator,
             seed=seed, dtype=dtype, session=session
         )
@@ -112,8 +112,6 @@ class SGHMCSampler(BurnInMCMCSampler):
         Mdecay = tf.constant(mdecay, name="mdecay", dtype=dtype)
 
         #  }}} Initialize graph constants #
-
-        self.Cost = cost_fun(params)
 
         grads = [vectorize(gradient) for gradient in
                  tf.gradients(self.Cost, params)]
