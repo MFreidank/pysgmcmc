@@ -1,9 +1,12 @@
 # vim: foldmethod=marker
 
+# NOTE: Make BNN tensorflow.dtype aware so that we can run
+# with different floating point precision. one approach: guess the datatype
+# from the architecture; another: add a parameter for it
+
 
 #  Imports {{{ #
 from collections import deque
-from enum import Enum
 import itertools
 import logging
 from time import time
@@ -17,102 +20,15 @@ from pysgmcmc.models.base_model import (
 )
 
 
-from pysgmcmc.samplers.sghmc import SGHMCSampler
-from pysgmcmc.samplers.sgld import SGLDSampler
+from pysgmcmc.sampling import Sampler
 
 from pysgmcmc.data_batches import generate_batches
 from pysgmcmc.tensor_utils import safe_divide
 
+#  }}}  Imports #
 
-# XXX: This needs a decision: do we do without this entirely? If not,
-# where does it live?
-# from pysgmcmc.sampling import SamplingMethod
-class SamplingMethod(Enum):
-    """ Enumeration type for all sampling methods we support. """
 
-    SGHMC = "SGHMC"
-    SGLD = "SGLD"
-
-    # will automatically generate tests for these when running "make test"
-    autotested = (
-        SGHMC,
-        SGLD,
-    )
-
-    @staticmethod
-    def is_supported(sampling_method):
-        """
-        Static method that returns true if `val` is a supported sampling
-        method (e.g. there is an entry for it in `SamplingMethod` enum).
-
-        Examples
-        ----------
-
-        Supported sampling methods give `True`:
-
-        >>> SamplingMethod.is_supported(SamplingMethod.SGHMC)
-        True
-
-        Other input types give `False`:
-
-        >>> SamplingMethod.is_supported(0)
-        False
-        >>> SamplingMethod.is_supported("test")
-        False
-
-        """
-        return sampling_method in SamplingMethod
-
-    @staticmethod
-    def get_sampler(sampling_method, **sampler_args):
-        """TODO: Docstring for get_sampler.
-
-        Parameters
-        ----------
-        sampling_method : SamplingMethod
-            Enum corresponding to sampling method to return a sampler for.
-
-        **sampler_args : dict
-            Keyword arguments that contain all input arguments to the desired
-            the constructor of the sampler for the specified `sampling_method`.
-
-        Returns
-        -------
-        sampler : Subclass of `sampling.MCMCSampler`
-            A sampler instance that implements the specified `sampling_method`
-            and is initialized with inputs `sampler_args`.
-
-        """
-        if sampling_method == SamplingMethod.SGHMC:
-            sampler = SGHMCSampler(
-                batch_generator=sampler_args["batch_generator"],
-                seed=sampler_args["seed"],
-                cost_fun=sampler_args["cost_fun"],
-                params=sampler_args["params"],
-                epsilon=sampler_args["epsilon"],
-                mdecay=sampler_args["mdecay"],
-                scale_grad=sampler_args["scale_grad"],
-                session=sampler_args["session"],
-                burn_in_steps=sampler_args["burn_in_steps"]
-            )
-        elif sampling_method == SamplingMethod.SGLD:
-            sampler = SGLDSampler(
-                batch_generator=sampler_args["batch_generator"],
-                seed=sampler_args["seed"],
-                cost_fun=sampler_args["cost_fun"],
-                params=sampler_args["params"],
-                epsilon=sampler_args["epsilon"],
-                scale_grad=sampler_args["scale_grad"],
-                session=sampler_args["session"],
-                burn_in_steps=sampler_args["burn_in_steps"]
-            )
-        elif sampling_method == SamplingMethod.RelativisticSGHMC:
-            raise NotImplementedError()
-        else:
-            raise ValueError()
-
-        return sampler
-
+#  Default Network Architecture {{{ #
 
 def get_default_net(inputs, seed=None):
     from tensorflow.contrib.layers import variance_scaling_initializer as HeNormal
@@ -156,6 +72,8 @@ def get_default_net(inputs, seed=None):
     )
 
     return output
+
+#  }}} Default Network Architecture #
 
 
 #  Priors {{{ #
@@ -226,16 +144,16 @@ class WeightPrior(object):
 #  }}} Priors #
 
 
-#  }}}  Imports #
-
-
 class BayesianNeuralNetwork(object):
-    def __init__(self, sampling_method=SamplingMethod.SGHMC,
-                 n_nets=100, learning_rate=1e-3, mdecay=5e-2,
-                 n_iters=50000, batch_size=20, burn_in_steps=1000,
-                 sample_steps=100, normalize_input=True, normalize_output=True,
-                 get_net=get_default_net, batch_generator=generate_batches,
-                 seed=None, session=None):
+    def __init__(self, sampling_method=Sampler.SGHMC,
+                 get_net=get_default_net,
+                 batch_generator=generate_batches,
+                 batch_size=20,
+                 learning_rate=np.sqrt(1e-4),
+                 n_nets=100, n_iters=50000,
+                 burn_in_steps=1000, sample_steps=100,
+                 normalize_input=True, normalize_output=True,
+                 seed=None, session=None, **sampler_kwargs):
         """
         Bayesian Neural Networks use Bayesian methods to estimate the posterior
         distribution of a neural network's weights. This allows to also
@@ -253,9 +171,9 @@ class BayesianNeuralNetwork(object):
 
         Parameters
         ----------
-        sampling_method : SamplingMethod, optional
+        sampling_method : Sampler, optional
             Method used to sample networks for this BNN.
-            Defaults to `SamplingMethod.SGHMC`.
+            Defaults to `Sampler.SGHMC`.
 
         n_nets: int, optional
             Number of nets to sample during training (and use to predict).
@@ -333,15 +251,17 @@ class BayesianNeuralNetwork(object):
         assert(hasattr(get_net, "__call__"))
         assert(hasattr(batch_generator, "__call__"))
 
-        if not SamplingMethod.is_supported(sampling_method):
+        if not Sampler.is_supported(sampling_method):
             raise ValueError(
                 "'BayesianNeuralNetwork.__init__' received unsupported input "
                 "for parameter 'sampling_method'. Input was: {input}.\n"
                 "Supported sampling methods are enumerated in "
-                "'SamplingMethod' enum type.".format(input=sampling_method)
+                "'Sampler' enum type.".format(input=sampling_method)
             )
 
         self.sampling_method = sampling_method
+
+        self.learning_rate = learning_rate
 
         self.get_net = get_net
         self.batch_generator = batch_generator
@@ -354,8 +274,7 @@ class BayesianNeuralNetwork(object):
 
         self.batch_size = batch_size
 
-        self.learning_rate = learning_rate
-        self.mdecay = mdecay
+        self.sampler_kwargs = sampler_kwargs
 
         self.burn_in_steps = burn_in_steps
         self.sample_steps = sample_steps
@@ -475,22 +394,27 @@ class BayesianNeuralNetwork(object):
         # remove any leftover samples from previous "train" calls
         self.samples.clear()
 
-        self.sampler = SamplingMethod.get_sampler(
-            self.sampling_method,
-            batch_generator=self.batch_generator(
+        self.sampler_kwargs.update({
+            "params": self.network_params,
+            "cost_fun": lambda *_: Nll,
+            "batch_generator": self.batch_generator(
                 x=self.X, x_placeholder=self.X_Minibatch,
                 y=self.y, y_placeholder=self.Y_Minibatch,
                 batch_size=self.batch_size,
                 seed=self.seed
             ),
-            seed=self.seed,
-            cost_fun=lambda *_: Nll,  # BNN costs do not need params as input
-            params=self.network_params,
-            epsilon=self.learning_rate,
-            mdecay=self.mdecay,
-            scale_grad=n_datapoints,
-            session=self.session,
-            burn_in_steps=self.burn_in_steps
+            "batch_size": self.batch_size,
+            "session": self.session,
+            "seed": self.seed,
+            # Not always used, only for
+            # `pysgmcmc.sampling.BurnInMCMCSampler` subclasses.
+            "scale_grad": n_datapoints,
+            "burn_in_steps": self.burn_in_steps,
+            "epsilon": self.learning_rate
+        })
+
+        self.sampler = Sampler.get_sampler(
+            self.sampling_method, **self.sampler_kwargs
         )
 
         self.session.run(tf.global_variables_initializer())

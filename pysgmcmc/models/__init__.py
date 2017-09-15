@@ -1,7 +1,6 @@
 from .base_model import BaseModel
 from .bayesian_neural_network import (
     BayesianNeuralNetwork,
-    SamplingMethod,
     LogVariancePrior,
     WeightPrior
 )
@@ -9,7 +8,6 @@ from .bayesian_neural_network import (
 __all__ = (
     "BaseModel",
     "BayesianNeuralNetwork",
-    "SamplingMethod",
     "LogVariancePrior",
     "WeightPrior"
 )

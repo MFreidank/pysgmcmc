@@ -16,7 +16,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
 cial Intelligence and Statistics (AISTATS) 2017\n
             `Relativistic Monte Carlo <proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
     """
-    def __init__(self, params, cost_fun, momentum, batch_generator=None,
+    def __init__(self, params, cost_fun, momentum=[0.0], batch_generator=None,
                  epsilon=0.001, mass=1.0, c=1.0, D=1.0, Bhat=0.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
@@ -26,40 +26,52 @@ cial Intelligence and Statistics (AISTATS) 2017\n
         ----------
         params : list of tensorflow.Variable objects
             Target parameters for which we want to sample new values.
+
         Cost : tensorflow.Tensor
             1-d Cost tensor that depends on `params`.
             Frequently denoted as U(theta) in literature.
-        epsilon : float, optional
-            Value that is used as learning rate parameter for the sampler,
-            also denoted as discretization parameter in literature.
-            Defaults to `0.001`.
-        m : float, optional
-            mass constant.
-            Defaults to `1.0`.
-        c : float, optional
-            "Speed of light" constant.
-            Defaults to `1.0`.
-        D : float, optional
-            Diffusion constant.
-            Defaults to `1.0`.
-        n_iters : int, optional
-            Number of iterations of the sampler to perform for each single
-            call to `next(sampler)`.
-            Defaults to `10`.
+
+        momentum : float or List[float], optional
+            Initial values for the momentum of the sampler.
+            Defaults to `0.0`.
+
         batch_generator : BatchGenerator, optional
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
-        seed : int, optional
-            Random seed to use.
-            Defaults to `None`.
-        dtype : tensorflow.DType, optional
-            Type of elements of `tensorflow.Tensor` objects used in this sampler.
-            Defaults to `tensorflow.float64`.
+
+        epsilon : float, optional
+            Value that is used as learning rate parameter for the sampler,
+            also denoted as discretization parameter in literature.
+            Defaults to `0.001`.
+
+        mass : float, optional
+            mass constant.
+            Defaults to `1.0`.
+
+        c : float, optional
+            "Speed of light" constant.
+            Defaults to `1.0`.
+
+        D : float, optional
+            Diffusion constant.
+            Defaults to `1.0`.
+
+        Bhat : float, optional
+            TODO: Documentation
+
         session : tensorflow.Session, optional
             Session object which knows about the external part of the graph
             (which defines `Cost`, and possibly batches).
             Used internally to evaluate (burn-in/sample) the sampler.
+
+        dtype : tensorflow.DType, optional
+            Type of elements of `tensorflow.Tensor` objects used in this sampler.
+            Defaults to `tensorflow.float64`.
+
+        seed : int, optional
+            Random seed to use.
+            Defaults to `None`.
 
         See Also
         ----------
