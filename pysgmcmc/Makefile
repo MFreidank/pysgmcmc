@@ -4,8 +4,8 @@ test:
 
 tests: test
 
-# XXX: Mutation testing with cosmic ray
 mutation-tests:
+	cosmic-ray run
 	echo "Mutation tests not yet implemented"
 
 # Use "nbval" py.test plugin to evaluate all notebooks and assert that

@@ -16,7 +16,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
 cial Intelligence and Statistics (AISTATS) 2017\n
             `Relativistic Monte Carlo <proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
     """
-    def __init__(self, params, cost_fun, momentum=[0.0SG], batch_generator=None,
+    def __init__(self, params, cost_fun, momentum=[0.0], batch_generator=None,
                  epsilon=0.001, mass=1.0, c=1.0, D=1.0, Bhat=0.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
