@@ -37,6 +37,11 @@ Features
    :target: https://landscape.io/github/MFreidank/pysgmcmc/master
    :alt: Code Health
 
+Install
+=============
+The quick way::
+    pip3 install git+https://github.com/MFreidank/pysgmcmc
+
 
 Documentation
 =============
