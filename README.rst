@@ -38,8 +38,10 @@ Features
    :alt: Code Health
 
 Install
-=============
+=======
+
 The quick way::
+
     pip3 install git+https://github.com/MFreidank/pysgmcmc
 
 
