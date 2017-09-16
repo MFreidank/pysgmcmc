@@ -2,6 +2,7 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import tensorflow as tf
 import unittest
+import pytest
 
 from pysgmcmc.tensor_utils import (
     pdist as pdist_tf, squareform as squareform_tf, median as median_tf
@@ -83,6 +84,21 @@ class TestSquareform(unittest.TestCase):
                     squareform_tf(input_tensorflow)
                 )
             self.assertTrue(np.allclose(result_scipy, result_tensorflow))
+
+    def test_zero_input_squareform(self):
+        with tf.Session() as session:
+            result_tensorflow = session.run(
+                squareform_tf(tf.constant([], dtype=tf.float64))
+            )
+
+        assert(np.array_equal(result_tensorflow, np.zeros((1, 1), dtype=np.float64)))
+
+    def test_invalid_inputs_squareform(self):
+        with tf.Session() as session:
+            with pytest.raises(ValueError):
+                session.run(
+                    squareform_tf(tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], dtype=tf.float64))
+                )
 
 
 class TestMedian(unittest.TestCase):
