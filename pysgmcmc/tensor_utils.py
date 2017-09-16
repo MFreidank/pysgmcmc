@@ -567,7 +567,7 @@ def squareform(tensor):
         )
 
 
-def uninitialized_params(params, session=None):
+def uninitialized_params(params, session):
     """
     Return the list containing all tensorflow.Variable objects present in
     iterable `params` that are not yet initialized.
@@ -577,6 +577,9 @@ def uninitialized_params(params, session=None):
     params : list of tensorflow.Variable objects
         List of parameters to check for initialization.
 
+    session : tf.Session
+        Session used to determine which parameters are uninitialized.
+
     Returns
     -------
     params_uninitialized: list of tensorflow.Variable objects
@@ -584,9 +587,7 @@ def uninitialized_params(params, session=None):
         yet initialized in the current graph.
 
     """
-
-    if session is None:
-        session = tf.get_default_session()
+    assert(isinstance(session, (tf.Session, tf.InteractiveSession)))
 
     init_flag = session.run(
         tf.stack([tf.is_variable_initialized(v) for v in params])
