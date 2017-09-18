@@ -11,9 +11,11 @@ class RelativisticSGHMCSampler(MCMCSampler):
     """ Relativistic Stochastic Gradient Hamiltonian Monte-Carlo Sampler.
 
         See [1] for more details on Relativistic SGHMC.
+
         [1] X. Lu, V. Perrone, L. Hasenclever, Y. W. Teh, S. J. Vollmer
             In Proceedings of the 20 th International Conference on Artifi-
 cial Intelligence and Statistics (AISTATS) 2017\n
+
             `Relativistic Monte Carlo <proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
     """
     def __init__(self, params, cost_fun, momentum=[0.0], batch_generator=None,

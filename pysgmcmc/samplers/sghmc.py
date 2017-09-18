@@ -17,6 +17,7 @@ class SGHMCSampler(BurnInMCMCSampler):
 
         [1] J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
             In Advances in Neural Information Processing Systems 29 (2016).\n
+
             `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
 
 
