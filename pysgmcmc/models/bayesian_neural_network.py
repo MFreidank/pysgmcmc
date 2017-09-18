@@ -403,7 +403,6 @@ class BayesianNeuralNetwork(object):
                 batch_size=self.batch_size,
                 seed=self.seed
             ),
-            "batch_size": self.batch_size,
             "session": self.session,
             "seed": self.seed,
             # Not always used, only for
