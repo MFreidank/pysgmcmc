@@ -12,5 +12,6 @@ Samplers
    :maxdepth: 2
 
    samplers/sghmc
+   samplers/relativistic_sghmc
    samplers/sgld
    samplers/base_classes
