@@ -553,6 +553,9 @@ class Sampler(Enum):
         # default values
         all_sampler_parameters = signature(Sampler.__init__).parameters
 
+        # Check if any invalid sampler arguments were passed
+        # (sampler arguments that are not actually parameters of the specified)
+        # sampling method
         try:
             undefined_parameter = next(
                 parameter_name for parameter_name in sampler_args
