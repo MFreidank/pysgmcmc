@@ -15,11 +15,6 @@ test-notebooks:
 	    py.test --nbval-lax $$notebook ; \
 	done
 
-
-# XXX: limit to fast-running tests
-fast:
-	echo "fast tests not yet implemented"
-
 doc:
 	make -C ../docs html
 
