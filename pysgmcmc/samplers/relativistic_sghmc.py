@@ -124,3 +124,39 @@ cial Intelligence and Statistics (AISTATS) 2017\n
                 Param,
                 unvectorize(Vectorized_Theta_t, original_shape=Param.shape)
             )
+
+    def _sample_relativistic_momentum(mass, c, n_params,
+                                      bounds=(float("-inf"), float("inf"))):
+        # XXX: Remove when more is supported, currently only floats for mass
+        # and c are.
+        assert(isinstance(mass, float))
+        assert(isinstance(c, float))
+
+        def generate_relativistic_logpdf(mass, c):
+            def relativistic_log_pdf(p):
+                """
+                Logarithm of pdf of (multivariate) generalized
+                hyperbolic distribution.
+
+                XXX: Paper reference
+                XXX: Return type
+
+                Parameters
+                ----------
+                p : TODO
+                    Momentum
+
+                Returns
+                -------
+                TODO
+
+                """
+                from numpy import sqrt
+                return -mass * c ** 2 * sqrt(p ** 2 / (mass ** 2 * c ** 2) + 1.)
+            return relativistic_log_pdf
+
+        momentum_log_pdf = generate_relativistic_logpdf(mass=mass, c=c)
+        return adaptive_rejection_sampling(
+            logpdf=momentum_log_pdf, a=-10.0, b=10.0,
+            domain=bounds, n_samples=n_params
+        )
