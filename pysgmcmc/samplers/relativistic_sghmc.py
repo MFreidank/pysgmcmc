@@ -92,7 +92,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
             seed=seed, dtype=dtype, session=session
         )
 
-        grads = [vectorize(gradient) for gradient in tf.gradients(self.Cost, params)]
+        grads = [vectorize(gradient) for gradient in tf.gradients(-self.Cost, params)]
 
         stepsize = tf.constant(epsilon)
         m = tf.constant(mass)
