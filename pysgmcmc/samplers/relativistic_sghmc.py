@@ -6,7 +6,7 @@ from pysgmcmc.tensor_utils import (
     vectorize, unvectorize
 )
 
-from pyars.ars import adaptive_rejection_sampling
+from arspy.ars import adaptive_rejection_sampling
 
 
 class RelativisticSGHMCSampler(MCMCSampler):
