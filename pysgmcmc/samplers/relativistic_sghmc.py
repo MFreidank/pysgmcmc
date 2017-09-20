@@ -96,19 +96,25 @@ cial Intelligence and Statistics (AISTATS) 2017\n
 
         grads = [vectorize(gradient) for gradient in tf.gradients(-self.Cost, params)]
 
-        stepsize = tf.constant(epsilon)
-        m = tf.constant(mass)
-        c = tf.constant(c)
-        D = tf.constant(D)
-        Bhat = tf.constant(Bhat)
-        momentum = [tf.Variable(momentum_val) for momentum_val in momentum]
+        stepsize = tf.constant(epsilon, dtype=dtype)
+        D = tf.constant(D, dtype=dtype)
+        Bhat = tf.constant(Bhat, dtype=dtype)
+        momentum = [
+            tf.Variable(momentum_sample, dtype=dtype)
+            for momentum_sample in self._sample_relativistic_momentum(
+                mass=mass, c=c, n_params=len(self.params)
+            )
+        ]
+
+        m = tf.constant(mass, dtype=dtype)
+        c = tf.constant(c, dtype=dtype)
 
         for i, (Param, Grad) in enumerate(zip(params, grads)):
             Vectorized_Param = self.vectorized_params[i]
 
             p_grad = stepsize * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
 
-            n = tf.sqrt(stepsize * (2 * D - stepsize * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape)
+            n = tf.sqrt(stepsize * (2 * D - stepsize * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape, dtype=dtype)
             Momentum_t = tf.assign_add(
                 momentum[i],
                 tf.reshape(stepsize * Grad + n - D * p_grad, momentum[i].shape)
@@ -125,7 +131,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
                 unvectorize(Vectorized_Theta_t, original_shape=Param.shape)
             )
 
-    def _sample_relativistic_momentum(mass, c, n_params,
+    def _sample_relativistic_momentum(self, mass, c, n_params,
                                       bounds=(float("-inf"), float("inf"))):
         # XXX: Remove when more is supported, currently only floats for mass
         # and c are.
