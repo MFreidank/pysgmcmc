@@ -122,3 +122,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
                 Param,
                 unvectorize(Vectorized_Theta_t, original_shape=Param.shape)
             )
+
+    def _sample_relativistic_momentum(self, mass, c, n_params,
+                                      bounds=(float("-inf"), float("inf"))):
+        raise NotImplementedError
