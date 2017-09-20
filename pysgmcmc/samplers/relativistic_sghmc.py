@@ -6,6 +6,8 @@ from pysgmcmc.tensor_utils import (
     vectorize, unvectorize
 )
 
+from pyars.ars import adaptive_rejection_sampling
+
 
 class RelativisticSGHMCSampler(MCMCSampler):
     """ Relativistic Stochastic Gradient Hamiltonian Monte-Carlo Sampler.
