@@ -17,9 +17,10 @@ class RelativisticSGHMCSampler(MCMCSampler):
         [1] X. Lu, V. Perrone, L. Hasenclever, Y. W. Teh, S. J. Vollmer
             In Proceedings of the 20 th International Conference on Artifi-
 cial Intelligence and Statistics (AISTATS) 2017\n
+            `Relativistic Monte Carlo <http://proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
 
-            `Relativistic Monte Carlo <proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
     """
+
     def __init__(self, params, cost_fun, momentum=[0.0], batch_generator=None,
                  epsilon=0.001, mass=1.0, c=1.0, D=1.0, Bhat=0.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
@@ -83,6 +84,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
             Base class for `RelativisticSGHMCSampler` that specifies how
             actual sampling is performed (using iterator protocol,
             e.g. `next(sampler)`).
+
         """
 
         # Set up MCMCSampler base class:
