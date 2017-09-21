@@ -400,8 +400,8 @@ class Sampler(Enum):
     """ Enumeration type for all samplers we support. """
 
     SGHMC = "SGHMC"
-    RelativisticSGHMC = "RelativisticSGHMC"
     SGLD = "SGLD"
+    # RelativisticSGHMC = "RelativisticSGHMC"
 
     @staticmethod
     def is_supported(sampling_method):
@@ -542,8 +542,8 @@ class Sampler(Enum):
             from pysgmcmc.samplers.sghmc import SGHMCSampler as Sampler
         elif sampling_method == cls.SGLD:
             from pysgmcmc.samplers.sgld import SGLDSampler as Sampler
-        elif sampling_method == cls.RelativisticSGHMC:
-            from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler as Sampler
+        # elif sampling_method == cls.RelativisticSGHMC:
+        #   from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler as Sampler
         else:
             assert(False)
 

@@ -9,7 +9,7 @@ import numbers
 
 # XXX Doku and proper testing
 def data_for(function, n_train_points=100, dimensionality=2,
-             function_domain=(0., 1.), seed=1):
+             function_domain=(0, 1), seed=1):
 
     assert(hasattr(function_domain, "__len__"))
     assert(len(function_domain) == 2)
@@ -48,7 +48,7 @@ def data_for(function, n_train_points=100, dimensionality=2,
     y_train = function(X_train)
 
     if dimensionality == 1:
-        X_test = np.linspace(lower[0], upper[0], num=n_train_points * 10)
+        X_test = np.linspace(lower[0], upper[0], num=n_train_points)[:, None]
     else:
         X_test = np.meshgrid(
             *[np.linspace(lower[i], upper[i], n_train_points)
@@ -66,7 +66,7 @@ def sampler_test(objective_function,
                  function_domain=(0., 1.),
                  n_train_points=100,
                  seed=1,
-                 sampling_method=Sampler.SGHMC, **sampler_args):
+                 sampling_method=Sampler.SGHMC, sampler_args=dict()):
 
     data = data_for(
         objective_function, dimensionality=dimensionality,
@@ -74,13 +74,15 @@ def sampler_test(objective_function,
         function_domain=function_domain, seed=seed,
     )
 
-    with tf.Session() as session:
+    g = tf.Graph()
+    with tf.Session(graph=g) as session:
         bnn = BayesianNeuralNetwork(
-            sampling_method=sampling_method, sampler_args=sampler_args,
-            session=session
+            sampling_method=sampling_method,
+            session=session,
+            **sampler_args
         )
 
-        bnn.fit(*data["train"])
+        bnn.train(*data["train"])
 
         X_test, y_test = data["test"]
 
