@@ -1,4 +1,5 @@
 from scipy.misc import logsumexp
+import tensorflow as tf
 import numpy as np
 
 
@@ -11,13 +12,35 @@ def gaussian_mixture_model_log_likelihood(x, mu=(-5, 0, 5), var=(1., 1., 1.),
                                           weights=(1. / 3., 1. / 3., 1. / 3.)):
     assert len(mu) == len(var) == len(weights)
 
-    def normldf(x, mu, var):
-        return -0.5 * np.log(2.0 * np.pi * var) - 0.5 * ((x - mu) ** 2) / var
+    if hasattr(x, "__iter__"):
+        assert(len(x) == 1)
+        x = x[0]
 
-    return logsumexp([
-        np.log(weights[i]) + normldf(x, mu[i], var[i])
-        for i in range(len(mu))
-    ])
+    if isinstance(x, tf.Variable):
+        # XXX Reimplement logsumexp here for the update below
+        def normldf_tf(x, mu, var):
+            pi = tf.constant(np.pi)
+            return -0.5 * tf.log(2.0 * pi * var) - 0.5 * ((x - mu) ** 2) / var
+
+        """
+        result = tf.constant(0.0)
+
+        for mu_val, var_val, weight_val in zip(weights, mu, var):
+            result += tf.exp(weight_val * normldf_tf(x, mu_val, var_val))
+
+        return tf.log(result)
+        """
+        return tf.reduce_logsumexp(
+            [tf.log(weights[i]) + normldf_tf(x, mu[i], var[i]) for i in range(len(mu))]
+        )
+    else:
+        def normldf(x, mu, var):
+            return -0.5 * np.log(2.0 * np.pi * var) - 0.5 * ((x - mu) ** 2) / var
+
+        return logsumexp([
+            np.log(weights[i]) + normldf(x, mu[i], var[i])
+            for i in range(len(mu))
+        ])
 
 
 # XXX: Give references for gmm functions (relativistic monte carlo paper)
