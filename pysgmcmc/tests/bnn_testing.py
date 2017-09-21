@@ -11,8 +11,8 @@ import numbers
 def data_for(function, n_train_points=100, dimensionality=2,
              function_domain=(0, 1), seed=1):
 
-    assert(hasattr(function_domain, "__len__"))
-    assert(len(function_domain) == 2)
+    assert hasattr(function_domain, "__len__")
+    assert len(function_domain) == 2
 
     lower, upper = function_domain
 
@@ -23,8 +23,8 @@ def data_for(function, n_train_points=100, dimensionality=2,
         assert(isinstance(lower, numbers.Real))
         assert(isinstance(upper, numbers.Real))
 
-    assert(isinstance(lower, numbers.Real) or hasattr(lower, "__iter__"))
-    assert(isinstance(upper, numbers.Real) or hasattr(upper, "__iter__"))
+    assert isinstance(lower, numbers.Real) or hasattr(lower, "__iter__")
+    assert isinstance(upper, numbers.Real) or hasattr(upper, "__iter__")
 
     if isinstance(lower, numbers.Real):
         lower = np.ones(dimensionality) * lower
@@ -77,8 +77,8 @@ def sampler_test(objective_function,
         function_domain=function_domain, seed=seed,
     )
 
-    g = tf.Graph()
-    with tf.Session(graph=g) as session:
+    graph = tf.Graph()
+    with tf.Session(graph=graph) as session:
         bnn = BayesianNeuralNetwork(
             sampling_method=sampling_method,
             session=session,

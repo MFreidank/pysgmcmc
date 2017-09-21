@@ -11,13 +11,29 @@ try:
     from hypothesis import given
     from hypothesis.strategies import integers
 except ImportError:
-    hypothesis_installed = False
+    HYPOTHESIS_INSTALLED = False
 else:
-    hypothesis_installed = True
+    HYPOTHESIS_INSTALLED = True
+
+
+def batch_generator(self, X=None, y=None, x_placeholder=None,
+                    y_placeholder=None, seed=None, batch_size=10):
+    return generate_batches(x=X, y=y,
+                            x_placeholder=x_placeholder,
+                            y_placeholder=y_placeholder,
+                            seed=seed,
+                            batch_size=batch_size)
+
+
+def assert_batch_shapes(batch):
+    x_placeholder, _ = tuple(batch.keys())
+    X_batch, y_batch = tuple(batch.values())
+    assert X_batch.shape[1] == x_placeholder.shape[1]
+    assert y_batch.shape[0] == X_batch.shape[0] == y_batch.shape[0]
 
 
 @pytest.mark.skipif(
-    not hypothesis_installed, reason="Package 'hypothesis' not installed!"
+    not HYPOTHESIS_INSTALLED, reason="Package 'hypothesis' not installed!"
 )
 class HypothesisTest(unittest.TestCase):
     """ Base class for property-based tests that use 'hypothesis' strategies. """
@@ -32,14 +48,6 @@ class HypothesisTest(unittest.TestCase):
             lists(integers(), max_size=10), sets(integers(), max_size=10),
             fractions(), text()
         )
-
-    def batch_generator(self, X=None, y=None, x_placeholder=None,
-                        y_placeholder=None, seed=None, batch_size=10):
-        return generate_batches(x=X, y=y,
-                                x_placeholder=x_placeholder,
-                                y_placeholder=y_placeholder,
-                                seed=seed,
-                                batch_size=batch_size)
 
     def setup_data(self, seed=None, n_points=100):
         self.seed = seed
@@ -64,41 +72,35 @@ class HypothesisTest(unittest.TestCase):
 
         self.Y_Placeholder = tf.placeholder(dtype=tf.float64, name="Y_Minibatch")
 
-    def assert_batch_shapes(self, batch):
-        x_placeholder, _ = tuple(batch.keys())
-        X_batch, y_batch = tuple(batch.values())
-        assert(X_batch.shape[1] == x_placeholder.shape[1])
-        assert(y_batch.shape[0] == X_batch.shape[0] == y_batch.shape[0])
-
 
 @pytest.mark.skipif(
-    not hypothesis_installed, reason="Package 'hypothesis' not installed!"
+    not HYPOTHESIS_INSTALLED, reason="Package 'hypothesis' not installed!"
 )
 class HypothesisInvalidInputs(HypothesisTest):
     """ Property-based tests with invalid inputs"""
     @given(HypothesisTest.random_nonint_input_type_strategy())
     def test_invalid_input_types_batch_size(self, batch_size):
         with pytest.raises(AssertionError):
-            next(self.batch_generator(batch_size=batch_size))
+            next(batch_generator(batch_size=batch_size))
 
     @given(integers(max_value=0))
     def test_nonpositive_inputs_batch_size(self, batch_size):
         with pytest.raises(AssertionError):
-            next(self.batch_generator(batch_size=batch_size))
+            next(batch_generator(batch_size=batch_size))
 
     @given(HypothesisTest.random_nonint_input_type_strategy())
     def test_invalid_input_types_seed(self, seed):
         with pytest.raises(AssertionError):
-            next(self.batch_generator(seed=seed))
+            next(batch_generator(seed=seed))
 
     @given(integers(max_value=-1))
     def test_negative_inputs_seed(self, seed):
         with pytest.raises(AssertionError):
-            next(self.batch_generator(seed=seed))
+            next(batch_generator(seed=seed))
 
 
 @pytest.mark.skipif(
-    not hypothesis_installed, reason="Package 'hypothesis' not installed!"
+    not HYPOTHESIS_INSTALLED, reason="Package 'hypothesis' not installed!"
 )
 class HypothesisTestSimpleBatches(HypothesisTest):
     """ Valid simple cases for batch extraction"""
@@ -110,17 +112,17 @@ class HypothesisTestSimpleBatches(HypothesisTest):
     def test_simple_batch(self, n_points, seed):
         batch_size = np.random.randint(1, n_points)
         self.setup_data(n_points=n_points, seed=seed)
-        generator = self.batch_generator(
+        generator = batch_generator(
             X=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
             batch_size=batch_size
         )
-        self.assert_batch_shapes(next(generator))
+        assert_batch_shapes(next(generator))
 
 
 @pytest.mark.skipif(
-    not hypothesis_installed, reason="Package 'hypothesis' not installed!"
+    not HYPOTHESIS_INSTALLED, reason="Package 'hypothesis' not installed!"
 )
 class HypothesisTestCornerCases(HypothesisTest):
     """
@@ -134,7 +136,7 @@ class HypothesisTestCornerCases(HypothesisTest):
     def test_batchsize_equals_n_datapoints(self, n_points, seed):
         """ Extracting batches with batch_size == dataset size. """
         self.setup_data(n_points=n_points, seed=seed)
-        generator = self.batch_generator(
+        generator = batch_generator(
             X=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
@@ -143,12 +145,10 @@ class HypothesisTestCornerCases(HypothesisTest):
 
         for _ in range(10):  # extract and check ten batches
             batch = next(generator)
-            self.assert_batch_shapes(batch)
-            assert(np.allclose(batch[self.X_Placeholder], self.X, atol=1e-02))
-            assert(
-                np.allclose(batch[self.Y_Placeholder],
-                            self.y.reshape(-1, 1),
-                            atol=1e-02)
+            assert_batch_shapes(batch)
+            assert np.allclose(batch[self.X_Placeholder], self.X, atol=1e-02)
+            assert np.allclose(
+                batch[self.Y_Placeholder], self.y.reshape(-1, 1), atol=1e-02
             )
 
     @given(
@@ -160,7 +160,7 @@ class HypothesisTestCornerCases(HypothesisTest):
         self.setup_data(n_points=n_points, seed=seed)
 
         batch_size = np.random.randint(n_points + 1, n_points * 100)
-        generator = self.batch_generator(
+        generator = batch_generator(
             X=self.X, y=self.y,
             x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
             seed=seed,
@@ -168,17 +168,15 @@ class HypothesisTestCornerCases(HypothesisTest):
         )
         for _ in range(10):  # extract and check ten batches
             batch = next(generator)
-            self.assert_batch_shapes(batch)
-            assert(np.allclose(batch[self.X_Placeholder], self.X, atol=1e-02))
-            assert(
-                np.allclose(batch[self.Y_Placeholder],
-                            self.y.reshape(-1, 1),
-                            atol=1e-02)
+            assert_batch_shapes(batch)
+            assert np.allclose(batch[self.X_Placeholder], self.X, atol=1e-02)
+            assert np.allclose(
+                batch[self.Y_Placeholder], self.y.reshape(-1, 1), atol=1e-02
             )
 
 
 @pytest.mark.skipif(
-    not hypothesis_installed, reason="Package 'hypothesis' not installed!"
+    not HYPOTHESIS_INSTALLED, reason="Package 'hypothesis' not installed!"
 )
 class HypothesisSeededBatches(HypothesisTest):
     """ Test that fixing a seed makes batches reproducible. """
@@ -195,7 +193,7 @@ class HypothesisSeededBatches(HypothesisTest):
 
         self.setup_data(seed=seed, n_points=n_points)
         generators = [
-            self.batch_generator(
+            batch_generator(
                 X=self.X, y=self.y,
                 x_placeholder=self.X_Placeholder, y_placeholder=self.Y_Placeholder,
                 seed=seed,
@@ -208,4 +206,4 @@ class HypothesisSeededBatches(HypothesisTest):
             reference = np.array(list(reference_batch.values()))
             for generator in generators[1:]:
                 batch = np.array(list(next(generator).values()))
-                assert(np.allclose(reference, batch, atol=1e-02))
+                assert np.allclose(reference, batch, atol=1e-02)

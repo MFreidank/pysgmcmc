@@ -100,7 +100,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
 
         momentum = [
             tf.Variable(momentum_sample, dtype=dtype)
-            for momentum_sample in self._sample_relativistic_momentum(
+            for momentum_sample in _sample_relativistic_momentum(
                 mass=mass, c=c, n_params=len(self.params)
             )
         ]
@@ -130,38 +130,39 @@ cial Intelligence and Statistics (AISTATS) 2017\n
                 unvectorize(Vectorized_Theta_t, original_shape=Param.shape)
             )
 
-    def _sample_relativistic_momentum(self, mass, c, n_params,
-                                      bounds=(float("-inf"), float("inf"))):
-        # XXX: Remove when more is supported, currently only floats for mass
-        # and c are.
-        assert(isinstance(mass, float))
-        assert(isinstance(c, float))
 
-        def generate_relativistic_logpdf(mass, c):
-            def relativistic_log_pdf(p):
-                """
-                Logarithm of pdf of (multivariate) generalized
-                hyperbolic distribution.
+def _sample_relativistic_momentum(mass, c, n_params,
+                                  bounds=(float("-inf"), float("inf"))):
+    # XXX: Remove when more is supported, currently only floats for mass
+    # and c are.
+    assert isinstance(mass, float)
+    assert isinstance(c, float)
 
-                XXX: Paper reference
-                XXX: Return type
+    def generate_relativistic_logpdf(mass, c):
+        def relativistic_log_pdf(p):
+            """
+            Logarithm of pdf of (multivariate) generalized
+            hyperbolic distribution.
 
-                Parameters
-                ----------
-                p : TODO
-                    Momentum
+            XXX: Paper reference
+            XXX: Return type
 
-                Returns
-                -------
-                TODO
+            Parameters
+            ----------
+            p : TODO
+                Momentum
 
-                """
-                from numpy import sqrt
-                return -mass * c ** 2 * sqrt(p ** 2 / (mass ** 2 * c ** 2) + 1.)
-            return relativistic_log_pdf
+            Returns
+            -------
+            TODO
 
-        momentum_log_pdf = generate_relativistic_logpdf(mass=mass, c=c)
-        return adaptive_rejection_sampling(
-            logpdf=momentum_log_pdf, a=-10.0, b=10.0,
-            domain=bounds, n_samples=n_params
-        )
+            """
+            from numpy import sqrt
+            return -mass * c ** 2 * sqrt(p ** 2 / (mass ** 2 * c ** 2) + 1.)
+        return relativistic_log_pdf
+
+    momentum_log_pdf = generate_relativistic_logpdf(mass=mass, c=c)
+    return adaptive_rejection_sampling(
+        logpdf=momentum_log_pdf, a=-10.0, b=10.0,
+        domain=bounds, n_samples=n_params
+    )

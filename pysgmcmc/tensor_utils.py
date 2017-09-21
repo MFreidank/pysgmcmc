@@ -379,7 +379,7 @@ def pdist(tensor, metric="euclidean"):
 
     """
 
-    assert(isinstance(tensor, tf.Tensor)), "tensor_utils.pdist: Input must be a `tensorflow.Tensor` instance."
+    assert isinstance(tensor, tf.Tensor), "tensor_utils.pdist: Input must be a `tensorflow.Tensor` instance."
 
     if len(tensor.shape.as_list()) != 2:
         raise ValueError('tensor_utils.pdist: A 2-d tensor must be passed.')
@@ -453,7 +453,7 @@ def squareform(tensor):
 
     """
 
-    assert(isinstance(tensor, tf.Tensor)), "tensor_utils.squareform: Input must be a `tensorflow.Tensor` instance."
+    assert isinstance(tensor, tf.Tensor), "tensor_utils.squareform: Input must be a `tensorflow.Tensor` instance."
 
     tensor_shape = tensor.shape.as_list()
     n_elements = tensor_shape[0]
@@ -515,7 +515,7 @@ def squareform(tensor):
 
             """
 
-            assert(dimension > 0), "tensor_utils.upper_triangular_indices: Dimension must be positive integer!"
+            assert dimension > 0, "tensor_utils.upper_triangular_indices: Dimension must be positive integer!"
 
             for row in range(dimension):
                 for column in range(row + 1, dimension):
@@ -587,7 +587,7 @@ def uninitialized_params(params, session):
         yet initialized in the current graph.
 
     """
-    assert(isinstance(session, (tf.Session, tf.InteractiveSession)))
+    assert isinstance(session, (tf.Session, tf.InteractiveSession))
 
     init_flag = session.run(
         tf.stack([tf.is_variable_initialized(v) for v in params])

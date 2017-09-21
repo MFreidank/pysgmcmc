@@ -64,13 +64,13 @@ class MCMCSampler(object):
         """
 
         # Sanitize inputs
-        assert(batch_generator is None or hasattr(batch_generator, "__next__"))
-        assert(seed is None or type(seed) == int)
+        assert batch_generator is None or hasattr(batch_generator, "__next__")
+        assert seed is None or type(seed) == int
 
-        assert(isinstance(session, (tf.Session, tf.InteractiveSession)))
-        assert(isinstance(dtype, tf.DType))
+        assert isinstance(session, (tf.Session, tf.InteractiveSession))
+        assert isinstance(dtype, tf.DType)
 
-        assert(hasattr(cost_fun, "__call__"))
+        assert hasattr(cost_fun, "__call__")
 
         self.dtype = dtype
 
@@ -336,7 +336,7 @@ class BurnInMCMCSampler(MCMCSampler):
 
         """
         # Sanitize inputs
-        assert(isinstance(burn_in_steps, int))
+        assert isinstance(burn_in_steps, int)
 
         super().__init__(params=params, cost_fun=cost_fun,
                          batch_generator=batch_generator,
@@ -536,7 +536,7 @@ class Sampler(Enum):
 
         """
 
-        assert(cls.is_supported(sampling_method))
+        assert cls.is_supported(sampling_method)
 
         if sampling_method == cls.SGHMC:
             from pysgmcmc.samplers.sghmc import SGHMCSampler as Get_Sampler
@@ -547,7 +547,7 @@ class Sampler(Enum):
                 RelativisticSGHMCSampler as Get_Sampler
             )
         else:
-            assert(False)
+            assert False
 
         from inspect import signature, _empty
 
@@ -615,7 +615,7 @@ class Sampler(Enum):
                     "in `sampler_args` and does not have any default value "
                     "in {sampler}.__init__"
                     "Please pass an explicit value for this parameter.".format(
-                        param_name=parameter_name, sampler=Sampler.__name__
+                        param_name=parameter_name, sampler=Get_Sampler.__name__
                     )
                 )
 

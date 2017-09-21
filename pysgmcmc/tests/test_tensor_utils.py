@@ -91,7 +91,7 @@ class TestSquareform(unittest.TestCase):
                 squareform_tf(tf.constant([], dtype=tf.float64))
             )
 
-        assert(np.array_equal(result_tensorflow, np.zeros((1, 1), dtype=np.float64)))
+        assert np.array_equal(result_tensorflow, np.zeros((1, 1), dtype=np.float64))
 
     def test_invalid_inputs_squareform(self):
         with tf.Session() as session:

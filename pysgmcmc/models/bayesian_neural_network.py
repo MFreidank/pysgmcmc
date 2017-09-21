@@ -274,20 +274,20 @@ class BayesianNeuralNetwork(object):
         """
 
         # Sanitize inputs
-        assert(isinstance(n_nets, int))
-        assert(isinstance(n_iters, int))
-        assert(isinstance(burn_in_steps, int))
-        assert(isinstance(sample_steps, int))
-        assert(isinstance(batch_size, int))
+        assert isinstance(n_nets, int)
+        assert isinstance(n_iters, int)
+        assert isinstance(burn_in_steps, int)
+        assert isinstance(sample_steps, int)
+        assert isinstance(batch_size, int)
 
-        assert(n_nets > 0)
-        assert(n_iters > 0)
-        assert(burn_in_steps >= 0)
-        assert(sample_steps > 0)
-        assert(batch_size > 0)
+        assert n_nets > 0
+        assert n_iters > 0
+        assert burn_in_steps >= 0
+        assert sample_steps > 0
+        assert batch_size > 0
 
-        assert(hasattr(get_net, "__call__"))
-        assert(hasattr(batch_generator, "__call__"))
+        assert hasattr(get_net, "__call__")
+        assert hasattr(batch_generator, "__call__")
 
         if not Sampler.is_supported(sampling_method):
             raise ValueError(
@@ -483,18 +483,19 @@ class BayesianNeuralNetwork(object):
                     self.Y_Minibatch: self.y.reshape(-1, 1)
                 }
             )
-            t = time() - start_time
+            seconds_elapsed = time() - start_time
             if is_sampling:
                 logging.info("Iter {:8d} : NLL = {:.4e} MSE = {:.4e} "
                              "Time = {:5.2f}".format(iteration_index,
                                                      float(total_nll),
                                                      float(total_mse),
-                                                     t))
+                                                     seconds_elapsed))
             else:
                 logging.info("Iter {:8d} : NLL = {:.4e} MSE = {:.4e} "
                              "Samples = {} Time = {:5.2f}".format(
                                  iteration_index, float(total_nll),
-                                 float(total_mse), len(self.samples), t))
+                                 float(total_mse), len(self.samples),
+                                 seconds_elapsed))
 
         logging_intervals = {"burn-in": 512, "sampling": self.sample_steps}
 
@@ -600,13 +601,15 @@ class BayesianNeuralNetwork(object):
                 theta_noise *= self.y_std**2
             return f_out, theta_noise
 
-        m = np.mean(f_out, axis=0)
+        mean_prediction = np.mean(f_out, axis=0)
         # Total variance
         # v = np.mean(f_out ** 2 + theta_noise, axis=0) - m ** 2
-        v = np.mean((f_out - m) ** 2, axis=0)
+        variance_prediction = np.mean((f_out - mean_prediction) ** 2, axis=0)
 
         if self.normalize_output:
-            m = zero_mean_unit_var_unnormalization(m, self.y_mean, self.y_std)
-            v *= self.y_std ** 2
+            mean_prediction = zero_mean_unit_var_unnormalization(
+                mean_prediction, self.y_mean, self.y_std
+            )
+            variance_prediction *= self.y_std ** 2
 
-        return m, v
+        return mean_prediction, variance_prediction

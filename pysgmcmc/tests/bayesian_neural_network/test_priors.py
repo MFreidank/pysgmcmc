@@ -7,13 +7,13 @@ from pysgmcmc.models.bayesian_neural_network import (
 
 from os.path import dirname, join as path_join, realpath
 
-data_path = path_join(dirname(realpath(__file__)), "..", "data")
-priors_path = path_join(data_path, "bayesian_neural_network_priors")
+DATA_PATH = path_join(dirname(realpath(__file__)), "..", "data")
+PRIORS_PATH = path_join(DATA_PATH, "bayesian_neural_network_priors")
 
 
 ground_truth = {
-    "log_variance": path_join(priors_path, "log_variance.npy"),
-    "weights": path_join(priors_path, "weights.npy"),
+    "log_variance": path_join(PRIORS_PATH, "log_variance.npy"),
+    "weights": path_join(PRIORS_PATH, "weights.npy"),
 }
 
 
@@ -56,12 +56,12 @@ def test_log_variance_prior_log_likelihood():
     # load precomputed ground truth
     expected_value = np.load(ground_truth["log_variance"])
 
-    assert(np.array_equal(result, expected_value))
+    assert np.array_equal(result, expected_value)
 
 
 def test_weight_prior_log_likelihood():
     # load inputs
-    weight_inputs = np.load(path_join(priors_path, "weights_inputs.npy"))
+    weight_inputs = np.load(path_join(PRIORS_PATH, "weights_inputs.npy"))
 
     inputs = [
         tf.convert_to_tensor(
@@ -78,4 +78,4 @@ def test_weight_prior_log_likelihood():
     # load precomputed ground truth
     expected_value = np.load(ground_truth["weights"])
 
-    assert(np.array_equal(result, expected_value))
+    assert np.array_equal(result, expected_value)

@@ -1,38 +1,38 @@
 from os.path import realpath, dirname, join as path_join
 from setuptools import setup, find_packages
 
-name = "pysgmcmc"
-description = "PySGMCMC"
-long_description = "PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on Stochastic Gradient Markov Chain Monte Carlo methods."
-maintainer = "Moritz Freidank"
-maintainer_email = "freidankm@googlemail.com"
-url = "https://github.com/MFreidank/pysgmcmc"
+NAME = "pysgmcmc"
+DESCRIPTION = "PySGMCMC"
+LONG_DESCRIPTION = "PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on Stochastic Gradient Markov Chain Monte Carlo methods."
+MAINTAINER = "Moritz Freidank"
+MAINTAINER_EMAIL = "freidankm@googlemail.com"
+URL = "https://github.com/MFreidank/pysgmcmc"
 # license = ??
-version = "0.0.1"
+VERSION = "0.0.1"
 
-project_root = dirname(realpath(__file__))
-requirements_file = path_join(project_root, "requirements.txt")
+PROJECT_ROOT = dirname(realpath(__file__))
+REQUIREMENTS_FILE = path_join(PROJECT_ROOT, "requirements.txt")
 
-with open(requirements_file, "r") as f:
-    install_requirements = f.read().splitlines()
+with open(REQUIREMENTS_FILE, "r") as f:
+    INSTALL_REQUIREMENTS = f.read().splitlines()
 
-setup_requirements = ["pytest-runner"]
-test_requirements = ["pytest", "pytest-cov", "hypothesis"]
+SETUP_REQUIREMENTS = ["pytest-runner"]
+TEST_REQUIREMENTS = ["pytest", "pytest-cov", "hypothesis"]
 
 
 if __name__ == "__main__":
     setup(
-        name=name,
-        version=version,
-        maintainer=maintainer,
-        maintainer_email=maintainer_email,
-        description=description,
-        url=url,
-        long_description=long_description,
+        name=NAME,
+        version=VERSION,
+        maintainer=MAINTAINER,
+        maintainer_email=MAINTAINER_EMAIL,
+        description=DESCRIPTION,
+        url=URL,
+        long_description=LONG_DESCRIPTION,
         packages=find_packages(),
         package_data={"docs": ["*"]},
         include_package_data=True,
-        install_requires=install_requirements,
-        setup_requires=setup_requirements,
-        tests_require=test_requirements,
+        install_requires=INSTALL_REQUIREMENTS,
+        setup_requires=SETUP_REQUIREMENTS,
+        tests_require=TEST_REQUIREMENTS,
     )
