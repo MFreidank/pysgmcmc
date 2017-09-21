@@ -13,7 +13,7 @@ all_tests() {
 
 echo "TRAVIS: $TRAVIS_EVENT_TYPE"
 
-if [[ "$TRAVIS_EVENT_TYPE" -eq "cron" ]]; then
+if [[ "$TRAVIS_EVENT_TYPE" == "cron" ]]; then
     # for the daily cron job, run *all* tests (and not just the fast-paced ones)
     all_tests
 else
