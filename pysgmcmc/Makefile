@@ -1,5 +1,5 @@
 test:
-	py.test -v --cov=pysgmcmc
+	py.test
 	make test-notebooks
 
 tests: test
