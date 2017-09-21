@@ -539,11 +539,13 @@ class Sampler(Enum):
         assert(cls.is_supported(sampling_method))
 
         if sampling_method == cls.SGHMC:
-            from pysgmcmc.samplers.sghmc import SGHMCSampler as Sampler
+            from pysgmcmc.samplers.sghmc import SGHMCSampler as Get_Sampler
         elif sampling_method == cls.SGLD:
-            from pysgmcmc.samplers.sgld import SGLDSampler as Sampler
+            from pysgmcmc.samplers.sgld import SGLDSampler as Get_Sampler
         elif sampling_method == cls.RelativisticSGHMC:
-            from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler as Sampler
+            from pysgmcmc.samplers.relativistic_sghmc import (
+                RelativisticSGHMCSampler as Get_Sampler
+            )
         else:
             assert(False)
 
@@ -551,7 +553,7 @@ class Sampler(Enum):
 
         # look up all initializer parameters with their (potential)
         # default values
-        all_sampler_parameters = signature(Sampler.__init__).parameters
+        all_sampler_parameters = signature(Get_Sampler.__init__).parameters
 
         # Check if any invalid sampler arguments were passed
         # (sampler arguments that are not actually parameters of the specified)
@@ -572,7 +574,7 @@ class Sampler(Enum):
                 "that fit the corresponding sampling method.\n"
                 "For your choice of sampling method ('{sampler}'), supported parameters are:\n"
                 "{valid_parameters}".format(
-                    sampler_name=Sampler.__name__,
+                    sampler_name=Get_Sampler.__name__,
                     sampler=sampling_method,
                     parameter=undefined_parameter,
                     valid_parameters="\n".join(
@@ -625,4 +627,4 @@ class Sampler(Enum):
             if parameter_name != "self"  # never pass `self` during construction
         }
 
-        return Sampler(**sampler_args)
+        return Get_Sampler(**sampler_args)

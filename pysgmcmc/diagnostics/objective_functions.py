@@ -9,7 +9,7 @@ def banana_log_likelihood(x):
 
 def gaussian_mixture_model_log_likelihood(x, mu=(-5, 0, 5), var=(1., 1., 1.),
                                           weights=(1. / 3., 1. / 3., 1. / 3.)):
-    assert(len(mu) == len(var) == len(weights))
+    assert len(mu) == len(var) == len(weights)
 
     def normldf(x, mu, var):
         return -0.5 * np.log(2.0 * np.pi * var) - 0.5 * ((x - mu) ** 2) / var
@@ -49,9 +49,9 @@ def bohachevski(x):
 
 
 def branin(x):
-        y = (x[1] - (5.1 / (4 * np.pi ** 2)) * x[0] ** 2 + 5 * x[0] / np.pi - 6) ** 2
-        y += 10 * (1 - 1 / (8 * np.pi)) * np.cos(x[0]) + 10
-        return x
+    y = (x[1] - (5.1 / (4 * np.pi ** 2)) * x[0] ** 2 + 5 * x[0] / np.pi - 6) ** 2
+    y += 10 * (1 - 1 / (8 * np.pi)) * np.cos(x[0]) + 10
+    return x
 
 
 def camelback(x):
@@ -61,9 +61,9 @@ def camelback(x):
 
 
 def goldstein_price(x):
-        y = (1 + (x[0] + x[1] + 1) ** 2 * (19 - 14 * x[0] + 3 * x[0] ** 2 - 14 * x[1] + 6 * x[0] * x[1] + 3 * x[1] ** 2))\
-            * (30 + (2 * x[0] - 3 * x[1]) ** 2 * (18 - 32 * x[0] + 12 * x[0] ** 2 + 48 * x[1] - 36 * x[0] * x[1] + 27 * x[1] ** 2))
-        return y
+    y = (1 + (x[0] + x[1] + 1) ** 2 * (19 - 14 * x[0] + 3 * x[0] ** 2 - 14 * x[1] + 6 * x[0] * x[1] + 3 * x[1] ** 2))\
+        * (30 + (2 * x[0] - 3 * x[1]) ** 2 * (18 - 32 * x[0] + 12 * x[0] ** 2 + 48 * x[1] - 36 * x[0] * x[1] + 27 * x[1] ** 2))
+    return y
 
 
 def hartmann3(x):

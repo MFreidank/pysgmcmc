@@ -68,11 +68,14 @@ class PYSGMCMCTrace(object):
                 "from that trace. We will give them anonymous names "
                 "by enumerating all target parameter dimensions."
             )
-            self.varnames = list(map(str, range(self.n_vars)))
+            self.varnames = [
+                str(variable_index) for variable_index in range(self.n_vars)
+            ]
+
         else:
             self.varnames = varnames
 
-        assert(len(self.varnames) == self.n_vars)
+        assert len(self.varnames) == self.n_vars
 
     @classmethod
     def from_sampler(cls, chain_id, sampler, n_samples, varnames=None):

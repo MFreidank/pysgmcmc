@@ -66,7 +66,10 @@ def sampler_test(objective_function,
                  function_domain=(0., 1.),
                  n_train_points=100,
                  seed=1,
-                 sampling_method=Sampler.SGHMC, sampler_args=dict()):
+                 sampling_method=Sampler.SGHMC, sampler_args=None):
+
+    if sampler_args is None:
+        sampler_args = dict()
 
     data = data_for(
         objective_function, dimensionality=dimensionality,

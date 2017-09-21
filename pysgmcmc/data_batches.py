@@ -92,7 +92,7 @@ def generate_batches(x, y, x_placeholder, y_placeholder, batch_size=20, seed=Non
 
     assert(seed is None or isinstance(seed, int)), "generate_batches: seed must be an integer or `None`"
 
-    assert(seed is None or (0 <= seed <= 2 ** 32 - 1))
+    assert seed is None or (0 <= seed <= 2 ** 32 - 1)
 
     assert(y.shape[0] == x.shape[0]), "Not exactly one label per datapoint!"
 

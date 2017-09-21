@@ -21,7 +21,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
 
     """
 
-    def __init__(self, params, cost_fun, momentum=[0.0], batch_generator=None,
+    def __init__(self, params, cost_fun, batch_generator=None,
                  epsilon=0.001, mass=1.0, c=1.0, D=1.0, Bhat=0.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
@@ -35,10 +35,6 @@ cial Intelligence and Statistics (AISTATS) 2017\n
         Cost : tensorflow.Tensor
             1-d Cost tensor that depends on `params`.
             Frequently denoted as U(theta) in literature.
-
-        momentum : float or List[float], optional
-            Initial values for the momentum of the sampler.
-            Defaults to `0.0`.
 
         batch_generator : BatchGenerator, optional
             Iterable which returns dictionaries to feed into
@@ -101,6 +97,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
         stepsize = tf.constant(epsilon, dtype=dtype)
         D = tf.constant(D, dtype=dtype)
         Bhat = tf.constant(Bhat, dtype=dtype)
+
         momentum = [
             tf.Variable(momentum_sample, dtype=dtype)
             for momentum_sample in self._sample_relativistic_momentum(

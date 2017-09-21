@@ -1,6 +1,7 @@
 [run]
 omit = 
     # somehow these have become necessary - no idea why
+    # but ci wants it - ci gets it
     /home/travis/virtualenv/python3.5.3/*
     /opt/python/*
     # omit tests themselves

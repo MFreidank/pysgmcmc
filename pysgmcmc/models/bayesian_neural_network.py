@@ -78,6 +78,39 @@ def get_default_net(inputs, seed=None):
 
 #  Priors {{{ #
 
+
+def log_variance_prior_log_like(log_var, mean=1e-6, var=0.01, dtype=tf.float64):
+    """ Prior on the log predicted variance.
+
+    Parameters
+    ----------
+    log_var : tensorflow.Tensor
+        TODO:DOKU
+
+    mean : float, optional
+        Actual mean on a linear scale.
+        Defaults to `1e-6`.
+
+    var : float, optional
+        Variance on a log scale.
+        Defaults to `0.01`.
+
+    dtype : tensorflow.DType, optional
+
+    Returns
+    -------
+    log_like : tensorflow.Tensor
+        TODO: DOKU
+
+    """
+    mean = tf.constant(mean, name="log_variance_prior_mean", dtype=dtype)
+    var = tf.constant(var, name="log_variance_prior_var", dtype=dtype)
+
+    return tf.reduce_mean(tf.reduce_sum(
+        safe_divide(-tf.square(log_var - tf.log(mean)), (2. * var)) - 0.5 *
+        tf.log(var), axis=1), name="variance_prior_log_like")
+
+
 class LogVariancePrior(object):
     """ Prior on the log predicted variance."""
 
@@ -115,31 +148,36 @@ class LogVariancePrior(object):
                 self.var), axis=1), name="variance_prior_log_like")
 
 
-class WeightPrior(object):
-    """ Prior on the weights."""
-    def __init__(self):
-        """ Initialize weight prior with weight decay initialized to `1.` """
-        self.Wdecay = tf.constant(1., name="wdecay", dtype=tf.float64)
+def weight_prior_log_like(params, wdecay=1., dtype=tf.float64):
+    """ Prior on the weights.
 
-    def log_like(self, params):
-        """ Compute the log log likelihood of this prior for a given input.
+    Parameters
+    ----------
+    params : list of tensorflow.Variable objects
 
-        Parameters
-        ----------
-        params : list of tensorflow.Variable objects
+    weight_decay : float
+        TODO DOKU
+        Defaults to `1.`.
 
-        Returns
-        -------
-        log_like: tensorflow.Tensor
+    dtype : tensorflow.DType, optional
+        TODO DOKU
+        Defaults to `tf.float64`
 
-        """
-        ll = tf.convert_to_tensor(0., name="ll", dtype=tf.float64)
-        n_params = tf.convert_to_tensor(0., name="n_params", dtype=tf.float64)
+    Returns
+    ----------
+    log_like: tensorflow.Tensor
 
-        for p in params:
-            ll += tf.reduce_sum(-self.Wdecay * 0.5 * tf.square(p))
-            n_params += tf.cast(tf.reduce_prod(tf.to_float(p.shape)), dtype=tf.float64)
-        return safe_divide(ll, n_params, name="weight_prior_log_like")
+    """
+    Wdecay = tf.constant(1., name="wdecay", dtype=dtype)
+
+    ll = tf.convert_to_tensor(0., name="ll", dtype=dtype)
+    n_params = tf.convert_to_tensor(0., name="n_params", dtype=dtype)
+
+    for p in params:
+        ll += tf.reduce_sum(-Wdecay * 0.5 * tf.square(p))
+        n_params += tf.cast(tf.reduce_prod(tf.to_float(p.shape)), dtype=dtype)
+    return safe_divide(ll, n_params, name="weight_prior_log_like")
+
 
 #  }}} Priors #
 
@@ -288,9 +326,6 @@ class BayesianNeuralNetwork(object):
         if not self.session:
             self.session = tf.Session()
 
-        self.variance_prior = LogVariancePrior(mean=1e-6, var=0.01)
-        self.weight_prior = WeightPrior()
-
         self.is_trained = False
 
     def negative_log_likelihood(self, X, Y):
@@ -339,11 +374,13 @@ class BayesianNeuralNetwork(object):
         n_examples = tf.constant(self.X.shape[0], tf.float64, name="n_examples")
 
         # prior for the variance
-        log_like += self.variance_prior.log_like(f_log_var) / n_examples
+        log_like += log_variance_prior_log_like(f_log_var) / n_examples
+        # log_like += self.variance_prior.log_like(f_log_var) / n_examples
 
         # prior for the weights
-        log_like += (self.weight_prior.log_like(tf.trainable_variables()) /
-                     n_examples)
+        log_like += weight_prior_log_like(tf.trainable_variables()) / n_examples
+        # log_like += (self.weight_prior.log_like(tf.trainable_variables()) /
+        # n_examples)
 
         return -log_like, tf.reduce_mean(mse)
 
@@ -405,12 +442,16 @@ class BayesianNeuralNetwork(object):
             ),
             "session": self.session,
             "seed": self.seed,
+            "epsilon": self.learning_rate,
             # Not always used, only for
             # `pysgmcmc.sampling.BurnInMCMCSampler` subclasses.
             "scale_grad": n_datapoints,
             "burn_in_steps": self.burn_in_steps,
-            "epsilon": self.learning_rate
         })
+        # NOTE: Burn_in_steps might not be a necessary parameter anymore,
+        # if we find that some samplers do not need it.
+        # In this case, we might get rid of it and make users specify it
+        # as part of `sampler_args` instead.
 
         self.sampler = Sampler.get_sampler(
             self.sampling_method, **self.sampler_kwargs

@@ -24,7 +24,7 @@ class HypothesisTest(unittest.TestCase):
     @classmethod
     def random_nonint_input_type_strategy(cls):
         from hypothesis.strategies import (
-            one_of, integers, floats, complex_numbers, lists,
+            one_of, floats, complex_numbers, lists,
             sets, fractions, text
         )
         return one_of(

@@ -1,7 +1,9 @@
 import tensorflow as tf
 import numpy as np
 
-from pysgmcmc.models.bayesian_neural_network import LogVariancePrior, WeightPrior
+from pysgmcmc.models.bayesian_neural_network import (
+    log_variance_prior_log_like, weight_prior_log_like
+)
 
 from os.path import dirname, join as path_join, realpath
 
@@ -17,8 +19,6 @@ ground_truth = {
 
 def test_log_variance_prior_log_likelihood():
     mean, var = 1e-6, 0.01
-
-    prior = LogVariancePrior(mean=mean, var=var)
 
     # intermediate f_log_var value stolen from a BNN run
     f_log_var = [[-11.25474104],
@@ -46,7 +46,10 @@ def test_log_variance_prior_log_likelihood():
     with tf.Session() as session:
         result = np.array(
             session.run(
-                prior.log_like(tf.constant(f_log_var, dtype=tf.float64))
+                log_variance_prior_log_like(
+                    tf.constant(f_log_var, dtype=tf.float64),
+                    mean=mean, var=var, dtype=tf.float64
+                )
             )
         )
 
@@ -57,8 +60,6 @@ def test_log_variance_prior_log_likelihood():
 
 
 def test_weight_prior_log_likelihood():
-    prior = WeightPrior()
-
     # load inputs
     weight_inputs = np.load(path_join(priors_path, "weights_inputs.npy"))
 
@@ -72,7 +73,7 @@ def test_weight_prior_log_likelihood():
     with tf.Session() as session:
         init = tf.global_variables_initializer()
         session.run(init)
-        result = np.array(session.run(prior.log_like(inputs)))
+        result = np.array(session.run(weight_prior_log_like(inputs)))
 
     # load precomputed ground truth
     expected_value = np.load(ground_truth["weights"])

@@ -38,10 +38,10 @@ class TestPDist(unittest.TestCase):
             tf.constant(invalid_input) for invalid_input in invalid_inputs
         ]
 
-        for input_scipy, input_tensorflow in zip(invalid_inputs, invalid_inputs_tf):
-            self.assertRaises(ValueError, lambda: pdist(input_scipy))
-            with tf.Session() as session:
-                self.assertRaises(ValueError, lambda: session.run(pdist(input_tensorflow)))
+        with tf.Session() as session:
+            for input_scipy, input_tensorflow in zip(invalid_inputs, invalid_inputs_tf):
+                self.assertRaises(ValueError, lambda: pdist(input_scipy))
+                self.assertRaises(ValueError, lambda: session.run(pdist_tf(input_tensorflow)))
 
     def test_valid_inputs_euclidean_pdist(self):
         n_test_arrays = 10
