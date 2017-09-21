@@ -1,0 +1,14 @@
+# Sphinx inventory version 2
+# Project: <tensorflow>
+# Version: <1.2.1>
+# The remainder of this file is compressed using zlib.
+
+tensorflow.DType py:class 1 tf/DType.html#$ -
+tensorflow.Session py:class 1 tf/Session.html#$ -
+tensorflow.Graph py:class 1 tf/Graph.html#$ -
+tensorflow.SparseTensor py:class 1 tf/SparseTensor.html#$ -
+tensorflow.Tensor py:class 1 tf/Tensor.html#$ -
+tensorflow.Variable py:class 1 tf/Variable.html#$ -
+tensorflow.Shape py:class 1 tf/Shape.html#$ -
+tensorflow.placeholder py:class 1 tf/placeholder.html#$ -
+tensorflow.constant py:class 1 tf/constant.html#$ -

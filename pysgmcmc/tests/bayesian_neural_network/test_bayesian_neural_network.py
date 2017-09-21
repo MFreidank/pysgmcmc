@@ -1,19 +1,10 @@
 from pysgmcmc.tests.bnn_testing import sampler_test
+from numpy.random import randint
 
 from itertools import product
 
 from pysgmcmc.sampling import Sampler
 from pysgmcmc.diagnostics.objective_functions import sinc
-
-import pytest
-
-try:
-    from hypothesis import given
-    from hypothesis.strategies import integers
-except ImportError:
-    hypothesis_installed = False
-else:
-    hypothesis_installed = True
 
 
 def passing_criterion(mean_prediction, variance_prediction, labels):
@@ -30,17 +21,15 @@ objective_functions = (
         "sampler_args": {
             "SGHMC": dict(),
             "SGLD": dict(),
-        }  # XXX: Add arguments for each sampler if necessary
+        }  # Add arguments for each sampler if necessary
     },
 )
 
 
-@pytest.mark.skipif(
-    not hypothesis_installed, reason="Package 'hypothesis' not installed!"
-)
-@given(integers(min_value=1, max_value=2 ** 32 - 1))
-def test_samplers(seed):
-    for sampler, objective_function in product(Sampler, objective_functions):
+def test_samplers():
+    seed = randint(1, 1000)
+    samplers = set(Sampler).difference(set((Sampler.RelativisticSGHMC,)))
+    for sampler, objective_function in product(samplers, objective_functions):
         sampler_test(
             objective_function["function"],
             dimensionality=objective_function["dimensionality"],
