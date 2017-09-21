@@ -43,7 +43,7 @@ def test_samplers(seed):
     for sampler, objective_function in product(Sampler, objective_functions):
         sampler_test(
             objective_function["function"],
-            passing_criterion=passing_criterion["passing_criterion"],
+            passing_criterion=objective_function["passing_criterion"],
             n_train_points=objective_function["n_train_points"],
             function_domain=objective_function["domain"],
             seed=seed,
