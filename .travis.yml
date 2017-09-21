@@ -20,7 +20,7 @@ install:
   - pip install coveralls 
 
 script: 
-    - py.test -v --doctest-modules --cov=pysgmcmc --ignore=pysgmcmc/tests/bayesian_neural_network/test_bayesian_neural_network.py
+    - py.test -v --doctest-modules --cov=pysgmcmc --ignore=pysgmcmc/tests/bayesian_neural_network/test_bayesian_neural_network.py pysgmcmc/tests
 
 after_success:
     - coveralls
