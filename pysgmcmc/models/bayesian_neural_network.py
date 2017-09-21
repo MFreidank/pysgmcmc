@@ -168,15 +168,15 @@ def weight_prior_log_like(params, wdecay=1., dtype=tf.float64):
     log_like: tensorflow.Tensor
 
     """
-    Wdecay = tf.constant(1., name="wdecay", dtype=dtype)
+    Wdecay = tf.constant(wdecay, name="wdecay", dtype=dtype)
 
-    ll = tf.convert_to_tensor(0., name="ll", dtype=dtype)
+    log_like = tf.convert_to_tensor(0., name="ll", dtype=dtype)
     n_params = tf.convert_to_tensor(0., name="n_params", dtype=dtype)
 
     for p in params:
-        ll += tf.reduce_sum(-Wdecay * 0.5 * tf.square(p))
+        log_like += tf.reduce_sum(-Wdecay * 0.5 * tf.square(p))
         n_params += tf.cast(tf.reduce_prod(tf.to_float(p.shape)), dtype=dtype)
-    return safe_divide(ll, n_params, name="weight_prior_log_like")
+    return safe_divide(log_like, n_params, name="weight_prior_log_like")
 
 
 #  }}} Priors #

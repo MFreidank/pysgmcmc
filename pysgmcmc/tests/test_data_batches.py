@@ -16,7 +16,7 @@ else:
     HYPOTHESIS_INSTALLED = True
 
 
-def batch_generator(self, X=None, y=None, x_placeholder=None,
+def batch_generator(X=None, y=None, x_placeholder=None,
                     y_placeholder=None, seed=None, batch_size=10):
     return generate_batches(x=X, y=y,
                             x_placeholder=x_placeholder,
