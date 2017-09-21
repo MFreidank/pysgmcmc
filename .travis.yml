@@ -8,6 +8,7 @@ os:
 
 before_install:
     - ls -la
+    - rm -rf pysgmcmc/.cache
     - sudo apt-get update
     - sudo apt-get install -q libatlas3gf-base libatlas-dev liblapack-dev gfortran
 
