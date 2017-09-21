@@ -6,6 +6,8 @@ from pysgmcmc.tensor_utils import (
     vectorize, unvectorize
 )
 
+from arspy.ars import adaptive_rejection_sampling
+
 
 class RelativisticSGHMCSampler(MCMCSampler):
     """ Relativistic Stochastic Gradient Hamiltonian Monte-Carlo Sampler.
@@ -15,9 +17,10 @@ class RelativisticSGHMCSampler(MCMCSampler):
         [1] X. Lu, V. Perrone, L. Hasenclever, Y. W. Teh, S. J. Vollmer
             In Proceedings of the 20 th International Conference on Artifi-
 cial Intelligence and Statistics (AISTATS) 2017\n
+            `Relativistic Monte Carlo <http://proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
 
-            `Relativistic Monte Carlo <proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
     """
+
     def __init__(self, params, cost_fun, momentum=[0.0], batch_generator=None,
                  epsilon=0.001, mass=1.0, c=1.0, D=1.0, Bhat=0.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
@@ -81,6 +84,7 @@ cial Intelligence and Statistics (AISTATS) 2017\n
             Base class for `RelativisticSGHMCSampler` that specifies how
             actual sampling is performed (using iterator protocol,
             e.g. `next(sampler)`).
+
         """
 
         # Set up MCMCSampler base class:
@@ -94,19 +98,25 @@ cial Intelligence and Statistics (AISTATS) 2017\n
 
         grads = [vectorize(gradient) for gradient in tf.gradients(-self.Cost, params)]
 
-        stepsize = tf.constant(epsilon)
-        m = tf.constant(mass)
-        c = tf.constant(c)
-        D = tf.constant(D)
-        Bhat = tf.constant(Bhat)
-        momentum = [tf.Variable(momentum_val) for momentum_val in momentum]
+        stepsize = tf.constant(epsilon, dtype=dtype)
+        D = tf.constant(D, dtype=dtype)
+        Bhat = tf.constant(Bhat, dtype=dtype)
+        momentum = [
+            tf.Variable(momentum_sample, dtype=dtype)
+            for momentum_sample in self._sample_relativistic_momentum(
+                mass=mass, c=c, n_params=len(self.params)
+            )
+        ]
+
+        m = tf.constant(mass, dtype=dtype)
+        c = tf.constant(c, dtype=dtype)
 
         for i, (Param, Grad) in enumerate(zip(params, grads)):
             Vectorized_Param = self.vectorized_params[i]
 
             p_grad = stepsize * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
 
-            n = tf.sqrt(stepsize * (2 * D - stepsize * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape)
+            n = tf.sqrt(stepsize * (2 * D - stepsize * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape, dtype=dtype)
             Momentum_t = tf.assign_add(
                 momentum[i],
                 tf.reshape(stepsize * Grad + n - D * p_grad, momentum[i].shape)
@@ -125,4 +135,36 @@ cial Intelligence and Statistics (AISTATS) 2017\n
 
     def _sample_relativistic_momentum(self, mass, c, n_params,
                                       bounds=(float("-inf"), float("inf"))):
-        raise NotImplementedError
+        # XXX: Remove when more is supported, currently only floats for mass
+        # and c are.
+        assert(isinstance(mass, float))
+        assert(isinstance(c, float))
+
+        def generate_relativistic_logpdf(mass, c):
+            def relativistic_log_pdf(p):
+                """
+                Logarithm of pdf of (multivariate) generalized
+                hyperbolic distribution.
+
+                XXX: Paper reference
+                XXX: Return type
+
+                Parameters
+                ----------
+                p : TODO
+                    Momentum
+
+                Returns
+                -------
+                TODO
+
+                """
+                from numpy import sqrt
+                return -mass * c ** 2 * sqrt(p ** 2 / (mass ** 2 * c ** 2) + 1.)
+            return relativistic_log_pdf
+
+        momentum_log_pdf = generate_relativistic_logpdf(mass=mass, c=c)
+        return adaptive_rejection_sampling(
+            logpdf=momentum_log_pdf, a=-10.0, b=10.0,
+            domain=bounds, n_samples=n_params
+        )
