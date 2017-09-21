@@ -16,6 +16,8 @@ install:
   - pip install cython
   - travis_wait pip install -r requirements.txt
   - pip install pytest-cov
+  - pip install pytest-xdist
+  - pip install pytest-forked
   - python setup.py install
   - pip install coveralls 
 
