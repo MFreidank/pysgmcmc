@@ -4,8 +4,13 @@ import numpy as np
 
 
 # XXX: Give references for banana function (this is the one they use in their notebook!)
-def banana_log_likelihood(x):
+def banana_log_likelihood_notebooks(x):
     return -1.0 / 20.0 * (100 * (x[1] - x[0]**2)**2 + (1 - x[0]) ** 2)
+
+
+# XXX: Give references again, this is the banana function from the relativistic monte carlo paper
+def banana_log_likelihood(x):
+    return -0.5 * (0.01 * x[0] ** 2 + (x[1] + 0.1 * x[0] ** 2 - 10) ** 2)
 
 
 def gaussian_mixture_model_log_likelihood(x, mu=(-5, 0, 5), var=(1., 1., 1.),
@@ -17,19 +22,10 @@ def gaussian_mixture_model_log_likelihood(x, mu=(-5, 0, 5), var=(1., 1., 1.),
         x = x[0]
 
     if isinstance(x, tf.Variable):
-        # XXX Reimplement logsumexp here for the update below
         def normldf_tf(x, mu, var):
             pi = tf.constant(np.pi)
             return -0.5 * tf.log(2.0 * pi * var) - 0.5 * ((x - mu) ** 2) / var
 
-        """
-        result = tf.constant(0.0)
-
-        for mu_val, var_val, weight_val in zip(weights, mu, var):
-            result += tf.exp(weight_val * normldf_tf(x, mu_val, var_val))
-
-        return tf.log(result)
-        """
         return tf.reduce_logsumexp(
             [tf.log(weights[i]) + normldf_tf(x, mu[i], var[i]) for i in range(len(mu))]
         )
