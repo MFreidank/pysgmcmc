@@ -80,7 +80,8 @@ def get_default_net(inputs, seed=None):
 
 
 def log_variance_prior_log_like(log_var, mean=1e-6, var=0.01, dtype=tf.float64):
-    """ Prior on the log predicted variance.
+    """
+    Prior on the log predicted variance.
 
     Parameters
     ----------
@@ -111,45 +112,9 @@ def log_variance_prior_log_like(log_var, mean=1e-6, var=0.01, dtype=tf.float64):
         tf.log(var), axis=1), name="variance_prior_log_like")
 
 
-class LogVariancePrior(object):
-    """ Prior on the log predicted variance."""
-
-    def __init__(self, mean=10e-3, var=2):
-        """ Initialize prior for a given `mean` and `variance`.
-
-        Parameters
-        ----------
-        mean : float, optional
-        Actual mean on a linear scale. Default value is `10e-3`.
-
-        var : float, optional
-        Variance on a log scale. Default value is `2`.
-
-        """
-
-        self.mean = tf.constant(mean, name="log_variance_prior_mean", dtype=tf.float64)
-        self.var = tf.constant(var, name="log_variance_prior_var", dtype=tf.float64)
-
-    def log_like(self, log_var):
-        """ Compute the log likelihood of this prior for a given input.
-
-        Parameters
-        ----------
-        log_var: tensorflow.Tensor
-
-        Returns
-        -------
-        log_like_output: tensorflow.Tensor
-
-        """
-
-        return tf.reduce_mean(tf.reduce_sum(
-            safe_divide(-tf.square(log_var - tf.log(self.mean)), (2. * self.var)) - 0.5 * tf.log(
-                self.var), axis=1), name="variance_prior_log_like")
-
-
 def weight_prior_log_like(parameters, wdecay=1., dtype=tf.float64):
-    """ Prior on the weights.
+    """
+    Prior on the weights.
 
     Parameters
     ----------
