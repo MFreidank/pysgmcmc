@@ -24,7 +24,7 @@ install:
   - pip install coveralls 
 
 script: 
-    - pytest --cov=pysgmcmc .
+    - pytest --conv-config .coveragerc --cov=pysgmcmc .
 
 after_success:
     - coveralls
