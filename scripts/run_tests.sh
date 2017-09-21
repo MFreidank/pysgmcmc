@@ -10,6 +10,8 @@ all_tests() {
     fast_tests
 }
 
+ls -la
+
 if [[ "$TRAVIS_EVENT_TYPE" == "cron" ]]; then
     # for the daily cron job, run *all* tests (and not just the fast-paced ones)
     all_tests
