@@ -11,12 +11,9 @@ all_tests() {
     fast_tests
 }
 
-fast_tests
-
-
-# if [[ "$TRAVIS_EVENT_TYPE" -eq "cron" ]]; then
-#     # for the daily cron job, run *all* tests (and not just the fast-paced ones)
-#     all_tests
-# else
-#     fast_tests
-# fi
+if [[ "$TRAVIS_EVENT_TYPE" -eq "cron" ]]; then
+    # for the daily cron job, run *all* tests (and not just the fast-paced ones)
+    all_tests
+else
+     fast_tests
+fi
