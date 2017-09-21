@@ -5,7 +5,7 @@ from pysgmcmc.models.bayesian_neural_network import LogVariancePrior, WeightPrio
 
 from os.path import dirname, join as path_join, realpath
 
-data_path = path_join(dirname(realpath(__file__)), "data")
+data_path = path_join(dirname(realpath(__file__)), "..", "data")
 priors_path = path_join(data_path, "bayesian_neural_network_priors")
 
 
