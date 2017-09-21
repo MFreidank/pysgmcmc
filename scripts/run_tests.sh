@@ -2,7 +2,7 @@
 
 fast_tests() {
     make -C pysgmcmc test-notebooks
-    py.test -v --doctest-modules --cov=pysgmcmc --ignore=pysgmcmc/tests/bayesian_neural_network/test_bayesian_neural_network.py 
+    py.test -v --doctest-modules --cov=pysgmcmc 
 }
 
 all_tests() {
