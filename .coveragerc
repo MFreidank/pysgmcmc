@@ -1,0 +1,6 @@
+[run]
+omit = 
+    # somehow this has become necessary - no idea why
+    /home/travis/virtualenv/python3.5.3/*
+    # omit tests themselves
+    pysgmcmc/tests/*
