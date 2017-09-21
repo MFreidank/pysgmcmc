@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from tests.utils import init_random_uniform
+from pysgmcmc.tests.utils import init_random_uniform
 from pysgmcmc.sampling import Sampler
 from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
 
