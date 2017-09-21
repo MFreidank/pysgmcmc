@@ -148,12 +148,12 @@ class LogVariancePrior(object):
                 self.var), axis=1), name="variance_prior_log_like")
 
 
-def weight_prior_log_like(params, wdecay=1., dtype=tf.float64):
+def weight_prior_log_like(parameters, wdecay=1., dtype=tf.float64):
     """ Prior on the weights.
 
     Parameters
     ----------
-    params : list of tensorflow.Variable objects
+    parameters : list of tensorflow.Variable objects
 
     weight_decay : float
         TODO DOKU
@@ -173,9 +173,11 @@ def weight_prior_log_like(params, wdecay=1., dtype=tf.float64):
     log_like = tf.convert_to_tensor(0., name="ll", dtype=dtype)
     n_params = tf.convert_to_tensor(0., name="n_params", dtype=dtype)
 
-    for p in params:
-        log_like += tf.reduce_sum(-Wdecay * 0.5 * tf.square(p))
-        n_params += tf.cast(tf.reduce_prod(tf.to_float(p.shape)), dtype=dtype)
+    for parameter in parameters:
+        log_like += tf.reduce_sum(-Wdecay * 0.5 * tf.square(parameter))
+        n_params += tf.cast(
+            tf.reduce_prod(tf.to_float(parameter.shape)), dtype=dtype
+        )
     return safe_divide(log_like, n_params, name="weight_prior_log_like")
 
 
