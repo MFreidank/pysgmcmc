@@ -547,7 +547,12 @@ class Sampler(Enum):
                 RelativisticSGHMCSampler as Get_Sampler
             )
         else:
-            assert False
+            raise ValueError(
+                "Sampling method {sampler} is supported, but function "
+                "'pysgmcmc.sampling.get_sampler' is missing an `import` "
+                "statement for the corresponding sampler object. "
+                "Please add an import in the appropriate location."
+            )
 
         from inspect import signature, _empty
 

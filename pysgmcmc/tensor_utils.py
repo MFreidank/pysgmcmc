@@ -73,7 +73,21 @@ def vectorize(tensor):
            [  2.],
            [  4.]], dtype=float32)
 
+    Input of other types will raise a `ValueError`:
+
+    >>> import tensorflow as tf
+    >>> session = tf.Session()
+    >>> v = vectorize([1.0])
+    Traceback (most recent call last):
+     ...
+    AssertionError: Unsupported input to tensor_utils.vectorize: [1.0] is not a tensorflow.Tensor subclass
+
     """
+
+    error_msg = ("Unsupported input to tensor_utils.vectorize: "
+                 "{value} is not a tensorflow.Tensor subclass".format(value=tensor))
+
+    assert isinstance(tensor, (tf.Variable, tf.Tensor,)), error_msg
 
     # Compute vectorized shape
     n_elements = np.prod(np.asarray(tensor.shape, dtype=np.int))
@@ -89,8 +103,7 @@ def vectorize(tensor):
 
     else:
         raise ValueError(
-            "Unsupported input to tensor_utils.vectorize: "
-            "{value} is not a tensorflow.Tensor subclass".format(value=tensor)
+            error_msg
         )
 
 
