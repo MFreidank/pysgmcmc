@@ -24,7 +24,7 @@ install:
   - pip install coveralls 
 
 script: 
-    - bash scripts/run_tests.sh
+    - bash ci_scripts/run_tests.sh
 
 after_success:
     - coveralls
