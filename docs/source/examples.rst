@@ -9,4 +9,5 @@ RSGHMC
 ======
 
 .. toctree::
+   :maxdepth: 3
    notebooks/Relativistic_SGHMC.ipynb
