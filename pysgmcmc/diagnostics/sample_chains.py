@@ -56,7 +56,12 @@ class PYSGMCMCTrace(object):
         self.samples = samples
 
         first_sample = self.samples[0]
-        self.n_vars = len(first_sample)
+
+        if isinstance(first_sample, float):
+            # handle 1-d samples
+            self.n_vars = 1
+        else:
+            self.n_vars = len(first_sample)
 
         assert(self.n_vars >= 1), "The first sample needs to have at least one variable."
 
