@@ -253,8 +253,8 @@ class BayesianNeuralNetwork(object):
         assert sample_steps > 0
         assert batch_size > 0
 
-        assert hasattr(get_net, "__call__")
-        assert hasattr(batch_generator, "__call__")
+        assert callable(get_net)
+        assert callable(batch_generator)
 
         if not Sampler.is_supported(sampling_method):
             raise ValueError(

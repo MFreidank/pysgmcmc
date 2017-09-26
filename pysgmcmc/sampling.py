@@ -70,7 +70,7 @@ class MCMCSampler(object):
         assert isinstance(session, (tf.Session, tf.InteractiveSession))
         assert isinstance(dtype, tf.DType)
 
-        assert hasattr(cost_fun, "__call__")
+        assert callable(cost_fun)
 
         self.dtype = dtype
 
