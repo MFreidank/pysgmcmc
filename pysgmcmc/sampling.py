@@ -132,7 +132,7 @@ class Sampler(Enum):
         -params
         -cost_fun
         -batch_generator
-        -epsilon
+        -stepsize_schedule
         -burn_in_steps
         -mdecay
         -scale_grad

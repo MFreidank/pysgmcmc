@@ -398,6 +398,8 @@ class BayesianNeuralNetwork(object):
         # remove any leftover samples from previous "train" calls
         self.samples.clear()
 
+        from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
+
         self.sampler_kwargs.update({
             "params": self.network_params,
             "cost_fun": lambda *_: Nll,
@@ -409,7 +411,8 @@ class BayesianNeuralNetwork(object):
             ),
             "session": self.session,
             "seed": self.seed,
-            "epsilon": self.learning_rate,
+            #"epsilon": self.learning_rate,
+            "stepsize_schedule": ConstantStepsizeSchedule(self.learning_rate),
             # Not always used, only for
             # `pysgmcmc.sampling.BurnInMCMCSampler` subclasses.
             "scale_grad": n_datapoints,

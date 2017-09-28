@@ -7,6 +7,7 @@ import abc
 import tensorflow as tf
 
 from pysgmcmc.tensor_utils import vectorize, uninitialized_params
+from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 
 __all__ = (
     "MCMCSampler",
@@ -19,6 +20,7 @@ class MCMCSampler(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, params, cost_fun, batch_generator=None,
+                 stepsize_schedule=ConstantStepsizeSchedule(0.01),
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """
         Initialize the sampler base class. Sets up member variables and
@@ -39,6 +41,11 @@ class MCMCSampler(object):
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
+
+        stepsize_schedule : pysgmcmc.stepsize_schedules.StepsizeSchedule
+            Iterator class that produces a stream of stepsize values that
+            we can use in our samplers.
+            See also: `pysgmcmc.stepsize_schedules`
 
         session : `tensorflow.Session`, optional
             Session object which knows about the external part of the graph
@@ -77,6 +84,11 @@ class MCMCSampler(object):
 
         self.seed = seed
 
+        assert hasattr(stepsize_schedule, "update")
+        assert hasattr(stepsize_schedule, "__next__")
+
+        self.stepsize_schedule = stepsize_schedule
+
         self.batch_generator = batch_generator
         self.session = session
 
@@ -89,10 +101,18 @@ class MCMCSampler(object):
         # compute vectorized clones of all parameters
         self.vectorized_params = [vectorize(param) for param in self.params]
 
+        self.Epsilon = tf.Variable(
+            self.stepsize_schedule.initial_value,
+            dtype=self.dtype,
+            name="epsilon",
+            trainable=False
+        )
+
         # Initialize uninitialized parameters before usage in any sampler.
         init = tf.variables_initializer(
             uninitialized_params(
-                session=self.session, params=self.params + self.vectorized_params
+                session=self.session,
+                params=self.params + self.vectorized_params + [self.Epsilon]
             )
         )
         self.session.run(init)
@@ -158,6 +178,10 @@ class MCMCSampler(object):
         if self.batch_generator is not None:
             return next(self.batch_generator)
         return dict()
+
+    # XXX: Doku
+    def _next_stepsize(self):
+        return {self.Epsilon: next(self.stepsize_schedule)}
 
     def _draw_noise_sample(self, Sigma, Shape):
         """ Generate a single random normal sample with shape `Shape` and
@@ -257,6 +281,7 @@ class MCMCSampler(object):
             )
 
         feed_vals.update(self._next_batch())
+        feed_vals.update(self._next_stepsize())
         params, cost = self.session.run(
             [self.Theta_t, self.Cost], feed_dict=feed_vals
         )
@@ -264,6 +289,8 @@ class MCMCSampler(object):
         if len(params) == 1:
             # unravel single-element lists to scalars
             params = params[0]
+
+        self.stepsize_schedule.update(params, cost)
 
         self.n_iterations += 1  # increment iteration counter
 
@@ -280,6 +307,7 @@ class BurnInMCMCSampler(MCMCSampler):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, params, cost_fun, batch_generator=None,
+                 stepsize_schedule=ConstantStepsizeSchedule(0.01),
                  burn_in_steps=3000,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """
@@ -300,6 +328,11 @@ class BurnInMCMCSampler(MCMCSampler):
             Iterable which returns dictionaries to feed into
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
+
+        stepsize_schedule : pysgmcmc.stepsize_schedules.StepsizeSchedule
+            Iterator class that produces a stream of stepsize values that
+            we can use in our samplers.
+            See also: `pysgmcmc.stepsize_schedules`
 
         burn_in_steps : int
             Number of burn-in steps to perform. In each burn-in step, this
@@ -338,6 +371,7 @@ class BurnInMCMCSampler(MCMCSampler):
         assert isinstance(burn_in_steps, int)
 
         super().__init__(params=params, cost_fun=cost_fun,
+                         stepsize_schedule=stepsize_schedule,
                          batch_generator=batch_generator,
                          seed=seed, dtype=dtype, session=session)
 
@@ -383,11 +417,17 @@ class BurnInMCMCSampler(MCMCSampler):
         feed_vals.update(self._next_batch())
 
         if self.is_burning_in:
+            # feed next stepsize value
+            feed_vals.update(self._next_stepsize())
+
             # perform a burn-in step = adapt the samplers mass matrix inverse
             params, cost, self.minv = self.session.run(
                 [self.Theta_t, self.Cost, self.Minv_t],
                 feed_dict=feed_vals
             )
+
+            self.stepsize_schedule.update(params, cost)
+
             self.n_iterations += 1
             return params, cost
 

@@ -1,6 +1,7 @@
 # vim:foldmethod=marker
 import tensorflow as tf
 from pysgmcmc.samplers.base_classes import MCMCSampler
+from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 
 from pysgmcmc.tensor_utils import (
     vectorize, unvectorize
@@ -22,7 +23,8 @@ cial Intelligence and Statistics (AISTATS) 2017\n
     """
 
     def __init__(self, params, cost_fun, batch_generator=None,
-                 epsilon=0.001, mass=1.0, c=1.0, D=1.0, Bhat=0.0,
+                 stepsize_schedule=ConstantStepsizeSchedule(0.001),
+                 mass=1.0, c=1.0, D=1.0, Bhat=0.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
             for later queries.
@@ -41,10 +43,10 @@ cial Intelligence and Statistics (AISTATS) 2017\n
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
 
-        epsilon : float, optional
-            Value that is used as learning rate parameter for the sampler,
-            also denoted as discretization parameter in literature.
-            Defaults to `0.001`.
+        stepsize_schedule : pysgmcmc.stepsize_schedules.StepsizeSchedule
+            Iterator class that produces a stream of stepsize values that
+            we can use in our samplers.
+            See also: `pysgmcmc.stepsize_schedules`
 
         mass : float, optional
             mass constant.
@@ -89,12 +91,12 @@ cial Intelligence and Statistics (AISTATS) 2017\n
         # (to avoid errors in the graph definitions below).
         super().__init__(
             params=params, cost_fun=cost_fun, batch_generator=batch_generator,
+            stepsize_schedule=stepsize_schedule,
             seed=seed, dtype=dtype, session=session
         )
 
         grads = [vectorize(gradient) for gradient in tf.gradients(-self.Cost, params)]
 
-        stepsize = tf.constant(epsilon, dtype=dtype)
         D = tf.constant(D, dtype=dtype)
         Bhat = tf.constant(Bhat, dtype=dtype)
 
@@ -111,15 +113,15 @@ cial Intelligence and Statistics (AISTATS) 2017\n
         for i, (Param, Grad) in enumerate(zip(params, grads)):
             Vectorized_Param = self.vectorized_params[i]
 
-            p_grad = stepsize * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
+            p_grad = self.Epsilon * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
 
-            n = tf.sqrt(stepsize * (2 * D - stepsize * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape, dtype=dtype)
+            n = tf.sqrt(self.Epsilon * (2 * D - self.Epsilon * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape, dtype=dtype)
             Momentum_t = tf.assign_add(
                 momentum[i],
-                tf.reshape(stepsize * Grad + n - D * p_grad, momentum[i].shape)
+                tf.reshape(self.Epsilon * Grad + n - D * p_grad, momentum[i].shape)
             )
 
-            p_grad_new = stepsize * Momentum_t / (m * tf.sqrt(Momentum_t * Momentum_t / (tf.square(m) * tf.square(c)) + 1))
+            p_grad_new = self.Epsilon * Momentum_t / (m * tf.sqrt(Momentum_t * Momentum_t / (tf.square(m) * tf.square(c)) + 1))
             Vectorized_Theta_t = tf.assign_add(
                 Vectorized_Param,
                 tf.reshape(p_grad_new, Vectorized_Param.shape)

@@ -2,6 +2,7 @@
 
 import tensorflow as tf
 from pysgmcmc.samplers.base_classes import BurnInMCMCSampler
+from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 
 from pysgmcmc.tensor_utils import (
     vectorize, unvectorize, safe_divide, safe_sqrt
@@ -27,7 +28,8 @@ class SGLDSampler(BurnInMCMCSampler):
     """
 
     def __init__(self, params, cost_fun, batch_generator=None,
-                 epsilon=0.01, burn_in_steps=3000, A=1.0, scale_grad=1.0,
+                 stepsize_schedule=ConstantStepsizeSchedule(0.01),
+                 burn_in_steps=3000, A=1.0, scale_grad=1.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
             for later queries.
@@ -47,10 +49,10 @@ class SGLDSampler(BurnInMCMCSampler):
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
 
-        epsilon : float, optional
-            Value that is used as learning rate parameter for the sampler,
-            also denoted as discretization parameter in literature.
-            Defaults to `0.01`.
+        stepsize_schedule : pysgmcmc.stepsize_schedules.StepsizeSchedule
+            Iterator class that produces a stream of stepsize values that
+            we can use in our samplers.
+            See also: `pysgmcmc.stepsize_schedules`
 
         burn_in_steps: int, optional
             Number of burn-in steps to perform. In each burn-in step, this
@@ -101,7 +103,6 @@ class SGLDSampler(BurnInMCMCSampler):
 
         A = tf.constant(A, name="A", dtype=dtype)
         Noise = tf.constant(0., name="noise", dtype=dtype)
-        Epsilon = tf.constant(epsilon, name="epsilon", dtype=dtype)
         Scale_grad = tf.constant(scale_grad, name="scale_grad", dtype=dtype)
 
         #  }}} Initialize graph constants #
@@ -181,7 +182,7 @@ class SGLDSampler(BurnInMCMCSampler):
                         #  Draw random sample {{{ #
 
                         Sigma = safe_sqrt(
-                            2. * Epsilon *
+                            2. * self.Epsilon *
                             safe_divide(
                                 (self.Minv_t[i] * (A - Noise)), Scale_grad
                             )
@@ -197,7 +198,7 @@ class SGLDSampler(BurnInMCMCSampler):
 
                         Vectorized_Theta_t = tf.assign_add(
                             Vectorized_Param,
-                            - Epsilon * self.Minv_t[i] * A * Grad + Sample,
+                            - self.Epsilon * self.Minv_t[i] * A * Grad + Sample,
                         )
                         self.Theta_t[i] = tf.assign(
                             Param,

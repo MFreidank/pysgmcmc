@@ -6,6 +6,8 @@ from pysgmcmc.tensor_utils import (
     vectorize, unvectorize, safe_divide, safe_sqrt,
 )
 
+from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
+
 
 class SGHMCSampler(BurnInMCMCSampler):
     """ Stochastic Gradient Hamiltonian Monte-Carlo Sampler that uses a burn-in
@@ -27,7 +29,8 @@ class SGHMCSampler(BurnInMCMCSampler):
     """
 
     def __init__(self, params, cost_fun, batch_generator=None,
-                 epsilon=0.01, burn_in_steps=3000, mdecay=0.05, scale_grad=1.0,
+                 stepsize_schedule=ConstantStepsizeSchedule(0.01),
+                 burn_in_steps=3000, mdecay=0.05, scale_grad=1.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
             for later queries.
@@ -47,10 +50,10 @@ class SGHMCSampler(BurnInMCMCSampler):
             tensorflow.Session.run() calls to evaluate the cost function.
             Defaults to `None` which indicates that no batches shall be fed.
 
-        epsilon : float, optional
-            Value that is used as learning rate parameter for the sampler,
-            also denoted as discretization parameter in literature.
-            Defaults to `0.01`.
+        stepsize_schedule : pysgmcmc.stepsize_schedules.StepsizeSchedule
+            Iterator class that produces a stream of stepsize values that
+            we can use in our samplers.
+            See also: `pysgmcmc.stepsize_schedules`
 
         burn_in_steps: int, optional
             Number of burn-in steps to perform. In each burn-in step, this
@@ -99,16 +102,17 @@ class SGHMCSampler(BurnInMCMCSampler):
         super().__init__(
             params=params, cost_fun=cost_fun, burn_in_steps=burn_in_steps,
             batch_generator=batch_generator,
-            seed=seed, dtype=dtype, session=session
+            seed=seed, dtype=dtype, session=session,
+            stepsize_schedule=stepsize_schedule
         )
 
         #  Initialize graph constants {{{ #
 
         Noise = tf.constant(0., name="noise", dtype=dtype)
-        Epsilon = tf.constant(epsilon, name="epsilon", dtype=dtype)
 
         Scale_grad = tf.constant(scale_grad, dtype=dtype, name="scale_grad")
-        Epsilon_scaled = tf.divide(Epsilon, tf.sqrt(Scale_grad), name="epsilon_scaled")
+
+        Epsilon_scaled = tf.divide(self.Epsilon, tf.sqrt(Scale_grad), name="epsilon_scaled")
 
         Mdecay = tf.constant(mdecay, name="mdecay", dtype=dtype)
 
@@ -227,7 +231,7 @@ class SGHMCSampler(BurnInMCMCSampler):
                         # Minv = V_hat^{-1/2}, Mdecay = epsilon * V_hat^{-1/2} C
                         V_t = tf.assign_add(
                             V[i],
-                            - Epsilon ** 2 * self.Minv_t[i] * Grad -
+                            - self.Epsilon ** 2 * self.Minv_t[i] * Grad -
                             Mdecay * V[i] + Sample,
                             name="V_t_{}".format(i)
                         )
