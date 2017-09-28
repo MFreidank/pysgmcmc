@@ -1,7 +1,7 @@
 # vim: foldmethod=marker
 
 import tensorflow as tf
-from pysgmcmc.sampling import BurnInMCMCSampler
+from pysgmcmc.samplers.base_classes import BurnInMCMCSampler
 
 from pysgmcmc.tensor_utils import (
     vectorize, unvectorize, safe_divide, safe_sqrt

@@ -1,6 +1,6 @@
 # vim:foldmethod=marker
 import tensorflow as tf
-from pysgmcmc.sampling import MCMCSampler
+from pysgmcmc.samplers.base_classes import MCMCSampler
 
 from pysgmcmc.tensor_utils import (
     vectorize, unvectorize
