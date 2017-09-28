@@ -10,8 +10,9 @@ from pymc3.backends.base import MultiTrace
 from pymc3.diagnostics import effective_n as ess
 
 import sys
-import os
-sys.path.insert(0, os.path.join(os.path.abspath("."), "..", "..", ".."))
+from os.path import dirname, realpath, join as path_join
+SCRIPT_PATH = dirname(realpath(__file__))
+sys.path.insert(0, path_join(SCRIPT_PATH, "..", "..", ".."))
 
 from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler
 from pysgmcmc.diagnostics.sample_chains import PYSGMCMCTrace
@@ -94,6 +95,26 @@ def main():
         default=0.05
     )
 
+    parser.add_argument(
+        "--stepsize",
+        help="Stepsize to use. Note that this overwrites ranges for the stepsize specified via "
+             "--stepsize_min, --stepsize_max, --stepsize_step",
+        dest="stepsize",
+        action="store", type=float,
+        default=None
+    )
+
+    parser.add_argument(
+        "-o", "--output-file",
+        help="Output filename to write results to. Defaults to 'output.json'.",
+        action="store",
+        dest="output_filename",
+        default="output.json"
+
+
+
+    )
+
     args = parser.parse_args()
 
     ObjectiveFunction = namedtuple(
@@ -156,9 +177,12 @@ def main():
     assert args.stepsize_min >= 0.0, "--stepsize-min must be >= 0.0"
     assert args.stepsize_step > 0, "--stepsize-increment must be > 0.0"
 
-    stepsizes = np.arange(
-        args.stepsize_min, args.stepsize_max, args.stepsize_step
-    )
+    if args.stepsize is None:
+        stepsizes = np.arange(
+            args.stepsize_min, args.stepsize_max, args.stepsize_step
+        )
+    else:
+        stepsizes = (args.stepsize,)
 
     ess_vals = defaultdict(list)
 
@@ -204,7 +228,7 @@ def main():
 
                 ess_vals[stepsize].append(mean_ess)
 
-    with open("ess_results_{}.json".format(function_name), "w") as f:
+    with open("/home/freidanm/cluster_utils/results/{filename}".format(filename=args.output_filename), "w") as f:
         json.dump(ess_vals, f)
 
 
