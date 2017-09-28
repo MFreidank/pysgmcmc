@@ -19,8 +19,8 @@ from pysgmcmc.models.base_model import (
     zero_mean_unit_var_unnormalization
 )
 
-
 from pysgmcmc.sampling import Sampler
+from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 
 from pysgmcmc.data_batches import generate_batches
 from pysgmcmc.tensor_utils import safe_divide
@@ -154,7 +154,7 @@ class BayesianNeuralNetwork(object):
                  get_net=get_default_net,
                  batch_generator=generate_batches,
                  batch_size=20,
-                 learning_rate=np.sqrt(1e-4),
+                 stepsize_schedule=ConstantStepsizeSchedule(np.sqrt(1e-4)),
                  n_nets=100, n_iters=50000,
                  burn_in_steps=1000, sample_steps=100,
                  normalize_input=True, normalize_output=True,
@@ -184,9 +184,10 @@ class BayesianNeuralNetwork(object):
             Number of nets to sample during training (and use to predict).
             Defaults to `100`.
 
-        learning_rate: float, optional
-            Learning rate to use during sampling.
-            Defaults to `1e-3`.
+        stepsize_schedule : pysgmcmc.stepsize_schedules.StepsizeSchedule
+            Iterator class that produces a stream of stepsize values that
+            we can use during sampling.
+            See also: `pysgmcmc.stepsize_schedules`
 
         mdecay: float, optional
             Momentum decay per time-step (parameter for SGHMCSampler).
@@ -256,6 +257,9 @@ class BayesianNeuralNetwork(object):
         assert callable(get_net)
         assert callable(batch_generator)
 
+        assert hasattr(stepsize_schedule, "update")
+        assert hasattr(stepsize_schedule, "__next__")
+
         if not Sampler.is_supported(sampling_method):
             raise ValueError(
                 "'BayesianNeuralNetwork.__init__' received unsupported input "
@@ -266,7 +270,7 @@ class BayesianNeuralNetwork(object):
 
         self.sampling_method = sampling_method
 
-        self.learning_rate = learning_rate
+        self.stepsize_schedule = stepsize_schedule
 
         self.get_net = get_net
         self.batch_generator = batch_generator
@@ -398,8 +402,6 @@ class BayesianNeuralNetwork(object):
         # remove any leftover samples from previous "train" calls
         self.samples.clear()
 
-        from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
-
         self.sampler_kwargs.update({
             "params": self.network_params,
             "cost_fun": lambda *_: Nll,
@@ -411,8 +413,7 @@ class BayesianNeuralNetwork(object):
             ),
             "session": self.session,
             "seed": self.seed,
-            #"epsilon": self.learning_rate,
-            "stepsize_schedule": ConstantStepsizeSchedule(self.learning_rate),
+            "stepsize_schedule": self.stepsize_schedule,
             # Not always used, only for
             # `pysgmcmc.sampling.BurnInMCMCSampler` subclasses.
             "scale_grad": n_datapoints,
