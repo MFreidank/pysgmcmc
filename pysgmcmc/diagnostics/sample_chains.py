@@ -57,9 +57,12 @@ class PYSGMCMCTrace(object):
 
         first_sample = self.samples[0]
 
-        if isinstance(first_sample, float):
+        if isinstance(first_sample, (float, np.float32, np.float64)):
             # handle 1-d samples
             self.n_vars = 1
+            self.samples = [
+                [sample] for sample in self.samples
+            ]
         else:
             self.n_vars = len(first_sample)
 
