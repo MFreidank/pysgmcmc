@@ -3,10 +3,6 @@ from pymc3.diagnostics import (
 )
 from pysgmcmc.diagnostics.sample_chains import pymc3_multitrace
 
-# XXX: Migrate pymc3.diagnostics.geweke here too
-# XXX: unittests for this and sample_chains.py
-
-
 def _pymc3_diagnostic(get_sampler, pymc3_diagnostic_fun, n_chains=2,
                       samples_per_chain=100):
     """TODO: Docstring for _pymc3_diagnostic.
@@ -49,8 +45,6 @@ def _pymc3_diagnostic(get_sampler, pymc3_diagnostic_fun, n_chains=2,
     return pymc3_diagnostic_fun(multitrace)
 
 
-# XXX: More meaningful assertions in doctest
-# XXX: DOKU for return type
 def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     """
     Calculate ess metric for a sampler returned by callable `get_sampler`.
@@ -74,6 +68,9 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     Returns
     ----------
     ess : dict
+        Dictionary that maps the variable name of each target parameter of a
+        sampler obtained by callable `get_sampler` to the corresponding
+        effective sample size of (each dimension of) this variable.
 
     Notes
     ----------
@@ -91,17 +88,20 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
 
     Examples
     ----------
-    Simple (very arbitrary) example to showcase usage:
+    Simple (arbitrary) example to showcase usage:
 
     >>> import tensorflow as tf
     >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
     >>> params = [tf.Variable([1.0, 2.0], name="x", dtype=tf.float64)]
-    >>> cost_fun = lambda params: tf.reduce_sum(params)
+    >>> cost_fun = lambda params: tf.reduce_sum(params)  # dummy cost functions
     >>> get_sampler = lambda session: SGHMCSampler(params=params, cost_fun=cost_fun, session=session)
     >>> ess_vals = effective_sample_sizes(get_sampler=get_sampler)
-    >>> type(ess_vals) == dict
+    >>> type(ess_vals)
+    <class 'dict'>
+    >>> list(ess_vals.keys())[0].startswith("x")  # necessary due to tensorflow variable enumeration
     True
-
+    >>> len(ess_vals[params[0].name])  # x:0 has two dimensions, we have one ess value for each
+    2
     """
 
     return _pymc3_diagnostic(
@@ -112,7 +112,6 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     )
 
 
-# XXX: More meaningful assertions in doctest
 def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
     """
     Calculate gelman_rubin metric for a sampler returned by callable `get_sampler`.
@@ -165,7 +164,7 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
 
     Examples
     ----------
-    Simple (very arbitrary) example to showcase usage:
+    Simple (arbitrary) example to showcase usage:
 
     >>> import tensorflow as tf
     >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
@@ -173,8 +172,12 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
     >>> cost_fun = lambda params: tf.reduce_sum(params)
     >>> get_sampler = lambda session: SGHMCSampler(params=params, cost_fun=cost_fun, session=session)
     >>> factors = gelman_rubin(get_sampler=get_sampler)
-    >>> type(factors) == dict
+    >>> type(factors)
+    <class 'dict'>
+    >>> list(factors.keys())[0].startswith("x")  # necessary due to tensorflow variable enumeration
     True
+    >>> len(factors[params[0].name])  # x:0 has two dimensions, we have one factor for each
+    2
     """
     return _pymc3_diagnostic(
         pymc3_diagnostic_fun=pymc3_gelman_rubin,

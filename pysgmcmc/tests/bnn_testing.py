@@ -7,21 +7,46 @@ from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
 import numbers
 
 
-# XXX Doku and proper testing
 def data_for(function, n_train_points=100, dimensionality=2,
              function_domain=(0, 1), seed=1):
+    """ Construct a training and test set for `dimensionality`-dimensional
+        `function` with domain `function_domain`.
+        Hereby, the training set is sampled uniformly at random from the given
+        `function_domain`. This random sampling can be seeded by passing
+        a `seed`.
+
+    Parameters
+    ----------
+    function : callable
+        XXX DOKU
+    n_train_points : int, optional
+        XXX Doku
+    dimensionality : int, optional
+        XXX Doku
+    function_domain : Tuple(int, int), optional
+        XXX Doku
+    seed : int, optional
+        XXX Doku
+
+    Returns
+    ----------
+    XXX Doku
+
+    Examples
+    ----------
+    XXX Doctest
+
+    """
 
     assert hasattr(function_domain, "__len__")
     assert len(function_domain) == 2
 
+    assert(dimensionality >= 1)
+
     lower, upper = function_domain
 
-    if dimensionality == 1:
-        # XXX Message
-        # dimensionality of 1 implies that lower and upper bound of data
-        # must be floats
-        assert(isinstance(lower, numbers.Real))
-        assert(isinstance(upper, numbers.Real))
+    assert(dimensionality > 1 or isinstance(lower, numbers.Real))
+    assert(dimensionality > 1 or isinstance(upper, numbers.Real))
 
     assert isinstance(lower, numbers.Real) or hasattr(lower, "__iter__")
     assert isinstance(upper, numbers.Real) or hasattr(upper, "__iter__")
@@ -60,6 +85,7 @@ def data_for(function, n_train_points=100, dimensionality=2,
     return {"train": (X_train, y_train), "test": (X_test, y_test)}
 
 
+# XXX Docu
 def sampler_test(objective_function,
                  dimensionality,
                  passing_criterion,  # use default for this (r2 score)
