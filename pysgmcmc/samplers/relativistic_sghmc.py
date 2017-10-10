@@ -174,10 +174,14 @@ def _sample_relativistic_momentum(m, c, n_params,
     Returns
     ----------
     momentum_samples : list
-        TODO DOKU
+        Samples used to initialize our samplers momentum variables.
 
     Examples
     ----------
+
+    Drawing 10 momentum values for 10 target parameters via (unbounded)
+    adaptive rejection sampling:
+
     >>> n_params = 10
     >>> momentum_values = _sample_relativistic_momentum(m=1.0, c=1.0, n_params=n_params)
     >>> len(momentum_values) == n_params
@@ -199,19 +203,6 @@ def _sample_relativistic_momentum(m, c, n_params,
             """
             Logarithm of pdf of (multivariate) generalized
             hyperbolic distribution.
-
-            XXX: Paper reference
-            XXX: Return type
-
-            Parameters
-            ----------
-            p : TODO
-                Momentum
-
-            Returns
-            -------
-            TODO
-
             """
             from numpy import sqrt
             return -m * c ** 2 * sqrt(p ** 2 / (m ** 2 * c ** 2) + 1.)
