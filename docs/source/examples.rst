@@ -5,8 +5,8 @@ Examples
 ********
 
 
-RSGHMC
-======
+Samplers On Various Functions
+=============================
 
 .. toctree::
    :maxdepth: 3
