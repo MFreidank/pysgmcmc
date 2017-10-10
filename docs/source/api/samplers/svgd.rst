@@ -1,6 +1,6 @@
-*****
+****
 SVGD
-*****
+****
 
 .. currentmodule:: pysgmcmc.samplers.svgd
 
