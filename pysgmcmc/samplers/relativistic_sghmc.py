@@ -105,7 +105,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
         momentum = [
             tf.Variable(momentum_sample, dtype=dtype)
             for momentum_sample in _sample_relativistic_momentum(
-                mass=mass, c=speed_of_light, n_params=len(self.params)
+                m=mass, c=speed_of_light, n_params=len(self.params)
             )
         ]
 
@@ -178,7 +178,10 @@ def _sample_relativistic_momentum(m, c, n_params,
 
     Examples
     ----------
-    TODO
+    >>> n_params = 10
+    >>> momentum_values = _sample_relativistic_momentum(m=1.0, c=1.0, n_params=n_params)
+    >>> len(momentum_values) == n_params
+    True
 
     See also
     ----------
