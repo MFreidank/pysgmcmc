@@ -392,7 +392,7 @@ def pdist(tensor, metric="euclidean"):
 
     """
 
-    assert isinstance(tensor, tf.Tensor), "tensor_utils.pdist: Input must be a `tensorflow.Tensor` instance."
+    assert isinstance(tensor, (tf.Variable, tf.Tensor,)), "tensor_utils.pdist: Input must be a `tensorflow.Tensor` instance."
 
     if len(tensor.shape.as_list()) != 2:
         raise ValueError('tensor_utils.pdist: A 2-d tensor must be passed.')
@@ -607,3 +607,27 @@ def uninitialized_params(params, session):
     )
 
     return [param for param, flag in zip(params, init_flag) if not flag]
+
+
+def all_uninitialized_variables(session, scope=None):
+    """ Return all uninitialized `tensorflow.Variable` objects in the
+        current default graph. Uses `session` to determine if a variable
+        was initialized.
+
+    Parameters
+    ----------
+    session : tf.Session
+        Session used to determine which variables are uninitialized.
+
+    Returns
+    ----------
+    params_uninitialized: list of tensorflow.Variable objects
+        All `tensorflow.Variable` objects in the current default graph
+        that were not yet initialized.
+
+    """
+
+    return uninitialized_params(
+        tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope),
+        session=session
+    )

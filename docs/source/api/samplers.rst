@@ -14,4 +14,5 @@ Samplers
    samplers/sghmc
    samplers/relativistic_sghmc
    samplers/sgld
+   samplers/sgvd
    samplers/base_classes
