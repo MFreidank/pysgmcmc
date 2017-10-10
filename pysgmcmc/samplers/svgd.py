@@ -28,7 +28,7 @@ class SVGDSampler(MCMCSampler):
 
         Parameters
         ----------
-        particles : tf.Variable
+        particles : tensorflow.Variable
             Variable with shape (n_particles, target_parameter_dimension)
             that represents a cloud of particles which are propagated through
             space at every step and averaged to obtain samples.
