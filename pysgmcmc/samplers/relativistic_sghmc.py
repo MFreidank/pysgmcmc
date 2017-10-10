@@ -23,7 +23,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
 
     def __init__(self, params, cost_fun, batch_generator=None,
                  stepsize_schedule=ConstantStepsizeSchedule(0.001),
-                 mass=1.0, c=1.0, D=1.0, Bhat=0.0,
+                 mass=1.0, speed_of_light=1.0, D=1.0, Bhat=0.0,
                  session=tf.get_default_session(), dtype=tf.float64, seed=None):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
             for later queries.
@@ -51,8 +51,8 @@ class RelativisticSGHMCSampler(MCMCSampler):
             mass constant.
             Defaults to `1.0`.
 
-        c : float, optional
-            "Speed of light" constant.
+        speed_of_light : float, optional
+            "Speed of light" constant. TODO EXTEND DOKU
             Defaults to `1.0`.
 
         D : float, optional
@@ -105,12 +105,14 @@ class RelativisticSGHMCSampler(MCMCSampler):
         momentum = [
             tf.Variable(momentum_sample, dtype=dtype)
             for momentum_sample in _sample_relativistic_momentum(
-                mass=mass, c=c, n_params=len(self.params)
+                mass=mass, c=speed_of_light, n_params=len(self.params)
             )
         ]
 
+        # In internal implementation, stick to mathematical formulas.
+        # For users, prefer readability.
         m = tf.constant(mass, dtype=dtype)
-        c = tf.constant(c, dtype=dtype)
+        c = tf.constant(speed_of_light, dtype=dtype)
 
         for i, (Param, Grad) in enumerate(zip(params, grads)):
             Vectorized_Param = self.vectorized_params[i]
@@ -135,14 +137,61 @@ class RelativisticSGHMCSampler(MCMCSampler):
             )
 
 
-def _sample_relativistic_momentum(mass, c, n_params,
+def _sample_relativistic_momentum(m, c, n_params,
                                   bounds=(float("-inf"), float("inf"))):
+    """
+    Use adaptive rejection sampling (here: provided by external library `pyARS`)
+    to sample initial values for relativistic momentum `p`.
+    The relativistic momentum variable in Relativistic MCMC has (marginal)
+    distribution
+    .. math:: \\propto e^{-K(p)}
+    where :math:`K(p)` is the relativistic kinetic energy.
+    This distribution is a multivariate generalisation of the symmetric
+    hyperbolic distribution, which cannot easily be sampled directly.
+    Therefore we resort to *adaptive rejection sampling* to generate our samples
+    and initialize our momentum terms properly.
+
+    See `the paper "Relativistic Monte Carlo" <http://proceedings.mlr.press/v54/lu17b/lu17b.pdf/#page=2>`_ for more information on Relativistic Hamiltonian Dynamics.
+
+    See `Generalized hyperbolic distribution <https://en.wikipedia.org/wiki/Generalised_hyperbolic_distribution>`_ for more information on our target distribution.
+
+    Parameters
+    ----------
+    m : float
+        Mass constant used for sampling.
+
+    c : float
+        Speed of light constant used for sampling.
+
+    n_params : int
+        Number of target parameters of the target log pdf to sample from.
+
+    bounds : Tuple[float, float], optional
+        Adaptive rejection sampling bounds to use during sampling.
+        Defaults to `(float("-inf"), float("inf"))`, i.e. unbounded
+        adaptive rejection sampling.
+
+    Returns
+    ----------
+    momentum_samples : list
+        TODO DOKU
+
+    Examples
+    ----------
+    TODO
+
+    See also
+    ----------
+    `pyARS`: Our external dependency that handles adaptive rejection sampling.
+             Available `here <https://github.com/MFreidank/pyars>`_.
+
+    """
     # XXX: Remove when more is supported, currently only floats for mass
     # and c are.
-    assert isinstance(mass, float)
+    assert isinstance(m, float)
     assert isinstance(c, float)
 
-    def generate_relativistic_logpdf(mass, c):
+    def generate_relativistic_logpdf(m, c):
         def relativistic_log_pdf(p):
             """
             Logarithm of pdf of (multivariate) generalized
@@ -162,10 +211,10 @@ def _sample_relativistic_momentum(mass, c, n_params,
 
             """
             from numpy import sqrt
-            return -mass * c ** 2 * sqrt(p ** 2 / (mass ** 2 * c ** 2) + 1.)
+            return -m * c ** 2 * sqrt(p ** 2 / (m ** 2 * c ** 2) + 1.)
         return relativistic_log_pdf
 
-    momentum_log_pdf = generate_relativistic_logpdf(mass=mass, c=c)
+    momentum_log_pdf = generate_relativistic_logpdf(m=m, c=c)
     return adaptive_rejection_sampling(
         logpdf=momentum_log_pdf, a=-10.0, b=10.0,
         domain=bounds, n_samples=n_params

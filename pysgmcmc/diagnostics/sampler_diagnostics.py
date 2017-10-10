@@ -3,9 +3,13 @@ from pymc3.diagnostics import (
 )
 from pysgmcmc.diagnostics.sample_chains import pymc3_multitrace
 
+
 def _pymc3_diagnostic(get_sampler, pymc3_diagnostic_fun, n_chains=2,
                       samples_per_chain=100):
-    """TODO: Docstring for _pymc3_diagnostic.
+    """
+    Compute pymc3 diagnostic defined by callable `pymc3_diagnostic_fun`
+    on sampler returned by callable `get_sampler`. To compute the diagnostic,
+    extract `n_chains` chains with `samples_per_chain` samples each.
 
     Parameters
     ----------
@@ -29,12 +33,7 @@ def _pymc3_diagnostic(get_sampler, pymc3_diagnostic_fun, n_chains=2,
     Returns
     ----------
     diagnostic_output
-        TODO: DOKU
-
-
-    Examples
-    ----------
-    TODO
+        Diagnostic result computed by pymc3.
 
     """
 
