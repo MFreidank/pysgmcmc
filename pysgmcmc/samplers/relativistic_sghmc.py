@@ -16,8 +16,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
         See [1] for more details on Relativistic SGHMC.
 
         [1] X. Lu, V. Perrone, L. Hasenclever, Y. W. Teh, S. J. Vollmer
-            In Proceedings of the 20 th International Conference on Artifi-
-cial Intelligence and Statistics (AISTATS) 2017\n
+            In Proceedings of the 20 th International Conference on Artificial Intelligence and Statistics (AISTATS) 2017\n
             `Relativistic Monte Carlo <http://proceedings.mlr.press/v54/lu17b/lu17b.pdf>`_
 
     """
@@ -95,6 +94,9 @@ cial Intelligence and Statistics (AISTATS) 2017\n
             seed=seed, dtype=dtype, session=session
         )
 
+        # Use `-self.Cost` since the rest of the implementation expects
+        # a log likelihood (instead of the *negative* log likelihood that
+        # we normally use as costs)
         grads = [vectorize(gradient) for gradient in tf.gradients(-self.Cost, params)]
 
         D = tf.constant(D, dtype=dtype)
