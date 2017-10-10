@@ -151,7 +151,7 @@ def _sample_relativistic_momentum(m, c, n_params,
     Therefore we resort to *adaptive rejection sampling* to generate our samples
     and initialize our momentum terms properly.
 
-    See `the paper "Relativistic Monte Carlo" <http://proceedings.mlr.press/v54/lu17b/lu17b.pdf/#page=2>`_ for more information on Relativistic Hamiltonian Dynamics.
+    See `the paper "Relativistic Monte Carlo" <http://proceedings.mlr.press/v54/lu17b/lu17b.pdf#page=2>`_ for more information on Relativistic Hamiltonian Dynamics.
 
     See `Generalized hyperbolic distribution <https://en.wikipedia.org/wiki/Generalised_hyperbolic_distribution>`_ for more information on our target distribution.
 
