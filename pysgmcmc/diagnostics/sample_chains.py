@@ -110,11 +110,45 @@ class PYSGMCMCTrace(object):
         trace : PYSGMCMCTrace
             A wrapper around `n_samples` samples for variables with names
             `varnames` extracted from `sampler`.
-            Id of this trace will be `chain_id`.
+            (Unique) chain id of this trace will be `chain_id`.
 
         Examples
         ----------
-        TODO
+        Below we show how to use this classmethod to obtain a `PYSGMCMCTrace`.
+        Furthermore, we demonstrate that we can apply burn-in steps prior
+        to passing the sampler, which enables us to automatically thin/remove
+        all burn-in samples prior to recording the actual trace.
+
+        We start by defining our problem, as cost function we use the negative
+        log likelihood of a mixture of gaussians (gmm1).
+
+        >>> import tensorflow as tf
+        >>> from itertools import islice
+        >>> from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler
+        >>> from pysgmcmc.diagnostics.objective_functions import gmm1_log_likelihood
+        >>> gmm1_negative_log_likelihood = lambda *args, **kwargs: -gmm1_log_likelihood(*args, **kwargs)
+        >>> session = tf.Session()
+        >>> params = [tf.Variable(0., dtype=tf.float32, name="p")]
+
+        Next, we set up our sampler and perform 100 steps of burn-in.
+        We skip the samples obtained and do not record them as part of our
+        `PYSGMCMCTrace`.
+
+        >>> n_burn_in_steps = 100
+        >>> sampler = RelativisticSGHMCSampler(params=params, cost_fun=gmm1_negative_log_likelihood, dtype=tf.float32, session=session)
+        >>> session.run(tf.global_variables_initializer())
+        >>> _ = islice(sampler, n_burn_in_steps)
+
+        Finally, we extract a `PYSGMCMCTrace` from the (already burnt-in)
+        sampler using `PYSGMCMCTrace.from_sampler`.
+
+        >>> n_samples = 1000
+        >>> varnames = ["p"]
+        >>> chain_id = 1234  # unique id
+        >>> trace = PYSGMCMCTrace.from_sampler(sampler=sampler, n_samples=n_samples, varnames=varnames, chain_id=chain_id)
+        >>> session.close()
+        >>> isinstance(trace, PYSGMCMCTrace), len(trace), trace.varnames
+        (True, 1000, ['p'])
 
         """
         from itertools import islice
@@ -225,7 +259,6 @@ def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100,
     ----------
     multitrace : pymc3.backends.base.MultiTrace
         TODO: DOKU
-
 
     Examples
     ----------
