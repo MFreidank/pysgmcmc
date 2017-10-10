@@ -610,9 +610,10 @@ def uninitialized_params(params, session):
 
 
 def all_uninitialized_variables(session, scope=None):
-    """ Return all uninitialized `tensorflow.Variable` objects in the
-        current default graph. Uses `session` to determine if a variable
-        was initialized.
+    """
+    Return all uninitialized `tensorflow.Variable` objects in the
+    current default graph. Uses `session` to determine if a variable
+    was initialized.
 
     Parameters
     ----------

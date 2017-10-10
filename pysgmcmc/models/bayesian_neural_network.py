@@ -428,6 +428,9 @@ class BayesianNeuralNetwork(object):
             self.sampling_method, **self.sampler_kwargs
         )
 
+        # XXX: For sgvd, this will cause problems, since all variables will
+        # be assigned the same value again - special case it or make other
+        # samplers run appropriate initializers (at the end of __init__)?
         self.session.run(tf.global_variables_initializer())
 
         logging.info("Starting sampling")

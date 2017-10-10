@@ -7,7 +7,8 @@ class StepsizeSchedule(object):
 
     @abstractmethod
     def __next__(self):
-        """ Compute and return the next stepsize according to this schedule.
+        """
+        Compute and return the next stepsize according to this schedule.
 
         Returns
         ----------
@@ -21,12 +22,12 @@ class StepsizeSchedule(object):
 
     @abstractmethod
     def update(self, *args, **kwargs):
-        """ Update this schedule with new information. What information
-            will be relevant depends on the type of schedule used.
-            Information may e.g. include cost values for the last step size
-            used, effective sample sizes of a sampler, values of other
-            hyperparameters etc.
-
+        """
+        Update this schedule with new information. What information
+        will be relevant depends on the type of schedule used.
+        Information may e.g. include cost values for the last step size
+        used, effective sample sizes of a sampler, values of other
+        hyperparameters etc.
         """
         raise NotImplementedError()
 
@@ -37,8 +38,9 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
         self.initial_value = constant_value
 
     def __next__(self):
-        """ Calling `next(schedule)` always returns the schedules initial value,
-            which is never changed.
+        """
+        Calling `next(schedule)` on a constant stepsize schedule
+        will always return the schedules initial value.
 
         Returns
         ----------

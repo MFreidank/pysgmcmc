@@ -9,7 +9,7 @@ from pysgmcmc.samplers.base_classes import MCMCSampler
 # and later by finding a joint interface for samplers and variational methods
 
 
-class SteinVariationalGradientDescentSampler(MCMCSampler):
+class SVGDSampler(MCMCSampler):
     """ Stein Variational Gradient Descent Sampler.
 
         See [1] for more details on stein variational gradient descent.\n
