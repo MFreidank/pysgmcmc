@@ -2,7 +2,7 @@
 
 
 fast_tests() {
-    make -C pysgmcmc test-notebooks
+    make -C pysgmcmc test-notebooks && 
     py.test -v --doctest-modules --cov-config .coveragerc --cov=pysgmcmc --ignore=pysgmcmc/tests/bayesian_neural_network/test_bayesian_neural_network.py
 }
 
