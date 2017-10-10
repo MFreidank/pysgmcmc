@@ -140,7 +140,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
 def _sample_relativistic_momentum(m, c, n_params,
                                   bounds=(float("-inf"), float("inf"))):
     """
-    Use adaptive rejection sampling (here: provided by external library `pyARS`)
+    Use adaptive rejection sampling (here: provided by external library `ARSpy`)
     to sample initial values for relativistic momentum `p`.
     The relativistic momentum variable in Relativistic MCMC has (marginal)
     distribution
@@ -189,7 +189,7 @@ def _sample_relativistic_momentum(m, c, n_params,
 
     See also
     ----------
-    `pyARS`: Our external dependency that handles adaptive rejection sampling.
+    `ARSpy`: Our external dependency that handles adaptive rejection sampling.
              Available `here <https://github.com/MFreidank/pyars>`_.
 
     """
