@@ -55,7 +55,7 @@ class SGHMCSampler(BurnInMCMCSampler):
             we can use in our samplers.
             See also: `pysgmcmc.stepsize_schedules`
 
-        burn_in_steps: int, optional
+        burn_in_steps : int, optional
             Number of burn-in steps to perform. In each burn-in step, this
             sampler will adapt its own internal parameters to decrease its error.
             Defaults to `3000`.\n
