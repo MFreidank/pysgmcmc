@@ -3,10 +3,11 @@ from pysgmcmc.tensor_utils import pdist, squareform, median
 from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 from pysgmcmc.samplers.base_classes import MCMCSampler
 
-# XXX: Figure out how to apply this method to learn BNNs,
-# -- with a common interface for the user.
-# first by spawning a new bnn class that uses variational methods
-# and later by finding a joint interface for samplers and variational methods
+
+# XXX: Interface needs to change more: particles should be List[List[tensorflow.Variable]]
+# where each inner list is one guess of a network.
+# This would enable the bnn code to change such that SVGD becomes applicable
+# to our BNN.
 
 
 class SVGDSampler(MCMCSampler):
@@ -28,10 +29,9 @@ class SVGDSampler(MCMCSampler):
 
         Parameters
         ----------
-        particles : tensorflow.Variable
-            Variable with shape (n_particles, target_parameter_dimension)
-            that represents a cloud of particles which are propagated through
-            space at every step and averaged to obtain samples.
+        particles : List[tensorflow.Variable]
+            List of particles each representing a (different) guess of the
+            target parameters of this sampler.
 
         cost_fun : callable
             Function that takes `params` of *one* particle as input and
@@ -82,7 +82,7 @@ class SVGDSampler(MCMCSampler):
         assert isinstance(fudge_factor, (int, float))
         assert hasattr(cost_fun, "__call__")
 
-        self.particles = particles
+        self.particles = tf.stack(particles)
 
         def cost_fun_wrapper(params):
             return tf.map_fn(lambda particle: cost_fun(particle), self.particles)
@@ -90,7 +90,7 @@ class SVGDSampler(MCMCSampler):
         cost_fun_wrapper.__name__ = cost_fun.__name__
 
         super().__init__(
-            params=[particles],
+            params=particles,
             cost_fun=cost_fun_wrapper,
             batch_generator=batch_generator,
             session=session, seed=seed, dtype=dtype,
@@ -106,7 +106,7 @@ class SVGDSampler(MCMCSampler):
         )
 
         self.n_particles = tf.cast(
-            particles.shape[0], self.dtype
+            self.particles.shape[0], self.dtype
         )
 
         Historical_grad = tf.get_variable(
@@ -120,7 +120,7 @@ class SVGDSampler(MCMCSampler):
 
         lnpgrad = tf.squeeze(tf.gradients(self.Cost, self.particles))
 
-        kernel_matrix, kernel_gradients = self.svgd_kernel(particles)
+        kernel_matrix, kernel_gradients = self.svgd_kernel(self.particles)
 
         grad_theta = tf.divide(
             tf.matmul(kernel_matrix, lnpgrad) + kernel_gradients,
@@ -137,10 +137,18 @@ class SVGDSampler(MCMCSampler):
             Fudge_factor + tf.sqrt(Historical_grad_t)
         )
 
+        for i, param in enumerate(self.params):
+            self.Theta_t[i] = tf.assign_sub(
+                param,
+                self.Epsilon * adj_grad[i]
+            )
+
+        """
         self.Theta_t = tf.assign_sub(
             self.particles,
             self.Epsilon * adj_grad
         )
+        """
 
     def svgd_kernel(self, particles):
         """ Calculate a kernel matrix with corresponding derivatives
