@@ -105,7 +105,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
         momentum = [
             tf.Variable(momentum_sample, dtype=dtype)
             for momentum_sample in _sample_relativistic_momentum(
-                m=mass, c=speed_of_light, n_params=len(self.params)
+                m=mass, c=speed_of_light, n_params=len(self.params), seed=self.seed
             )
         ]
 
@@ -119,7 +119,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
 
             p_grad = self.Epsilon * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
 
-            n = tf.sqrt(self.Epsilon * (2 * D - self.Epsilon * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape, dtype=dtype)
+            n = tf.sqrt(self.Epsilon * (2 * D - self.Epsilon * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape, dtype=dtype, seed=seed)
             Momentum_t = tf.assign_add(
                 momentum[i],
                 tf.reshape(self.Epsilon * Grad + n - D * p_grad, momentum[i].shape)
@@ -138,7 +138,8 @@ class RelativisticSGHMCSampler(MCMCSampler):
 
 
 def _sample_relativistic_momentum(m, c, n_params,
-                                  bounds=(float("-inf"), float("inf"))):
+                                  bounds=(float("-inf"), float("inf")),
+                                  seed=None):
     """
     Use adaptive rejection sampling (here: provided by external library `ARSpy`)
     to sample initial values for relativistic momentum `p`.
@@ -170,6 +171,9 @@ def _sample_relativistic_momentum(m, c, n_params,
         Adaptive rejection sampling bounds to use during sampling.
         Defaults to `(float("-inf"), float("inf"))`, i.e. unbounded
         adaptive rejection sampling.
+
+    seed : int
+        Random seed to use for adaptive rejection sampling.
 
     Returns
     ----------
@@ -211,5 +215,6 @@ def _sample_relativistic_momentum(m, c, n_params,
     momentum_log_pdf = generate_relativistic_logpdf(m=m, c=c)
     return adaptive_rejection_sampling(
         logpdf=momentum_log_pdf, a=-10.0, b=10.0,
-        domain=bounds, n_samples=n_params
+        domain=bounds, n_samples=n_params,
+        seed=seed
     )
