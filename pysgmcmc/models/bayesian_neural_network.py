@@ -414,11 +414,15 @@ class BayesianNeuralNetwork(object):
             "session": self.session,
             "seed": self.seed,
             "stepsize_schedule": self.stepsize_schedule,
-            # Not always used, only for
-            # `pysgmcmc.sampling.BurnInMCMCSampler` subclasses.
-            "scale_grad": n_datapoints,
-            "burn_in_steps": self.burn_in_steps,
         })
+        if Sampler.is_burn_in_mcmc(self.sampling_method):
+            # Not always used, only for `pysgmcmc.sampling.BurnInMCMCSampler`
+            # subclasses.
+            self.sampler_kwargs.update({
+                "scale_grad": n_datapoints,
+                "burn_in_steps": self.burn_in_steps,
+            })
+
         # NOTE: Burn_in_steps might not be a necessary parameter anymore,
         # if we find that some samplers do not need it.
         # In this case, we might get rid of it and make users specify it

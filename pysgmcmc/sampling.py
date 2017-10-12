@@ -10,6 +10,35 @@ class Sampler(Enum):
     SGLD = "SGLD"
 
     @staticmethod
+    def is_burn_in_mcmc(sampling_method):
+        """
+        Static method that returns true if `sampling_method` is a
+        burn_in sampler (e.g. there is an entry for it in `Sampler` enum).
+
+        Examples
+        ----------
+
+        Burn-in sampling methods give `True`:
+
+        >>> Sampler.is_burn_in_mcmc(Sampler.SGHMC)
+        True
+
+        Other sampling methods give `False`:
+
+        >>> Sampler.is_burn_in_mcmc(Sampler.RelativisticSGHMC)
+        False
+
+        Other input types give `False`:
+
+        >>> Sampler.is_supported(0)
+        False
+        >>> Sampler.is_supported("test")
+        False
+
+        """
+        return sampling_method in (Sampler.SGHMC, Sampler.SGLD)
+
+    @staticmethod
     def is_supported(sampling_method):
         """
         Static method that returns true if `sampling_method` is a
