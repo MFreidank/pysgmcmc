@@ -346,12 +346,9 @@ class BayesianNeuralNetwork(object):
 
         # prior for the variance
         log_like += log_variance_prior_log_like(f_log_var) / n_examples
-        # log_like += self.variance_prior.log_like(f_log_var) / n_examples
 
         # prior for the weights
         log_like += weight_prior_log_like(tf.trainable_variables()) / n_examples
-        # log_like += (self.weight_prior.log_like(tf.trainable_variables()) /
-        # n_examples)
 
         return -log_like, tf.reduce_mean(mse)
 
@@ -401,6 +398,8 @@ class BayesianNeuralNetwork(object):
 
         # remove any leftover samples from previous "train" calls
         self.samples.clear()
+
+        # XXX: Print batches and check that they are the same thing
 
         self.sampler_kwargs.update({
             "params": self.network_params,
