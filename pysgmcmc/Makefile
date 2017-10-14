@@ -28,7 +28,7 @@ full-tests: full-test
 # mutations. This allows for some validation of our test suite 
 # to see how well it tracks our codebase.
 mutation-tests:
-	cd .. && cosmic-ray run --timeout 20 pysgmcmc tests
+	cd .. && cosmic-ray run --timeout 20 pysgmcmc tests | tee mutation_test_results.txt
 
 doc:
 	make -C ../docs html
