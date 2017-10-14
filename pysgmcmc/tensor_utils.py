@@ -80,30 +80,27 @@ def vectorize(tensor):
     >>> v = vectorize([1.0])
     Traceback (most recent call last):
      ...
-    AssertionError: Unsupported input to tensor_utils.vectorize: [1.0] is not a tensorflow.Tensor subclass
+    ValueError: Unsupported input to tensor_utils.vectorize: [1.0] is not a tensorflow.Tensor subclass
 
     """
 
-    error_msg = ("Unsupported input to tensor_utils.vectorize: "
-                 "{value} is not a tensorflow.Tensor subclass".format(value=tensor))
+    def vectorized_shape(tensor):
+        # Compute vectorized shape
+        n_elements = np.prod(np.asarray(tensor.shape, dtype=np.int))
+        return (n_elements, 1)
 
-    assert isinstance(tensor, (tf.Variable, tf.Tensor,)), error_msg
-
-    # Compute vectorized shape
-    n_elements = np.prod(np.asarray(tensor.shape, dtype=np.int))
-    vectorized_shape = (n_elements, 1)
-
-    if type(tensor) == tf.Variable:
+    if isinstance(tensor, tf.Variable):
         return tf.Variable(
-            tf.reshape(tensor.initialized_value(), shape=vectorized_shape)
+            tf.reshape(tensor.initialized_value(), shape=vectorized_shape(tensor))
         )
 
     elif isinstance(tensor, tf.Tensor):
-        return tf.reshape(tensor, shape=vectorized_shape)
+        return tf.reshape(tensor, shape=vectorized_shape(tensor))
 
     else:
         raise ValueError(
-            error_msg
+            "Unsupported input to tensor_utils.vectorize: "
+            "{value} is not a tensorflow.Tensor subclass".format(value=tensor)
         )
 
 
@@ -607,28 +604,3 @@ def uninitialized_params(params, session):
     )
 
     return [param for param, flag in zip(params, init_flag) if not flag]
-
-
-def all_uninitialized_variables(session, scope=None):
-    """
-    Return all uninitialized `tensorflow.Variable` objects in the
-    current default graph. Uses `session` to determine if a variable
-    was initialized.
-
-    Parameters
-    ----------
-    session : tf.Session
-        Session used to determine which variables are uninitialized.
-
-    Returns
-    ----------
-    params_uninitialized: list of tensorflow.Variable objects
-        All `tensorflow.Variable` objects in the current default graph
-        that were not yet initialized.
-
-    """
-
-    return uninitialized_params(
-        tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope),
-        session=session
-    )

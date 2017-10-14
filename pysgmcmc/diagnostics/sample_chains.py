@@ -47,6 +47,14 @@ class PYSGMCMCTrace(object):
         >>> trace.n_vars, trace.varnames == names, len(trace.varnames) == trace.n_vars
         (2, True, True)
 
+        If `varnames` is `None`, anonymous names resulting from enumerating all
+        target parameters are used:
+
+        >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
+        >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=None)
+        >>> trace.varnames
+        ['0', '1']
+
         """
         self.chain = chain_id
 
@@ -156,16 +164,16 @@ class PYSGMCMCTrace(object):
             sample for sample, _ in islice(sampler, n_samples)
         ]
 
-        # try to read variable names from sampler parameters
+        # ensure all sampler target parameters have a name
+        # => tensorflow names variables automatically, so this assumption
+        # is fair
+        assert all(hasattr(param, "name") for param in sampler.params)
+
+        # read variable names from sampler parameters
         if varnames is None:
-            try:
-                varnames = [
-                    param.name for param in sampler.params
-                ]
-            except AttributeError:
-                # could not read sampler parameters, passing `None`
-                # which will use enumerated names for the parameters
-                varnames = None
+            varnames = [
+                param.name for param in sampler.params
+            ]
         return PYSGMCMCTrace(chain_id, samples, varnames)
 
     def __len__(self):
@@ -206,6 +214,7 @@ class PYSGMCMCTrace(object):
         This method makes each variable in a trace accessible by its name:
 
         >>> import tensorflow as tf
+        >>> graph = tf.Graph()
         >>> params = [tf.Variable(0., name="x"), tf.Variable(0., name="y")]
         >>> params[0].name, params[1].name
         ('x_1:0', 'y_1:0')
@@ -218,6 +227,17 @@ class PYSGMCMCTrace(object):
         >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=names)
         >>> trace.get_values(varname="x_1:0"), trace.get_values(varname="y_1:0")
         (array([ 0. ,  0.2,  0.3,  0.1]), array([ 0. , -0.2, -0.5,  0. ]))
+
+        If a queried name does not correspond to any parameter in the trace,
+        a `ValueError` is raised:
+
+        >>> names = [variable.name for variable in params]
+        >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
+        >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=names)
+        >>> trace.get_values(varname="FANTASYVARNAME")
+        Traceback (most recent call last):
+          ...
+        ValueError: Queried `PYSGMCMCTrace` for values of parameter with name 'FANTASYVARNAME' but the trace does not contain any parameter of that name. Known variable names were: '['x_1:0', 'y_1:0']'
 
         """
 

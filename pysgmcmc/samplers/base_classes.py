@@ -273,18 +273,11 @@ class MCMCSampler(object):
 
         """
         assert (feed_dict is None or hasattr(feed_dict, "update"))
+        # Ensure self.Theta_t and self.Cost are defined
+        assert hasattr(self, "Theta_t") or not hasattr(self, "Cost")
 
         if feed_dict is None:
             feed_dict = dict()
-
-        if not hasattr(self, "Theta_t") or not hasattr(self, "Cost"):
-            # Ensure self.Theta_t and self.Cost are defined
-            raise ValueError(
-                "MCMCSampler subclass attempted to compute the next sample "
-                "with corresponding costs, but one of the "
-                "two necessary sampler member variables 'Theta_t' and 'Cost' "
-                "were not found in the samplers instance dictionary."
-            )
 
         feed_dict.update(self._next_batch())
         feed_dict.update(self._next_stepsize())
