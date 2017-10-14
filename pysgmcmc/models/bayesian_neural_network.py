@@ -150,7 +150,7 @@ def weight_prior_log_like(parameters, wdecay=1., dtype=tf.float64):
 
 
 class BayesianNeuralNetwork(object):
-    def __init__(self, sampling_method=Sampler.SGHMC,
+    def __init__(self, session, sampling_method=Sampler.SGHMC,
                  get_net=get_default_net,
                  batch_generator=generate_batches,
                  batch_size=20,
@@ -158,7 +158,7 @@ class BayesianNeuralNetwork(object):
                  n_nets=100, n_iters=50000,
                  burn_in_steps=1000, sample_steps=100,
                  normalize_input=True, normalize_output=True,
-                 seed=None, session=None, **sampler_kwargs):
+                 seed=None, **sampler_kwargs):
         """
         Bayesian Neural Networks use Bayesian methods to estimate the posterior
         distribution of a neural network's weights. This allows to also
@@ -176,6 +176,10 @@ class BayesianNeuralNetwork(object):
 
         Parameters
         ----------
+        session: tensorflow.Session
+            A `tensorflow.Session` object used to delegate computations
+            performed in this network over to `tensorflow`.
+
         sampling_method : Sampler, optional
             Method used to sample networks for this BNN.
             Defaults to `Sampler.SGHMC`.
@@ -233,12 +237,6 @@ class BayesianNeuralNetwork(object):
             Random seed to use in this BNN.
             Defaults to `None`.
 
-        session: tensorflow.Session, optional
-            A `tensorflow.Session` object used to delegate computations
-            performed in this network over to `tensorflow`.
-            Defaults to `None` which indicates we should start a fresh
-            `tensorflow.Session`.
-
         """
 
         # Sanitize inputs
@@ -293,9 +291,6 @@ class BayesianNeuralNetwork(object):
         self.seed = seed
 
         self.session = session
-
-        if not self.session:
-            self.session = tf.Session()
 
         self.is_trained = False
 
