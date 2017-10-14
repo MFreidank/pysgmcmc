@@ -80,7 +80,7 @@ class SVGDSampler(MCMCSampler):
 
         assert isinstance(alpha, (int, float))
         assert isinstance(fudge_factor, (int, float))
-        assert hasattr(cost_fun, "__call__")
+        assert callable(cost_fun)
 
         self.particles = tf.stack(particles)
 

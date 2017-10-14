@@ -5,6 +5,9 @@ class StepsizeSchedule(object):
     """ Generic base class for all stepsize schedules. """
     __metaclass__ = ABCMeta
 
+    def __init__(self, initial_value):
+        self.initial_value = initial_value
+
     @abstractmethod
     def __next__(self):
         """
@@ -34,8 +37,6 @@ class StepsizeSchedule(object):
 
 class ConstantStepsizeSchedule(StepsizeSchedule):
     """ Trivial schedule that keeps the stepsize at a constant value.  """
-    def __init__(self, constant_value):
-        self.initial_value = constant_value
 
     def __next__(self):
         """
@@ -45,8 +46,7 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
         Returns
         ----------
         constant_value : float
-            Constant value associated with this `ConstantStepsizeSchedule`
-            object.
+            Constant value associated with this schedule.
 
         Examples
         ----------

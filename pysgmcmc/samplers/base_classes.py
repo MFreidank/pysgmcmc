@@ -3,6 +3,7 @@
 """
 Abstract base classes for all MCMC methods. Helps unify our sampler interface.
 """
+# XXX NEXT METHOD NEEDS DOKU FOR FEED_DICT
 import abc
 import tensorflow as tf
 
@@ -86,6 +87,7 @@ class MCMCSampler(object):
 
         assert hasattr(stepsize_schedule, "update")
         assert hasattr(stepsize_schedule, "__next__")
+        assert hasattr(stepsize_schedule, "initial_value")
 
         self.stepsize_schedule = stepsize_schedule
 
@@ -117,7 +119,8 @@ class MCMCSampler(object):
         )
         self.session.run(init)
 
-        self.Theta_t = [None] * len(params)  # query this later to get next sample
+        # query this later to determine the next sample
+        self.Theta_t = [None] * len(params)
 
     def _next_batch(self):
         """ Get a dictionary mapping `tensorflow.Placeholder` onto
@@ -181,7 +184,8 @@ class MCMCSampler(object):
 
     # XXX: Doku
     def _next_stepsize(self):
-        return {self.Epsilon: next(self.stepsize_schedule)}
+        epsilon = next(self.stepsize_schedule)
+        return {self.Epsilon: epsilon}
 
     def _draw_noise_sample(self, Sigma, Shape):
         """ Generate a single random normal sample with shape `Shape` and
@@ -237,7 +241,7 @@ class MCMCSampler(object):
         """
         return self
 
-    def __next__(self, feed_vals=None):
+    def __next__(self, feed_dict=None):
         """ Compute and return the next sample and
             next cost values for this sampler.
 
@@ -268,8 +272,10 @@ class MCMCSampler(object):
         >>> tf.reset_default_graph()  # to avoid polluting test environment
 
         """
-        if feed_vals is None:
-            feed_vals = dict()
+        assert (feed_dict is None or hasattr(feed_dict, "update"))
+
+        if feed_dict is None:
+            feed_dict = dict()
 
         if not hasattr(self, "Theta_t") or not hasattr(self, "Cost"):
             # Ensure self.Theta_t and self.Cost are defined
@@ -280,10 +286,10 @@ class MCMCSampler(object):
                 "were not found in the samplers instance dictionary."
             )
 
-        feed_vals.update(self._next_batch())
-        feed_vals.update(self._next_stepsize())
+        feed_dict.update(self._next_batch())
+        feed_dict.update(self._next_stepsize())
         params, cost = self.session.run(
-            [self.Theta_t, self.Cost], feed_dict=feed_vals
+            [self.Theta_t, self.Cost], feed_dict=feed_dict
         )
 
         if len(params) == 1:
@@ -392,7 +398,7 @@ class BurnInMCMCSampler(MCMCSampler):
 
         return self.n_iterations < self.burn_in_steps
 
-    def __next__(self, feed_vals=None):
+    def __next__(self, feed_dict=None):
         """ Perform a sampler step:
             Compute and return the next sample and next cost values
             for this sampler.
@@ -411,19 +417,20 @@ class BurnInMCMCSampler(MCMCSampler):
             Current cost value of the last evaluated target parameter values.
 
         """
-        if feed_vals is None:
-            feed_vals = dict()
+        assert (feed_dict is None or hasattr(feed_dict, "update"))
 
-        feed_vals.update(self._next_batch())
+        if feed_dict is None:
+            feed_dict = dict()
 
         if self.is_burning_in:
-            # feed next stepsize value
-            feed_vals.update(self._next_stepsize())
+            # feed next batch and stepsize
+            feed_dict.update(self._next_batch())
+            feed_dict.update(self._next_stepsize())
 
             # perform a burn-in step = adapt the samplers mass matrix inverse
             params, cost, self.minv = self.session.run(
                 [self.Theta_t, self.Cost, self.Minv_t],
-                feed_dict=feed_vals
+                feed_dict=feed_dict
             )
 
             self.stepsize_schedule.update(params, cost)
@@ -432,4 +439,11 @@ class BurnInMCMCSampler(MCMCSampler):
             return params, cost
 
         # "standard" MCMC sampling
-        return super().__next__(feed_vals=dict(zip(self.Minv_t, self.minv)))
+        if self.burn_in_steps > 0:
+            assert hasattr(self, "Minv_t")
+            assert hasattr(self, "minv")
+
+            # feed tuned inverse of mass matrix (minv) during sampling
+            feed_dict = dict(zip(self.Minv_t, self.minv))
+
+        return super().__next__(feed_dict=feed_dict)

@@ -225,6 +225,7 @@ class SGHMCSampler(BurnInMCMCSampler):
 
                         #  }}} Draw random sample #
 
+
                         #  HMC Update {{{ #
 
                         # Equation 10: right side, where:
