@@ -30,43 +30,43 @@ from pysgmcmc.tensor_utils import safe_divide
 
 #  Default Network Architecture {{{ #
 
-def get_default_net(inputs, seed=None):
+def get_default_net(inputs, seed=None, dtype=tf.float64):
     from tensorflow.contrib.layers import variance_scaling_initializer as HeNormal
     fc_layer_1 = tf.layers.dense(
         inputs, units=50, activation=tf.tanh,
-        kernel_initializer=HeNormal(factor=1.0, dtype=tf.float64, seed=seed),
-        bias_initializer=tf.zeros_initializer(dtype=tf.float64),
+        kernel_initializer=HeNormal(factor=1.0, dtype=dtype, seed=seed),
+        bias_initializer=tf.zeros_initializer(dtype=dtype),
         name="fc_layer_1"
     )
 
     fc_layer_2 = tf.layers.dense(
         fc_layer_1, units=50, activation=tf.tanh,
-        kernel_initializer=HeNormal(factor=1.0, dtype=tf.float64, seed=seed),
-        bias_initializer=tf.zeros_initializer(dtype=tf.float64),
+        kernel_initializer=HeNormal(factor=1.0, dtype=dtype, seed=seed),
+        bias_initializer=tf.zeros_initializer(dtype=dtype),
         name="fc_layer_2"
     )
 
     fc_layer_3 = tf.layers.dense(
         fc_layer_2, units=50, activation=tf.tanh,
-        kernel_initializer=HeNormal(factor=1.0, dtype=tf.float64, seed=seed),
-        bias_initializer=tf.zeros_initializer(dtype=tf.float64),
+        kernel_initializer=HeNormal(factor=1.0, dtype=dtype, seed=seed),
+        bias_initializer=tf.zeros_initializer(dtype=dtype),
         name="fc_layer_3"
     )
 
     layer_4 = tf.layers.dense(
         fc_layer_3, units=1, activation=None,  # linear activation
-        kernel_initializer=HeNormal(factor=1.0, dtype=tf.float64, seed=seed),
-        bias_initializer=tf.zeros_initializer(dtype=tf.float64),
+        kernel_initializer=HeNormal(factor=1.0, dtype=dtype, seed=seed),
+        bias_initializer=tf.zeros_initializer(dtype=dtype),
         name="fc_layer_4"
     )
 
     output_bias = tf.Variable(
-        [[np.log(1e-3)]], dtype=tf.float64,
+        [[np.log(1e-3)]], dtype=dtype,
         name="output_bias"
     )
 
     output = tf.concat(
-        [layer_4, tf.ones_like(layer_4, dtype=tf.float64) * output_bias],
+        [layer_4, tf.ones_like(layer_4, dtype=dtype) * output_bias],
         axis=1,
         name="Network_Output"
     )
@@ -158,7 +158,7 @@ class BayesianNeuralNetwork(object):
                  n_nets=100, n_iters=50000,
                  burn_in_steps=1000, sample_steps=100,
                  normalize_input=True, normalize_output=True,
-                 seed=None, **sampler_kwargs):
+                 seed=None, dtype=tf.float64, **sampler_kwargs):
         """
         Bayesian Neural Networks use Bayesian methods to estimate the posterior
         distribution of a neural network's weights. This allows to also
@@ -237,6 +237,10 @@ class BayesianNeuralNetwork(object):
             Random seed to use in this BNN.
             Defaults to `None`.
 
+        dtype : tf.DType, optional
+            Tensorflow datatype to use for internal representation.
+            Defaults to `None`.
+
         """
 
         # Sanitize inputs
@@ -245,6 +249,8 @@ class BayesianNeuralNetwork(object):
         assert isinstance(burn_in_steps, int)
         assert isinstance(sample_steps, int)
         assert isinstance(batch_size, int)
+
+        assert isinstance(dtype, tf.DType)
 
         assert n_nets > 0
         assert n_iters > 0
@@ -290,6 +296,8 @@ class BayesianNeuralNetwork(object):
 
         self.seed = seed
 
+        self.dtype = dtype
+
         self.session = session
 
         self.is_trained = False
@@ -320,7 +328,7 @@ class BayesianNeuralNetwork(object):
 
         """
 
-        self.net_output = self.get_net(inputs=X, seed=self.seed)
+        self.net_output = self.get_net(inputs=X, seed=self.seed, dtype=self.dtype)
 
         f_mean = tf.reshape(self.net_output[:, 0], shape=(-1, 1))
         f_log_var = tf.reshape(self.net_output[:, 1], shape=(-1, 1))
@@ -334,16 +342,16 @@ class BayesianNeuralNetwork(object):
         )
 
         # scale by batch size to make this work nicely with the updaters above
-        log_like = log_like / tf.constant(self.batch_size, dtype=tf.float64)
+        log_like = log_like / tf.constant(self.batch_size, dtype=self.dtype)
 
         # scale the priors by the dataset size for the same reason
-        n_examples = tf.constant(self.X.shape[0], tf.float64, name="n_examples")
+        n_examples = tf.constant(self.X.shape[0], self.dtype, name="n_examples")
 
         # prior for the variance
-        log_like += log_variance_prior_log_like(f_log_var) / n_examples
+        log_like += log_variance_prior_log_like(f_log_var, dtype=self.dtype) / n_examples
 
         # prior for the weights
-        log_like += weight_prior_log_like(tf.trainable_variables()) / n_examples
+        log_like += weight_prior_log_like(tf.trainable_variables(), dtype=self.dtype) / n_examples
 
         return -log_like, tf.reduce_mean(mse)
 
@@ -380,9 +388,9 @@ class BayesianNeuralNetwork(object):
 
         # set up placeholders for data minibatches
         self.X_Minibatch = tf.placeholder(shape=(None, n_inputs),
-                                          dtype=tf.float64,
+                                          dtype=self.dtype,
                                           name="X_Minibatch")
-        self.Y_Minibatch = tf.placeholder(dtype=tf.float64, name="Y_Minibatch")
+        self.Y_Minibatch = tf.placeholder(dtype=self.dtype, name="Y_Minibatch")
 
         # set up tensors for negative log likelihood and mean squared error
         Nll, Mse = self.negative_log_likelihood(
@@ -393,8 +401,6 @@ class BayesianNeuralNetwork(object):
 
         # remove any leftover samples from previous "train" calls
         self.samples.clear()
-
-        # XXX: Print batches and check that they are the same thing
 
         self.sampler_kwargs.update({
             "params": self.network_params,
@@ -407,6 +413,7 @@ class BayesianNeuralNetwork(object):
             ),
             "session": self.session,
             "seed": self.seed,
+            "dtype": self.dtype,
             "stepsize_schedule": self.stepsize_schedule,
         })
         if Sampler.is_burn_in_mcmc(self.sampling_method):
@@ -426,9 +433,6 @@ class BayesianNeuralNetwork(object):
             self.sampling_method, **self.sampler_kwargs
         )
 
-        # XXX: For sgvd, this will cause problems, since all variables will
-        # be assigned the same value again - special case it or make other
-        # samplers run appropriate initializers (at the end of __init__)?
         self.session.run(tf.global_variables_initializer())
 
         logging.info("Starting sampling")
@@ -473,15 +477,19 @@ class BayesianNeuralNetwork(object):
 
         sample_chain = itertools.islice(self.sampler, self.n_iters)
 
-        for i, (parameter_values, _) in enumerate(sample_chain):
+        for iteration_index, (parameter_values, _) in enumerate(sample_chain):
 
-            burning_in = i <= self.burn_in_steps
+            burning_in = iteration_index <= self.burn_in_steps
 
-            if burning_in and i % logging_intervals["burn-in"] == 0:
-                log_full_training_error(iteration_index=i, is_sampling=False)
+            if burning_in and iteration_index % logging_intervals["burn-in"] == 0:
+                log_full_training_error(
+                    iteration_index=iteration_index, is_sampling=False
+                )
 
-            if not burning_in and i % logging_intervals["sampling"] == 0:
-                log_full_training_error(iteration_index=i, is_sampling=True)
+            if not burning_in and iteration_index % logging_intervals["sampling"] == 0:
+                log_full_training_error(
+                    iteration_index=iteration_index, is_sampling=True
+                )
 
                 # collect sample
                 self.samples.append(parameter_values)
