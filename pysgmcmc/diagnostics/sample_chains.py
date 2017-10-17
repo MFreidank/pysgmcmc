@@ -95,7 +95,7 @@ class PYSGMCMCTrace(object):
         assert len(self.varnames) == self.n_vars
 
     @classmethod
-    def from_sampler(cls, chain_id, sampler, n_samples, varnames=None):
+    def from_sampler(cls, chain_id, sampler, n_samples, keep_every=1, varnames=None):
         """
         Instantiate a trace with id `chain_id` by extracting `n_samples`
         from `sampler`.
@@ -110,6 +110,9 @@ class PYSGMCMCTrace(object):
 
         n_samples : int
             Number of samples to extract from `sampler` for this chain/trace.
+
+        keep_every : int
+            Keep every `keep_every`th sample in each chain.
 
         varnames : List[String] or NoneType, optional
             TODO: DOKU
@@ -176,6 +179,24 @@ class PYSGMCMCTrace(object):
                 param.name for param in sampler.params
             ]
         return PYSGMCMCTrace(chain_id, samples, varnames)
+
+    def __getitem__(self, index):
+        return self.get_values(self.varnames[index])
+
+    def _slice(self, slice_):
+        # XXX: Set chain_id to something unique, instead of self.chain
+        return PYSGMCMCTrace(
+            chain_id=self.chain,
+            samples=self.samples[slice_],
+            varnames=self.varnames[slice_]
+        )
+
+    def point(self, index):
+        sample = self.samples[index]
+        return {
+            varname: sample[variable_index]
+            for variable_index, varname in enumerate(self.varnames)
+        }
 
     def __len__(self):
         """ Length of a trace/chain is the number of samples in it. """
@@ -259,6 +280,7 @@ class PYSGMCMCTrace(object):
 
 
 def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100,
+                     keep_every=10,
                      parameter_names=None):
     """
     Extract chains from `sampler` and return them as `pymc3.MultiTrace` object.
@@ -272,9 +294,8 @@ def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100,
 
     parameter_names : List[String] or NoneType, optional
         List of names for each target parameter of the sampler.
-        If set to `None`, simply enumerate the parameters and use those numbers
-        as names.
-        Defaults to `None`.
+        Defaults to `None`, which attempts to look the parameter names up
+        from the target parameters of the sampler returned by `get_sampler`.
 
     Returns
     ----------
@@ -290,13 +311,15 @@ def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100,
     single_traces = []
 
     for chain_id in range(n_chains):
-        with tf.Session() as session:
+        graph = tf.Graph()
+        with tf.Session(graph=graph) as session:
             sampler = get_sampler(session=session)
             session.run(tf.global_variables_initializer())
             trace = PYSGMCMCTrace.from_sampler(
                 chain_id=chain_id,
                 sampler=sampler,
                 n_samples=samples_per_chain,
+                keep_every=keep_every,
                 varnames=parameter_names
             )
 
