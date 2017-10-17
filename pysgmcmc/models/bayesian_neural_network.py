@@ -550,8 +550,11 @@ class BayesianNeuralNetwork(object):
         """
 
         if not self.is_trained:
-            logging.error("Model is not trained!")
-            return
+            raise ValueError(
+                "Calling `bnn.predict()` on an untrained "
+                "Bayesian Neural Network 'bnn' is not supported! "
+                "Please call `bnn.train()` before calling `bnn.predict()`"
+            )
 
         # Normalize input
         if self.normalize_input:
