@@ -97,10 +97,13 @@ class RelativisticSGHMCSampler(MCMCSampler):
         # Use `-self.Cost` since the rest of the implementation expects
         # a log likelihood (instead of the *negative* log likelihood that
         # we normally use as costs)
-        grads = [vectorize(gradient) for gradient in tf.gradients(-self.Cost, params)]
+        grads = [
+            vectorize(gradient)
+            for gradient in tf.gradients(-self.cost, params)
+        ]
 
         D = tf.constant(D, dtype=dtype)
-        Bhat = tf.constant(Bhat, dtype=dtype)
+        b_hat = tf.constant(Bhat, dtype=dtype)
 
         momentum = [
             tf.Variable(momentum_sample, dtype=dtype)
@@ -114,26 +117,26 @@ class RelativisticSGHMCSampler(MCMCSampler):
         m = tf.constant(mass, dtype=dtype)
         c = tf.constant(speed_of_light, dtype=dtype)
 
-        for i, (Param, Grad) in enumerate(zip(params, grads)):
-            Vectorized_Param = self.vectorized_params[i]
+        for i, (param, grad) in enumerate(zip(params, grads)):
+            vectorized_param = self.vectorized_params[i]
 
-            p_grad = self.Epsilon * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
+            p_grad = self.epsilon * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
 
-            n = tf.sqrt(self.Epsilon * (2 * D - self.Epsilon * Bhat)) * tf.random_normal(shape=Vectorized_Param.shape, dtype=dtype, seed=seed)
-            Momentum_t = tf.assign_add(
+            n = tf.sqrt(self.epsilon * (2 * D - self.epsilon * b_hat)) * tf.random_normal(shape=vectorized_param.shape, dtype=dtype, seed=seed)
+            momentum_t = tf.assign_add(
                 momentum[i],
-                tf.reshape(self.Epsilon * Grad + n - D * p_grad, momentum[i].shape)
+                tf.reshape(self.epsilon * grad + n - D * p_grad, momentum[i].shape)
             )
 
-            p_grad_new = self.Epsilon * Momentum_t / (m * tf.sqrt(Momentum_t * Momentum_t / (tf.square(m) * tf.square(c)) + 1))
-            Vectorized_Theta_t = tf.assign_add(
-                Vectorized_Param,
-                tf.reshape(p_grad_new, Vectorized_Param.shape)
+            p_grad_new = self.epsilon * momentum_t / (m * tf.sqrt(momentum_t * momentum_t / (tf.square(m) * tf.square(c)) + 1))
+            vectorized_theta_t = tf.assign_add(
+                vectorized_param,
+                tf.reshape(p_grad_new, vectorized_param.shape)
             )
 
-            self.Theta_t[i] = tf.assign(
-                Param,
-                unvectorize(Vectorized_Theta_t, original_shape=Param.shape)
+            self.theta_t[i] = tf.assign(
+                param,
+                unvectorize(vectorized_theta_t, original_shape=param.shape)
             )
 
 

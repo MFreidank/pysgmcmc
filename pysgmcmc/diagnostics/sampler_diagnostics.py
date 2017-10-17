@@ -93,7 +93,9 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
     >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
     >>> params = [tf.Variable([1.0, 2.0], name="x", dtype=tf.float64)]
     >>> cost_fun = lambda params: tf.reduce_sum(params)  # dummy cost functions
-    >>> get_sampler = lambda session: SGHMCSampler(params=params, cost_fun=cost_fun, session=session)
+    >>> get_sampler = lambda session: SGHMCSampler(
+    ...    params=params, cost_fun=cost_fun, session=session
+    ... )
     >>> ess_vals = effective_sample_sizes(get_sampler=get_sampler)
     >>> type(ess_vals)
     <class 'dict'>
@@ -112,7 +114,7 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
 
 
 def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
-    """
+    r"""
     Calculate gelman_rubin metric for a sampler returned by callable `get_sampler`.
     To do so, extract `n_chains` traces with `samples_per_chain` samples each.
 

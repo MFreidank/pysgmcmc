@@ -30,9 +30,9 @@ class Sampler(Enum):
 
         Other input types give `False`:
 
-        >>> Sampler.is_supported(0)
+        >>> Sampler.is_burn_in_mcmc(0)
         False
-        >>> Sampler.is_supported("test")
+        >>> Sampler.is_burn_in_mcmc("test")
         False
 
         """
@@ -60,7 +60,7 @@ class Sampler(Enum):
         False
 
         """
-        return sampling_method in Sampler
+        return sampling_method in (Sampler.SGHMC, Sampler.SGLD)
 
     @classmethod
     def get_sampler(cls, sampling_method, **sampler_args):
@@ -170,8 +170,6 @@ class Sampler(Enum):
         -seed
 
         """
-
-        assert cls.is_supported(sampling_method)
 
         if sampling_method == cls.SGHMC:
             from pysgmcmc.samplers.sghmc import SGHMCSampler as Get_Sampler

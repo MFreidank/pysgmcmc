@@ -50,7 +50,7 @@ class MCMCSampler(object):
 
         session : `tensorflow.Session`, optional
             Session object which knows about the external part of the graph
-            (which defines `Cost`, and possibly batches).
+            (which defines `cost`, and possibly batches).
             Used internally to evaluate (burn-in/sample) the sampler.
 
         dtype : tensorflow.DType, optional
@@ -69,10 +69,9 @@ class MCMCSampler(object):
             Inherits from `sampling.MCMCSampler`.
 
         """
-
         # Sanitize inputs
         assert batch_generator is None or hasattr(batch_generator, "__next__")
-        assert seed is None or type(seed) == int
+        assert seed is None or isinstance(seed, int)
 
         assert isinstance(session, (tf.Session, tf.InteractiveSession))
         assert isinstance(dtype, tf.DType)
@@ -98,12 +97,12 @@ class MCMCSampler(object):
 
         # set up costs
         self.cost_fun = cost_fun
-        self.Cost = cost_fun(self.params)
+        self.cost = cost_fun(self.params)
 
         # compute vectorized clones of all parameters
         self.vectorized_params = [vectorize(param) for param in self.params]
 
-        self.Epsilon = tf.Variable(
+        self.epsilon = tf.Variable(
             self.stepsize_schedule.initial_value,
             dtype=self.dtype,
             name="epsilon",
@@ -114,13 +113,13 @@ class MCMCSampler(object):
         init = tf.variables_initializer(
             uninitialized_params(
                 session=self.session,
-                params=self.params + self.vectorized_params + [self.Epsilon]
+                params=self.params + self.vectorized_params + [self.epsilon]
             )
         )
         self.session.run(init)
 
         # query this later to determine the next sample
-        self.Theta_t = [None] * len(params)
+        self.theta_t = [None] * len(params)
 
     def _next_batch(self):
         """ Get a dictionary mapping `tensorflow.Placeholder` onto
@@ -185,18 +184,18 @@ class MCMCSampler(object):
     # XXX: Doku
     def _next_stepsize(self):
         epsilon = next(self.stepsize_schedule)
-        return {self.Epsilon: epsilon}
+        return {self.epsilon: epsilon}
 
-    def _draw_noise_sample(self, Sigma, Shape):
-        """ Generate a single random normal sample with shape `Shape` and
-            standard deviation `Sigma`.
+    def _draw_noise_sample(self, sigma, shape):
+        """ Generate a single random normal sample with shape `shape` and
+            standard deviation `sigma`.
 
         Parameters
         ----------
-        Sigma : tensorflow.Tensor
+        sigma : tensorflow.Tensor
             Standard deviation of the noise.
 
-        Shape : tensorflow.Tensor
+        shape : tensorflow.Tensor
             Shape that the noise sample should have.
 
         Returns
@@ -206,8 +205,8 @@ class MCMCSampler(object):
             standard deviation `Sigma`.
 
         """
-        return Sigma * tf.random_normal(
-            shape=Shape, dtype=self.dtype, seed=self.seed
+        return sigma * tf.random_normal(
+            shape=shape, dtype=self.dtype, seed=self.seed
         )
 
     # Conform to iterator protocol.
@@ -273,8 +272,8 @@ class MCMCSampler(object):
 
         """
         assert (feed_dict is None or hasattr(feed_dict, "update"))
-        # Ensure self.Theta_t and self.Cost are defined
-        assert hasattr(self, "Theta_t") or not hasattr(self, "Cost")
+        # Ensure self.theta_t and self.cost are defined
+        assert hasattr(self, "theta_t") or not hasattr(self, "cost")
 
         if feed_dict is None:
             feed_dict = dict()
@@ -282,7 +281,7 @@ class MCMCSampler(object):
         feed_dict.update(self._next_batch())
         feed_dict.update(self._next_stepsize())
         params, cost = self.session.run(
-            [self.Theta_t, self.Cost], feed_dict=feed_dict
+            [self.theta_t, self.cost], feed_dict=feed_dict
         )
 
         if len(params) == 1:
@@ -422,7 +421,7 @@ class BurnInMCMCSampler(MCMCSampler):
 
             # perform a burn-in step = adapt the samplers mass matrix inverse
             params, cost, self.minv = self.session.run(
-                [self.Theta_t, self.Cost, self.Minv_t],
+                [self.theta_t, self.cost, self.minv_t],
                 feed_dict=feed_dict
             )
 
@@ -433,10 +432,10 @@ class BurnInMCMCSampler(MCMCSampler):
 
         # "standard" MCMC sampling
         if self.burn_in_steps > 0:
-            assert hasattr(self, "Minv_t")
+            assert hasattr(self, "minv_t")
             assert hasattr(self, "minv")
 
             # feed tuned inverse of mass matrix (minv) during sampling
-            feed_dict = dict(zip(self.Minv_t, self.minv))
+            feed_dict = dict(zip(self.minv_t, self.minv))
 
         return super().__next__(feed_dict=feed_dict)

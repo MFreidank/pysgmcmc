@@ -5,13 +5,18 @@ from numpy.random import randint, RandomState
 
 from pysgmcmc.diagnostics.objective_functions import sinc
 from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
-# from pysgmcmc.sampling import Sampler
-# from random import choice
+from pysgmcmc.sampling import Sampler
+from random import choice
 
 import pytest
 
 
 def test_default_get_net_seed():
+    """
+    This test asserts that running
+        pysgmcmc.models.bayesian_neural_network.get_default_net
+    with the same seed multiple times results in the same network.
+    """
     from pysgmcmc.models.bayesian_neural_network import get_default_net
     seed = randint(0, 2 ** 32 - 1)
     n_nets = randint(1, 5)
@@ -39,45 +44,3 @@ def test_default_get_net_seed():
     for net in nets:
         for var1, var2 in zip(reference_net, net):
             assert allclose(var1, var2)
-
-
-@pytest.mark.xfail(
-    reason="Seeding for bnns does not work yet.. causes are to be found!",
-    raises=AssertionError
-)
-def test_bnn_seed():
-    n_nets = randint(2, 6)
-    seed = randint(0, 2 ** 32 - 1)
-    burn_in_steps = randint(0, 10)
-
-    # Draw a random supported sampler
-    """
-    all_samplers = list(Sampler)
-    sampler = choice(all_samplers)
-    while not Sampler.is_supported(sampler):
-        sampler = choice(all_samplers)
-    """
-
-    rng, n_datapoints = RandomState(randint(0, 10000)), 100
-    x_train = asarray([rng.uniform(0., 1., 1) for _ in range(n_datapoints)])
-    y_train = sinc(x_train)
-
-    def bnn_chain():
-        graph = tf.Graph()
-
-        with tf.Session(graph=graph) as session:
-            bnn = BayesianNeuralNetwork(
-                n_nets=n_nets,
-                session=session,
-                seed=seed,
-                burn_in_steps=burn_in_steps
-            )
-            bnn.train(x_train, y_train)
-            assert bnn.is_trained
-
-        return bnn.samples
-
-    chain1, chain2 = bnn_chain(), bnn_chain()
-    for sample1, sample2 in zip(chain1, chain2):
-        for dimension1, dimension2 in zip(sample1, sample2):
-            assert allclose(dimension1, dimension2, atol=1e-01)

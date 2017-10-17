@@ -35,7 +35,7 @@ class SGHMCSampler(BurnInMCMCSampler):
         """ Initialize the sampler parameters and set up a tensorflow.Graph
             for later queries.
 
-        Parameters
+        parameters
         ----------
         params : list of tensorflow.Variable objects
             Target parameters for which we want to sample new values.
@@ -108,146 +108,146 @@ class SGHMCSampler(BurnInMCMCSampler):
 
         #  Initialize graph constants {{{ #
 
-        Noise = tf.constant(0., name="noise", dtype=dtype)
+        noise = tf.constant(0., name="noise", dtype=dtype)
 
-        Scale_grad = tf.constant(scale_grad, dtype=dtype, name="scale_grad")
+        scale_grad = tf.constant(scale_grad, dtype=dtype, name="scale_grad")
 
-        Epsilon_scaled = tf.divide(self.Epsilon, tf.sqrt(Scale_grad), name="epsilon_scaled")
+        epsilon_scaled = tf.divide(self.epsilon, tf.sqrt(scale_grad), name="epsilon_scaled")
 
-        Mdecay = tf.constant(mdecay, name="mdecay", dtype=dtype)
+        mdecay = tf.constant(mdecay, name="mdecay", dtype=dtype)
 
         #  }}} Initialize graph constants #
 
         grads = [vectorize(gradient) for gradient in
-                 tf.gradients(self.Cost, params)]
+                 tf.gradients(self.cost, params)]
 
         #  Initialize internal sampler parameters {{{ #
 
-        Tau = [tf.Variable(tf.ones_like(Param, dtype=dtype),
-                           dtype=dtype, name="Tau_{}".format(i),
+        tau = [tf.Variable(tf.ones_like(param, dtype=dtype),
+                           dtype=dtype, name="tau_{}".format(i),
                            trainable=False)
-               for i, Param in enumerate(self.vectorized_params)]
+               for i, param in enumerate(self.vectorized_params)]
 
-        R = [tf.Variable(1. / (Tau[i].initialized_value() + 1),
+        r = [tf.Variable(1. / (tau[i].initialized_value() + 1),
                          name="R_{}".format(i), trainable=False)
-             for i, Param in enumerate(self.vectorized_params)]
+             for i, param in enumerate(self.vectorized_params)]
 
-        G = [tf.Variable(tf.ones_like(Param, dtype=dtype),
-                         dtype=dtype, name="G_{}".format(i),
+        g = [tf.Variable(tf.ones_like(param, dtype=dtype),
+                         dtype=dtype, name="g_{}".format(i),
                          trainable=False)
-             for i, Param in enumerate(self.vectorized_params)]
+             for i, param in enumerate(self.vectorized_params)]
 
-        V_hat = [tf.Variable(tf.ones_like(Param, dtype=dtype),
-                             dtype=dtype, name="V_hat_{}".format(i),
+        v_hat = [tf.Variable(tf.ones_like(param, dtype=dtype),
+                             dtype=dtype, name="v_hat_{}".format(i),
                              trainable=False)
-                 for i, Param in enumerate(self.vectorized_params)]
+                 for i, param in enumerate(self.vectorized_params)]
 
         # Initialize Mass matrix inverse
-        self.Minv = [tf.Variable(tf.divide(tf.constant(1., dtype=dtype),
-                                 tf.sqrt(V_hat[i].initialized_value())),
-                                 name="Minv_{}".format(i), trainable=False)
-                     for i, Param in enumerate(self.vectorized_params)]
+        minv = [tf.Variable(tf.divide(tf.constant(1., dtype=dtype),
+                            tf.sqrt(v_hat[i].initialized_value())),
+                            name="minv_{}".format(i), trainable=False)
+                for i, param in enumerate(self.vectorized_params)]
 
         # Initialize momentum
-        V = [tf.Variable(tf.zeros_like(Param, dtype=dtype),
-                         dtype=dtype, name="V_{}".format(i),
+        V = [tf.Variable(tf.zeros_like(param, dtype=dtype),
+                         dtype=dtype, name="v_{}".format(i),
                          trainable=False)
-             for i, Param in enumerate(self.vectorized_params)]
+             for i, param in enumerate(self.vectorized_params)]
 
         #  }}} Initialize internal sampler parameters #
 
-        self.Minv_t = [None] * len(params)  # gets burned-in
+        self.minv_t = [None] * len(params)  # gets burned-in
 
-        # R_t = 1/ (Tau + 1), shouldn't it be: 1 / tau according to terms?
+        # R_t = 1/ (tau + 1), shouldn't it be: 1 / tau according to terms?
         # It is not, and changing it to that breaks everything!
         # Why?
 
-        for i, (Param, Grad) in enumerate(zip(params, grads)):
-            Vectorized_Param = self.vectorized_params[i]
+        for i, (param, grad) in enumerate(zip(params, grads)):
+            vectorized_param = self.vectorized_params[i]
             #  Burn-in logic {{{ #
-            R_t = tf.assign(R[i], 1. / (Tau[i] + 1), name="R_t_{}".format(i))
+            r_t = tf.assign(r[i], 1. / (tau[i] + 1), name="r_t_{}".format(i))
 
-            # R_t should always use the old value of Tau
-            with tf.control_dependencies([R_t]):
-                Tau_t = tf.assign_add(
-                    Tau[i],
-                    safe_divide(-G[i] * G[i] * Tau[i], V_hat[i]) + 1,
-                    name="Tau_t_{}".format(i)
+            # r_t should always use the old value of tau
+            with tf.control_dependencies([r_t]):
+                tau_t = tf.assign_add(
+                    tau[i],
+                    safe_divide(-g[i] * g[i] * tau[i], v_hat[i]) + 1,
+                    name="tau_t_{}".format(i)
                 )
 
-                # Minv = V_hat^{-1/2} = 1 / sqrt(V_hat)
-                self.Minv_t[i] = tf.assign(
-                    self.Minv[i],
-                    safe_divide(1., safe_sqrt(V_hat[i])),
-                    name="Minv_t_{}".format(i)
+                # minv = v_hat^{-1/2} = 1 / sqrt(v_hat)
+                self.minv_t[i] = tf.assign(
+                    minv[i],
+                    safe_divide(1., safe_sqrt(v_hat[i])),
+                    name="minv_t_{}".format(i)
                 )
-                # Tau_t, Minv_t should always use the old values of G, V_hat
-                with tf.control_dependencies([Tau_t, self.Minv_t[i]]):
-                    G_t = tf.assign_add(
-                        G[i],
-                        -R_t * G[i] + R_t * Grad,
-                        name="G_t_{}".format(i)
+                # tau_t, minv_t should always use the old values of G, v_hat
+                with tf.control_dependencies([tau_t, self.minv_t[i]]):
+                    g_t = tf.assign_add(
+                        g[i],
+                        -r_t * g[i] + r_t * grad,
+                        name="g_t_{}".format(i)
                     )
 
-                    V_hat_t = tf.assign_add(
-                        V_hat[i],
-                        - R_t * V_hat[i] + R_t * Grad ** 2,
-                        name="V_hat_t_{}".format(i)
+                    v_hat_t = tf.assign_add(
+                        v_hat[i],
+                        - r_t * v_hat[i] + r_t * grad ** 2,
+                        name="v_hat_t_{}".format(i)
                     )
 
             #  }}} Burn-in logic #
 
-                    with tf.control_dependencies([G_t, V_hat_t]):
+                    with tf.control_dependencies([g_t, v_hat_t]):
 
                         #  Draw random normal sample {{{ #
 
                         # Equation 10, variance of normal sample
 
                         # 2 * epsilon ** 2 * mdecay * Minv - 0 (noise is 0) - epsilon ** 4
-                        # = 2 * epsilon ** 2 * epsilon * V_hat^{-1/2} * C * Minv
-                        # = 2 * epsilon ** 3 * V_hat^{-1/2} * C * V_hat^{-1/2} - epsilon ** 4
+                        # = 2 * epsilon ** 2 * epsilon * v_hat^{-1/2} * C * Minv
+                        # = 2 * epsilon ** 3 * v_hat^{-1/2} * C * v_hat^{-1/2} - epsilon ** 4
 
                         # (co-) variance of normal sample
-                        Noise_scale = (
+                        noise_scale = (
                             tf.constant(2., dtype=dtype) *
-                            Epsilon_scaled ** tf.constant(2., dtype=dtype) *
-                            Mdecay * self.Minv_t[i] - tf.constant(2., dtype=dtype) *
-                            Epsilon_scaled ** tf.constant(3., dtype) *
-                            tf.square(self.Minv_t[i]) * Noise - Epsilon_scaled ** 4
+                            epsilon_scaled ** tf.constant(2., dtype=dtype) *
+                            mdecay * self.minv_t[i] - tf.constant(2., dtype=dtype) *
+                            epsilon_scaled ** tf.constant(3., dtype) *
+                            tf.square(self.minv_t[i]) * noise - epsilon_scaled ** 4
                         )
 
                         # turn into stddev
-                        Sigma = tf.sqrt(tf.maximum(Noise_scale, 1e-16),
-                                        name="Sigma_{}".format(i))
+                        sigma = tf.sqrt(tf.maximum(noise_scale, 1e-16),
+                                        name="sigma_{}".format(i))
 
-                        Sample = self._draw_noise_sample(Sigma=Sigma,
-                                                         Shape=Vectorized_Param.shape)
+                        sample = self._draw_noise_sample(
+                            sigma=sigma, shape=vectorized_param.shape
+                        )
 
                         #  }}} Draw random sample #
-
 
                         #  HMC Update {{{ #
 
                         # Equation 10: right side, where:
-                        # Minv = V_hat^{-1/2}, Mdecay = epsilon * V_hat^{-1/2} C
-                        V_t = tf.assign_add(
+                        # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
+                        v_t = tf.assign_add(
                             V[i],
-                            - self.Epsilon ** 2 * self.Minv_t[i] * Grad -
-                            Mdecay * V[i] + Sample,
-                            name="V_t_{}".format(i)
+                            - self.epsilon ** 2 * self.minv_t[i] * grad -
+                            mdecay * V[i] + sample,
+                            name="v_t_{}".format(i)
                         )
 
                         # Equation 10: left side
-                        Vectorized_Theta_t = tf.assign_add(
-                            Vectorized_Param, V_t
+                        vectorized_Theta_t = tf.assign_add(
+                            vectorized_param, v_t
                         )
 
-                        self.Theta_t[i] = tf.assign(
-                            Param,
+                        self.theta_t[i] = tf.assign(
+                            param,
                             unvectorize(
-                                Vectorized_Theta_t, original_shape=Param.shape
+                                vectorized_Theta_t, original_shape=param.shape
                             ),
-                            name="Theta_t_{}".format(i)
+                            name="theta_t_{}".format(i)
                         )
 
                         #  }}} HMC Update #

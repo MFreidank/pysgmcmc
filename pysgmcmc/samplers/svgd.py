@@ -97,11 +97,11 @@ class SVGDSampler(MCMCSampler):
             stepsize_schedule=stepsize_schedule
         )
 
-        Fudge_factor = tf.constant(
+        fudge_factor = tf.constant(
             fudge_factor, dtype=self.dtype, name="fudge_factor"
         )
 
-        self.Epsilon = tf.Variable(
+        self.epsilon = tf.Variable(
             stepsize_schedule.initial_value, dtype=self.dtype, name="stepsize"
         )
 
@@ -109,16 +109,16 @@ class SVGDSampler(MCMCSampler):
             self.particles.shape[0], self.dtype
         )
 
-        Historical_grad = tf.get_variable(
+        historical_grad = tf.get_variable(
             "historical_grad", self.particles.shape, dtype=dtype,
             initializer=tf.zeros_initializer()
         )
 
         self.session.run(
-            tf.variables_initializer([Historical_grad, self.Epsilon])
+            tf.variables_initializer([historical_grad, self.Epsilon])
         )
 
-        lnpgrad = tf.squeeze(tf.gradients(self.Cost, self.particles))
+        lnpgrad = tf.squeeze(tf.gradients(self.cost, self.particles))
 
         kernel_matrix, kernel_gradients = self.svgd_kernel(self.particles)
 
@@ -127,28 +127,21 @@ class SVGDSampler(MCMCSampler):
             self.n_particles
         )
 
-        Historical_grad_t = tf.assign(
-            Historical_grad,
-            alpha * Historical_grad + (1. - alpha) * (grad_theta ** 2)
+        historical_grad_t = tf.assign(
+            historical_grad,
+            alpha * historical_grad + (1. - alpha) * (grad_theta ** 2)
         )
 
         adj_grad = tf.divide(
             grad_theta,
-            Fudge_factor + tf.sqrt(Historical_grad_t)
+            fudge_factor + tf.sqrt(historical_grad_t)
         )
 
         for i, param in enumerate(self.params):
-            self.Theta_t[i] = tf.assign_sub(
+            self.theta_t[i] = tf.assign_sub(
                 param,
-                self.Epsilon * adj_grad[i]
+                self.epsilon * adj_grad[i]
             )
-
-        """
-        self.Theta_t = tf.assign_sub(
-            self.particles,
-            self.Epsilon * adj_grad
-        )
-        """
 
     def svgd_kernel(self, particles):
         """ Calculate a kernel matrix with corresponding derivatives

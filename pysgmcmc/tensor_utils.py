@@ -524,7 +524,6 @@ def squareform(tensor):
                 `(dimension, dimension)`.
 
             """
-
             assert dimension > 0, "tensor_utils.upper_triangular_indices: Dimension must be positive integer!"
 
             for row in range(dimension):

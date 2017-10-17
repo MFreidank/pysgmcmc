@@ -56,6 +56,7 @@ class PYSGMCMCTrace(object):
         ['0', '1']
 
         """
+
         self.chain = chain_id
 
         assert(hasattr(samples, "__len__")), "Samples needs to have a __len__ attribute."

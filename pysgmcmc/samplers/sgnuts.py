@@ -9,7 +9,6 @@ class SGNutsSampler(MCMCSampler):
                  dtype=tf.float64, seed=None):
         self.j = 0
         # XXX Implement rest of main algorithm 3 here
-        pass
 
     def build_tree(self, theta, r, u, v, j, epsilon):
         # XXX Replace if/else either with tf.ops or ensure that j is incremented
