@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: iso-8859-15 -*-
-"""
-Abstract base classes for all MCMC methods. Helps unify our sampler interface.
-"""
+"""Abstract base classes for all MCMC methods. Helps unify our sampler interface."""
 # XXX NEXT METHOD NEEDS DOKU FOR FEED_DICT
 import abc
 import tensorflow as tf
@@ -17,7 +15,9 @@ __all__ = (
 
 
 class MCMCSampler(object):
-    """ Generic base class for all MCMC samplers.  """
+
+    """Generic base class for all MCMC samplers."""
+
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, params, cost_fun, batch_generator=None,
@@ -122,13 +122,12 @@ class MCMCSampler(object):
         self.theta_t = [None] * len(params)
 
     def _next_batch(self):
-        """ Get a dictionary mapping `tensorflow.Placeholder` onto
-            their corresponding feedable minibatch data.
-            Each dictionary can directly be fed into `tensorflow.Session`.
-
-            Returns an empty dictionary if `self.batch_generator` is `None`,
-            i.e. if no batches are needed to compute the cost function.
-            (e.g. the cost function depends only on the target parameters).
+        """
+        Get a dictionary mapping `tensorflow.Placeholder` onto their corresponding feedable minibatch data.
+        Each dictionary can directly be fed into `tensorflow.Session`.
+        Returns an empty dictionary if `self.batch_generator` is `None`,
+        i.e. if no batches are needed to compute the cost function.
+        (e.g. the cost function depends only on the target parameters).
 
         Returns
         -------
@@ -151,7 +150,10 @@ class MCMCSampler(object):
         >>> session = tf.Session()
         >>> x = tf.Variable(1.0)
         >>> dist = tf.contrib.distributions.Normal(loc=0., scale=1.)
-        >>> sampler = SGHMCSampler(params=[x], cost_fun=lambda x: -dist.log_prob(x), session=session, dtype=tf.float32)
+        >>> sampler = SGHMCSampler(
+        ...     params=[x], cost_fun=lambda x: -dist.log_prob(x),
+        ...     session=session, dtype=tf.float32
+        ... )
         >>> session.close()
         >>> sampler._next_batch()
         {}
@@ -167,8 +169,16 @@ class MCMCSampler(object):
         >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
         >>> x_placeholder, y_placeholder = tf.placeholder(dtype=tf.float64), tf.placeholder(dtype=tf.float64)
         >>> batch_size = 10
-        >>> batch_generator = generate_batches(x=X, y=y, x_placeholder=x_placeholder, y_placeholder=y_placeholder, batch_size=batch_size)
-        >>> sampler = SGHMCSampler(params=[x], cost_fun=lambda x: x, session=session, dtype=tf.float32, batch_generator=batch_generator)  # cost function is just a dummy
+        >>> batch_generator = generate_batches(
+        ...     x=X, y=y,
+        ...     x_placeholder=x_placeholder, y_placeholder=y_placeholder,
+        ...     batch_size=batch_size
+        ... )
+        >>> sampler = SGHMCSampler(
+        ...     params=[x], cost_fun=lambda x: x,  # cost function is just a dummy
+        ...     session=session, dtype=tf.float32,
+        ...     batch_generator=batch_generator
+        ... )
         >>> batch_dict = sampler._next_batch()
         >>> session.close()
         >>> set(batch_dict.keys()) == set((x_placeholder, y_placeholder))
@@ -187,8 +197,8 @@ class MCMCSampler(object):
         return {self.epsilon: epsilon}
 
     def _draw_noise_sample(self, sigma, shape):
-        """ Generate a single random normal sample with shape `shape` and
-            standard deviation `sigma`.
+        """
+        Generate a single random normal sample with shape `shape` and standard deviation `sigma`.
 
         Parameters
         ----------
@@ -214,7 +224,8 @@ class MCMCSampler(object):
     # https://docs.python.org/3/library/stdtypes.html#iterator-types
 
     def __iter__(self):
-        """ Allows using samplers as iterators.
+        """
+        Allows using samplers as iterators.
 
         Examples
         ----------
@@ -228,7 +239,11 @@ class MCMCSampler(object):
         >>> x = tf.Variable(1.0)
         >>> dist = tf.contrib.distributions.Normal(loc=0., scale=1.)
         >>> n_burn_in, n_samples = 1000, 2000
-        >>> sampler = SGHMCSampler(params=[x], burn_in_steps=n_burn_in, cost_fun=lambda x: -dist.log_prob(x), session=session, dtype=tf.float32)
+        >>> sampler = SGHMCSampler(
+        ...     params=[x], burn_in_steps=n_burn_in,
+        ...     cost_fun=lambda x: -dist.log_prob(x),
+        ...     session=session, dtype=tf.float32
+        ... )
         >>> session.run(tf.global_variables_initializer())
         >>> burn_in_samples = list(islice(sampler, n_burn_in))  # perform all burn_in steps
         >>> samples = list(islice(sampler, n_samples))
@@ -241,8 +256,8 @@ class MCMCSampler(object):
         return self
 
     def __next__(self, feed_dict=None):
-        """ Compute and return the next sample and
-            next cost values for this sampler.
+        """
+        Compute and return the next sample and next cost values for this sampler.
 
         Returns
         --------
