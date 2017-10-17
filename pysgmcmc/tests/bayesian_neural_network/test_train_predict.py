@@ -70,3 +70,46 @@ def test_predict_before_train_error():
 
         with pytest.raises(ValueError):
             prediction_mean, prediction_variance = bnn.predict(X_test)
+
+
+def test_predict_individual_predictions_flag():
+    """
+    This test asserts that it is possible to get
+        pysgmcmc.models.bayesian_neural_network.BayesianNeuralNetwork
+    to return individual network predictions when setting
+    `return_invidual_predictions` to `True`.
+    """
+
+    rng, n_datapoints = RandomState(randint(0, 10000)), 100
+    x_train = asarray([rng.uniform(0., 1., 1) for _ in range(n_datapoints)])
+    y_train = sinc(x_train)
+
+    X_test = np.linspace(0, 1, 100)[:, None]
+    y_test = sinc(X_test)
+
+
+    normalization_kwargs = (
+        {"normalize_input": boolean, "normalize_output": boolean}
+        for boolean in (True, False)
+    )
+
+    n_nets = 10
+
+    for normalization in normalization_kwargs:
+        graph = tf.Graph()
+        with tf.Session(graph=graph) as session:
+            bnn = BayesianNeuralNetwork(
+                session=session,
+                dtype=tf.float64,
+                burn_in_steps=1000,
+                n_nets=n_nets,
+                **normalization,
+            )
+            bnn.train(x_train, y_train)
+            assert bnn.is_trained
+
+            predictions, prediction_variance = bnn.predict(
+                X_test, return_individual_predictions=True
+            )
+
+        assert len(predictions) == n_nets
