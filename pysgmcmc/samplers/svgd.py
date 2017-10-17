@@ -115,7 +115,7 @@ class SVGDSampler(MCMCSampler):
         )
 
         self.session.run(
-            tf.variables_initializer([historical_grad, self.Epsilon])
+            tf.variables_initializer([historical_grad, self.epsilon])
         )
 
         lnpgrad = tf.squeeze(tf.gradients(self.cost, self.particles))
