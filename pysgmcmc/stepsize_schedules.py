@@ -18,7 +18,6 @@ class StepsizeSchedule(object):
         next_stepsize : float
             Next stepsize to use according to this schedule.
         """
-        raise NotImplementedError()
 
     def __iter__(self):
         return self
@@ -31,8 +30,8 @@ class StepsizeSchedule(object):
         Information may e.g. include cost values for the last step size
         used, effective sample sizes of a sampler, values of other
         hyperparameters etc.
+
         """
-        raise NotImplementedError()
 
 
 class ConstantStepsizeSchedule(StepsizeSchedule):
