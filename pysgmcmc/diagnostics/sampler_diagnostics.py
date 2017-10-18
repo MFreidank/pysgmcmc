@@ -91,17 +91,19 @@ def effective_sample_sizes(get_sampler, n_chains=2, samples_per_chain=100):
 
     >>> import tensorflow as tf
     >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
-    >>> params = [tf.Variable([1.0, 2.0], name="x", dtype=tf.float64)]
-    >>> cost_fun = lambda params: tf.reduce_sum(params)  # dummy cost functions
-    >>> get_sampler = lambda session: SGHMCSampler(
-    ...    params=params, cost_fun=cost_fun, session=session
-    ... )
+    >>> def get_sampler(session):
+    ...     params = [tf.Variable([1.0, 2.0], name="x", dtype=tf.float64)]
+    ...     cost_fun = lambda params: tf.reduce_sum(params)
+    ...     sampler = SGHMCSampler(params=params, cost_fun=cost_fun, session=session)
+    ...     return sampler
+    ...
     >>> ess_vals = effective_sample_sizes(get_sampler=get_sampler)
     >>> type(ess_vals)
     <class 'dict'>
-    >>> list(ess_vals.keys())[0].startswith("x")  # necessary due to tensorflow variable enumeration
+    >>> param_name = list(ess_vals.keys())[0]
+    >>> param_name.startswith("x")
     True
-    >>> len(ess_vals[params[0].name])  # x:0 has two dimensions, we have one ess value for each
+    >>> len(ess_vals[param_name])  # x:0 has two dimensions, we have one ess value for each
     2
     """
 
@@ -169,15 +171,19 @@ def gelman_rubin(get_sampler, n_chains=2, samples_per_chain=100):
 
     >>> import tensorflow as tf
     >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
-    >>> params = [tf.Variable([1.0, 2.0], name="x", dtype=tf.float64)]
-    >>> cost_fun = lambda params: tf.reduce_sum(params)
-    >>> get_sampler = lambda session: SGHMCSampler(params=params, cost_fun=cost_fun, session=session)
+    >>> def get_sampler(session):
+    ...     params = [tf.Variable([1.0, 2.0], name="x", dtype=tf.float64)]
+    ...     cost_fun = lambda params: tf.reduce_sum(params)
+    ...     sampler = SGHMCSampler(params=params, cost_fun=cost_fun, session=session)
+    ...     return sampler
+    ...
     >>> factors = gelman_rubin(get_sampler=get_sampler)
     >>> type(factors)
     <class 'dict'>
-    >>> list(factors.keys())[0].startswith("x")  # necessary due to tensorflow variable enumeration
+    >>> param_name = list(factors.keys())[0]
+    >>> param_name.startswith("x")
     True
-    >>> len(factors[params[0].name])  # x:0 has two dimensions, we have one factor for each
+    >>> len(factors[param_name])  # x:0 has two dimensions, we have one factor for each
     2
     """
     return _pymc3_diagnostic(
