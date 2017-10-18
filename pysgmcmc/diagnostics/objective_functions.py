@@ -1,11 +1,14 @@
 from scipy.misc import logsumexp
 import tensorflow as tf
 import numpy as np
+import functools
 
 
-# XXX: Give references for banana function (this is the one they use in their notebook!)
-def banana_log_likelihood_notebooks(x):
-    return -1.0 / 20.0 * (100 * (x[1] - x[0]**2)**2 + (1 - x[0]) ** 2)
+def to_negative_log_likelihood(log_likelihood_function):
+    @functools.wraps(log_likelihood_function)
+    def negative_log_likelihood(*args, **kwargs):
+        return -log_likelihood_function(*args, **kwargs)
+    return negative_log_likelihood
 
 
 # XXX: Give references again, this is the banana function from the relativistic monte carlo paper
@@ -57,8 +60,6 @@ def sinc(x):
 
 
 # ## HPOLIB SYNTHETIC FUNCTIONS ## #
-
-# XXX Merge/write doku
 
 def bohachevski(x):
     """
