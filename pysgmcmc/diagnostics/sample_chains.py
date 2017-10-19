@@ -181,9 +181,53 @@ class PYSGMCMCTrace(object):
         return PYSGMCMCTrace(chain_id, samples, varnames)
 
     def __getitem__(self, index):
+        """
+        Extract all samples for a target parameter at the given `index` in this trace.
+        NOTE: This is equivalent to `trace.get_values(trace.varnames[index])`.
+
+        Parameters
+        ----------
+        index : int
+            Index of the target parameter for which we want to look up samples.
+
+        Returns
+        ----------
+        trace_samples : list
+            All samples for the parameter at the given `index` in this trace.
+
+        Examples
+        ----------
+
+        >>> varnames = ["x", "y"]
+        >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
+        >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=varnames)
+        >>> trace[0] == trace.get_values("x"), trace[1] == trace.get_values["y"]
+        (array([ 0. ,  0.2,  0.3,  0.1]), array([ 0. , -0.2, -0.5,  0. ]))
+
+        """
+        assert isinstance(index, int)
+        assert 0 <= index < len(self.varnames)
+
         return self.get_values(self.varnames[index])
 
     def _slice(self, slice_):
+        """
+        Slice this trace using slice indices in `slice_`.
+        Slicing a trace effectively projects the trace onto the target parameters
+        with the slice indices. All other target parameter samples are discarded
+        and only the ones in the slice are kept.
+
+        Parameters
+        ----------
+        slice_ : slice
+            A slice use to index this trace.
+
+        Returns
+        -------
+        sliced_trace : PYSGMCMCTrace
+            A new trace that keeps only variable indices in the given `slice_`.
+
+        """
         # XXX: Set chain_id to something unique, instead of self.chain
         return PYSGMCMCTrace(
             chain_id=self.chain,
@@ -192,6 +236,17 @@ class PYSGMCMCTrace(object):
         )
 
     def point(self, index):
+        """TODO: Docstring for point.
+
+        Parameters
+        ----------
+        index : TODO
+
+        Returns
+        ----------
+        TODO
+
+        """
         sample = self.samples[index]
         return {
             varname: sample[variable_index]
