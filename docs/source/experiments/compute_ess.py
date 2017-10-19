@@ -224,7 +224,7 @@ def main():
                     varnames = ["x"]
 
                 sampler = sampler_fun(
-                    epsilon=ConstantStepsizeSchedule(stepsize),
+                    stepsize_schedule=ConstantStepsizeSchedule(stepsize),
                     params=params,
                     cost_fun=cost_function(function),
                     session=session,
