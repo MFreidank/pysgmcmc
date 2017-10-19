@@ -201,7 +201,7 @@ class PYSGMCMCTrace(object):
         >>> varnames = ["x", "y"]
         >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
         >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=varnames)
-        >>> trace[0] == trace.get_values("x"), trace[1] == trace.get_values["y"]
+        >>> trace[0] == trace.get_values("x"), trace[1] == trace.get_values("y")
         (array([ 0. ,  0.2,  0.3,  0.1]), array([ 0. , -0.2, -0.5,  0. ]))
 
         """
