@@ -15,6 +15,9 @@ SCRIPT_PATH = dirname(realpath(__file__))
 sys.path.insert(0, path_join(SCRIPT_PATH, "..", "..", ".."))
 
 from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler
+from pysgmcmc.samplers.sghmc import SGHMCSampler
+from pysgmcmc.samplers.sgld import SGLDSampler
+
 from pysgmcmc.diagnostics.sample_chains import PYSGMCMCTrace
 from pysgmcmc.diagnostics.objective_functions import (
     banana_log_likelihood,
@@ -26,7 +29,7 @@ from pysgmcmc.diagnostics.objective_functions import (
 def main():
     parser = argparse.ArgumentParser(
         description="Small script to study the relationship between stepsize "
-                    "of relativistic sghmc and effective sample sizes (ESS) on "
+                    "of a sampler and effective sample sizes (ESS) on "
                     "on four different benchmarks."
     )
 
@@ -35,6 +38,13 @@ def main():
         help="Benchmark function to sample from. "
         "One of: 'banana', 'gmm1', 'gmm2', 'gmm3'. "
         "For reference, see: http://proceedings.mlr.press/v54/lu17b/lu17b.pdf.",
+    )
+
+    parser.add_argument(
+        "--sampler",
+        help="Sampler to study.",
+        default="RelativisticSGHMC",
+        action="store", dest="sampler"
     )
 
     parser.add_argument(
@@ -177,6 +187,16 @@ def main():
     assert args.stepsize_min >= 0.0, "--stepsize-min must be >= 0.0"
     assert args.stepsize_step > 0, "--stepsize-increment must be > 0.0"
 
+    samplers = {
+        "RelativisticSGHMC": RelativisticSGHMCSampler,
+        "SGHMC": SGHMCSampler,
+        "SGLD": SGLDSampler,
+    }
+
+    assert args.sampler in samplers
+
+    sampler_fun = samplers[args.sampler]
+
     if args.stepsize is None:
         stepsizes = np.arange(
             args.stepsize_min, args.stepsize_max, args.stepsize_step
@@ -202,7 +222,7 @@ def main():
                     params = [tf.Variable(0., dtype=tf.float32, name="x")]
                     varnames = ["x"]
 
-                sampler = RelativisticSGHMCSampler(
+                sampler = sampler_fun(
                     epsilon=stepsize,
                     params=params,
                     cost_fun=cost_function(function),
