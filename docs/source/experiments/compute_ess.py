@@ -15,6 +15,7 @@ SCRIPT_PATH = dirname(realpath(__file__))
 sys.path.insert(0, path_join(SCRIPT_PATH, "..", "..", ".."))
 
 from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler
+from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 from pysgmcmc.samplers.sghmc import SGHMCSampler
 from pysgmcmc.samplers.sgld import SGLDSampler
 
@@ -223,7 +224,7 @@ def main():
                     varnames = ["x"]
 
                 sampler = sampler_fun(
-                    epsilon=stepsize,
+                    epsilon=ConstantStepsizeSchedule(stepsize),
                     params=params,
                     cost_fun=cost_function(function),
                     session=session,
