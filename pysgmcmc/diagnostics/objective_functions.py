@@ -5,6 +5,40 @@ import functools
 
 
 def to_negative_log_likelihood(log_likelihood_function):
+    """ Decorator that converts a log likelihood into a negative log likelihood.
+        Callable `log_likelihood_function` represents the log likelihood
+        and a callable `negative_log_likelihood_function` with the same
+        signature is returned.
+
+    Parameters
+    ----------
+    log_likelihood_function : callable
+        Callable that represents a log likelihood function.
+
+    Returns
+    -------
+    negative_log_likelihood_function : callable
+        Callable that returns negative log likelihood.
+
+    Examples
+    -------
+    Wrapping a dummy log likelihood:
+
+    >>> import numpy as np
+    >>> log_likelihood = lambda a, b: np.log(a + b)
+    >>> negative_log_likelihood = to_negative_log_likelihood(log_likelihood)
+    >>> input_a, input_b = 4, 5
+    >>> ll = log_likelihood(input_a, input_b)
+    >>> nll = negative_log_likelihood(input_a, input_b)
+    >>> np.allclose(-ll, nll)
+    True
+
+    The name attribute of the wrapped function remains unchanged:
+
+    >>> log_likelihood.__name__ == negative_log_likelihood.__name__
+    True
+
+    """
     @functools.wraps(log_likelihood_function)
     def negative_log_likelihood(*args, **kwargs):
         return -log_likelihood_function(*args, **kwargs)
@@ -257,6 +291,7 @@ def sin_two(x):
         K. Kawaguchi, L. P. Kaelbling, and T. Lozano-Perez.
         Bayesian Optimization with Exponential Convergence.
         In Advances in Neural Information Processing (NIPS), 2015
+
     Examples
     -------
 

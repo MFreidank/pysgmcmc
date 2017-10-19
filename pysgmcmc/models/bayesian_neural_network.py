@@ -1,10 +1,5 @@
 # vim: foldmethod=marker
 
-# NOTE: Make BNN tensorflow.dtype aware so that we can run
-# with different floating point precision. one approach: guess the datatype
-# from the architecture; another: add a parameter for it
-
-
 #  Imports {{{ #
 from collections import deque
 import itertools
