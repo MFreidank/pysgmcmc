@@ -45,8 +45,17 @@ def to_negative_log_likelihood(log_likelihood_function):
     return negative_log_likelihood
 
 
-# XXX: Give references again, this is the banana function from the relativistic monte carlo paper
+# XXX Give references: Relativistic Monte Carlo
 def banana_log_likelihood(x):
+    """
+    Examples
+    ----------
+
+    >>> optimum, f_opt = (0, 10), 0.
+    >>> np.allclose(banana_log_likelihood(optimum), f_opt)
+    True
+
+    """
     return -0.5 * (0.01 * x[0] ** 2 + (x[1] + 0.1 * x[0] ** 2 - 10) ** 2)
 
 
