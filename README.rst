@@ -4,7 +4,7 @@ PYSGMCMC
 |Build Status|
 |Docs_|
 |Coverage_|
-|Health_|
+|Codacy_|
 
 PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on 
 Stochastic Gradient Markov Chain Monte Carlo methods. 
@@ -33,9 +33,9 @@ Features
    :target: https://coveralls.io/github/MFreidank/pysgmcmc
    :alt: Coverage
 
-.. |Health_| image:: https://landscape.io/github/MFreidank/pysgmcmc/master/landscape.svg?style=flat
-   :target: https://landscape.io/github/MFreidank/pysgmcmc/master
-   :alt: Code Health
+.. |Codacy_| image:: https://api.codacy.com/project/badge/Grade/94a3778e36814055ad7b12875857d15e    
+   :target: https://www.codacy.com/app/MFreidank/pysgmcmc?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=MFreidank/pysgmcmc&amp;utm_campaign=Badge_Grade
+   :alt: Codacy
 
 Install
 =======
