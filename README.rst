@@ -6,7 +6,7 @@ PYSGMCMC
 |Coverage_|
 |Codacy_|
 
-PYSGMCMC is a Python framework for Bayesian Deep Learning which focuses on 
+PYSGMCMC is a Python framework for Bayesian Deep Learning that focuses on 
 Stochastic Gradient Markov Chain Monte Carlo methods. 
 
 Features
