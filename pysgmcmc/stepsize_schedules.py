@@ -63,6 +63,29 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
         """
         return self.initial_value
 
+    def __str__(self):
+        """ Pretty string representation of `ConstantStepsizeSchedule`.
+
+        Returns
+        ----------
+        schedule_str : string
+            String representation of this schedule.
+
+        Examples
+        ----------
+        Proof of concept:
+
+        >>> schedule = ConstantStepsizeSchedule(0.01)
+        >>> str(schedule)
+        'ConstantStepsizeSchedule(stepsize=0.01)'
+
+        >>> schedule = ConstantStepsizeSchedule(0.1)
+        >>> str(schedule)
+        'ConstantStepsizeSchedule(stepsize=0.1)'
+
+        """
+        return "ConstantStepsizeSchedule(stepsize={})".format(self.initial_value)
+
     def update(self, *args, **kwargs):
         """ Updating a constant stepsize schedule is a no-op. """
         pass
