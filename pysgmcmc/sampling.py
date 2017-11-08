@@ -182,7 +182,7 @@ class Sampler(Enum):
             )
         elif sampling_method == cls.SVGD:
             from pysgmcmc.samplers.svgd import (
-                SteinVariationalGradientDescent as Get_Sampler
+                SVGDSampler as Get_Sampler
             )
         else:
             raise ValueError(
