@@ -8,6 +8,7 @@ class Sampler(Enum):
     SGHMC = "SGHMC"
     RelativisticSGHMC = "RelativisticSGHMC"
     SGLD = "SGLD"
+    SVGD = "SVGD"
 
     @staticmethod
     def is_burn_in_mcmc(sampling_method):
@@ -178,6 +179,10 @@ class Sampler(Enum):
         elif sampling_method == cls.RelativisticSGHMC:
             from pysgmcmc.samplers.relativistic_sghmc import (
                 RelativisticSGHMCSampler as Get_Sampler
+            )
+        elif sampling_method == cls.SVGD:
+            from pysgmcmc.samplers.svgd import (
+                SteinVariationalGradientDescent as Get_Sampler
             )
         else:
             raise ValueError(
