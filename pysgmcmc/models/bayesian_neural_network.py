@@ -297,6 +297,43 @@ class BayesianNeuralNetwork(object):
 
         self.is_trained = False
 
+    def _set_up_train_graph(self, X, y):
+        n_inputs = X.shape
+
+        self.X_Minibatch = tf.placeholder(
+            shape=(None, n_inputs),
+            dtype=self.dtype,
+            name="X_Minibatch"
+        )
+
+        self.Y_Minibatch = tf.placeholder(dtype=self.dtype, name="Y_Minibatch")
+
+        self.Nll, self.Mse = self.negative_log_likelihood(
+            X=self.X_Minibatch, Y=self.Y_Minibatch
+        )
+
+        self.sampler_kwargs.update({
+            "params": self.network_params,
+            "cost_fun": lambda *_: self.Nll,
+            "batch_generator": self.batch_generator(
+                x=self.X, x_placeholder=self.X_Minibatch,
+                y=self.y, y_placeholder=self.Y_Minibatch,
+                batch_size=self.batch_size,
+                seed=self.seed
+            ),
+            "session": self.session, "seed": self.seed,
+            "dtype": self.dtype, "stepsize_schedule": self.stepsize_schedule,
+        })
+
+        # XXX: n_datapoints will change on later calls -- we may have to pass
+        # that into the graph!
+        n_datapoints = X.shape[0]
+        if Sampler.is_burn_in_mcmc(self.sampling_method):
+            self.sampler_kwargs.update({
+                "scale_grad": n_datapoints,
+                "burn_in_steps": self.burn_in_steps
+            })
+
     def negative_log_likelihood(self, X, Y):
         """ Compute the negative log likelihood of the
             current network parameters with respect to inputs `X` with
