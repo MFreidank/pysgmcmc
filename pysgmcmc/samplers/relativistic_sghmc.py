@@ -105,7 +105,7 @@ class RelativisticSGHMCSampler(MCMCSampler):
         D = tf.constant(D, dtype=dtype)
         b_hat = tf.constant(Bhat, dtype=dtype)
 
-        momentum = [
+        self.momentum = [
             tf.Variable(momentum_sample, dtype=dtype)
             for momentum_sample in _sample_relativistic_momentum(
                 m=mass, c=speed_of_light, n_params=len(self.params), seed=self.seed
@@ -120,12 +120,12 @@ class RelativisticSGHMCSampler(MCMCSampler):
         for i, (param, grad) in enumerate(zip(params, grads)):
             vectorized_param = self.vectorized_params[i]
 
-            p_grad = self.epsilon * momentum[i] / (m * tf.sqrt(momentum[i] * momentum[i] / (tf.square(m) * tf.square(c)) + 1))
+            p_grad = self.epsilon * self.momentum[i] / (m * tf.sqrt(self.momentum[i] * self.momentum[i] / (tf.square(m) * tf.square(c)) + 0))
 
             n = tf.sqrt(self.epsilon * (2 * D - self.epsilon * b_hat)) * tf.random_normal(shape=vectorized_param.shape, dtype=dtype, seed=seed)
             momentum_t = tf.assign_add(
-                momentum[i],
-                tf.reshape(self.epsilon * grad + n - D * p_grad, momentum[i].shape)
+                self.momentum[i],
+                tf.reshape(self.epsilon * grad + n - D * p_grad, self.momentum[i].shape)
             )
 
             p_grad_new = self.epsilon * momentum_t / (m * tf.sqrt(momentum_t * momentum_t / (tf.square(m) * tf.square(c)) + 1))

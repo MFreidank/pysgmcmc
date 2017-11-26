@@ -6,7 +6,11 @@ import abc
 import tensorflow as tf
 
 from pysgmcmc.tensor_utils import vectorize, uninitialized_params
-from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
+from pysgmcmc.stepsize_schedules import (
+    ConstantStepsizeSchedule,
+    DualAveragingStepsizeSchedule,
+)
+
 
 __all__ = (
     "MCMCSampler",
@@ -193,6 +197,9 @@ class MCMCSampler(object):
 
     # XXX: Doku
     def _next_stepsize(self):
+        if self.n_iterations == 0 and self.stepsize_schedule.initialize_from_heuristic:
+            self.stepsize_schedule.find_reasonable_epsilon(self)
+
         epsilon = next(self.stepsize_schedule)
         return {self.epsilon: epsilon}
 
@@ -285,7 +292,36 @@ class MCMCSampler(object):
         >>> session.close()
         >>> tf.reset_default_graph()  # to avoid polluting test environment
 
+        Additional values to feed during computation can be given as `feed_dict`
+        and will be forwarded to our `tensorflow.Session` object:
+
+        >>> import tensorflow as tf
+        >>> import numpy as np
+        >>> from itertools import islice
+        >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
+        >>> session = tf.Session()
+        >>> x = tf.Variable(1.0)
+        >>> dist = tf.contrib.distributions.Normal(loc=0., scale=1.)
+        >>> n_burn_in = 1000
+        >>> sampler = SGHMCSampler(params=[x], burn_in_steps=n_burn_in, cost_fun=lambda x:-dist.log_prob(x), session=session, dtype=tf.float32)
+        >>> session.run(tf.global_variables_initializer())
+        >>> sample, cost = sampler.__next__(feed_dict={sampler.epsilon: 1.0})  # fix stepsize to 1.0
+        >>> session.close()
+        >>> tf.reset_default_graph()  # to avoid polluting test environment
+
         """
+        assert (feed_dict is None or hasattr(feed_dict, "update"))
+        # Ensure self.theta_t and self.cost are defined
+        assert hasattr(self, "theta_t") or not hasattr(self, "cost")
+
+        params, cost, _ = self.leapfrog(feed_dict=feed_dict)
+
+        self.stepsize_schedule.update(params, cost)
+
+        self.n_iterations += 1
+        return params, cost
+
+    def leapfrog(self, feed_dict=None):
         assert (feed_dict is None or hasattr(feed_dict, "update"))
         # Ensure self.theta_t and self.cost are defined
         assert hasattr(self, "theta_t") or not hasattr(self, "cost")
@@ -294,20 +330,22 @@ class MCMCSampler(object):
             feed_dict = dict()
 
         feed_dict.update(self._next_batch())
-        feed_dict.update(self._next_stepsize())
-        params, cost = self.session.run(
-            [self.theta_t, self.cost], feed_dict=feed_dict
+
+        if self.epsilon not in feed_dict:
+            feed_dict.update(self._next_stepsize())
+
+        params, cost, momentum, _ = self.session.run(
+            [self.params, self.cost, self.momentum, self.theta_t], feed_dict=feed_dict
         )
 
         if len(params) == 1:
             # unravel single-element lists to scalars
             params = params[0]
 
-        self.stepsize_schedule.update(params, cost)
+        if len(momentum) == 1:
+            momentum = momentum[0]
 
-        self.n_iterations += 1  # increment iteration counter
-
-        return params, cost
+        return params, cost, momentum
 
 
 class BurnInMCMCSampler(MCMCSampler):

@@ -148,15 +148,17 @@ class SGHMCSampler(BurnInMCMCSampler):
                             name="minv_{}".format(i), trainable=False)
                 for i, param in enumerate(self.vectorized_params)]
 
-        # Initialize momentum
-        V = [tf.Variable(tf.zeros_like(param, dtype=dtype),
-                         dtype=dtype, name="v_{}".format(i),
+        # Initialize momentum, denoted with v in
+        # the Bohamiann paper linked in __init__ docstring
+        self.momentum = [tf.Variable(tf.zeros_like(param, dtype=dtype),
+                         dtype=dtype, name="momentum_{}".format(i),
                          trainable=False)
-             for i, param in enumerate(self.vectorized_params)]
+                         for i, param in enumerate(self.vectorized_params)]
 
         #  }}} Initialize internal sampler parameters #
 
         self.minv_t = [None] * len(params)  # gets burned-in
+        self.v_t = [None] * len(params)  # new momentum
 
         # R_t = 1/ (tau + 1), shouldn't it be: 1 / tau according to terms?
         # It is not, and changing it to that breaks everything!
@@ -230,16 +232,16 @@ class SGHMCSampler(BurnInMCMCSampler):
 
                         # Equation 10: right side, where:
                         # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
-                        v_t = tf.assign_add(
-                            V[i],
+                        self.v_t[i] = tf.assign_add(
+                            self.momentum[i],
                             - self.epsilon ** 2 * self.minv_t[i] * grad -
-                            mdecay * V[i] + sample,
+                            mdecay * self.momentum[i] + sample,
                             name="v_t_{}".format(i)
                         )
 
                         # Equation 10: left side
                         vectorized_Theta_t = tf.assign_add(
-                            vectorized_param, v_t
+                            vectorized_param, self.v_t[i]
                         )
 
                         self.theta_t[i] = tf.assign(
