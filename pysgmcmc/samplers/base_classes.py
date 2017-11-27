@@ -90,7 +90,7 @@ class MCMCSampler(object):
 
         assert hasattr(stepsize_schedule, "update")
         assert hasattr(stepsize_schedule, "__next__")
-        assert hasattr(stepsize_schedule, "initial_value")
+        assert hasattr(stepsize_schedule, "stepsize")
 
         self.stepsize_schedule = stepsize_schedule
 
@@ -107,7 +107,7 @@ class MCMCSampler(object):
         self.vectorized_params = [vectorize(param) for param in self.params]
 
         self.epsilon = tf.Variable(
-            self.stepsize_schedule.initial_value,
+            self.stepsize_schedule.stepsize,
             dtype=self.dtype,
             name="epsilon",
             trainable=False

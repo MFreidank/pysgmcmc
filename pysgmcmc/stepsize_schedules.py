@@ -3,6 +3,14 @@ import numpy as np
 import tensorflow as tf
 
 
+def probability_value(momentum, costs):
+    log_likelihood = -np.squeeze(costs)
+    r_squeezed = np.squeeze(momentum)
+    return np.exp(
+        log_likelihood - 0.5 * np.dot(np.transpose(r_squeezed), r_squeezed)
+    )
+
+
 class StepsizeSchedule(object):
     """ Generic base class for all stepsize schedules. """
     __metaclass__ = ABCMeta
@@ -120,22 +128,17 @@ class StepsizeSchedule(object):
         """
         epsilon = 1.
 
-        theta, costs, r = sampler.session.run(
+        theta, costs, momentum = sampler.session.run(
             [sampler.params, sampler.cost, sampler.momentum]
         )
 
-        theta_, costs_, r_ = sampler.leapfrog(
+        theta_, costs_, momentum_ = sampler.leapfrog(
             feed_dict={sampler.epsilon: epsilon}
         )
 
-        def p(r, costs):
-            log_likelihood = -np.squeeze(costs)
-            r = np.squeeze(r)
-            return np.exp(log_likelihood - 0.5 * np.dot(np.transpose(r), r))
-
         # Compute old and new likelihood: p(theta, r)
-        p_0 = p(r=r, costs=costs)
-        p_ = p(r=r_, costs=costs_)
+        p_0 = probability_value(momentum=momentum, costs=costs)
+        p_ = probability_value(momentum=momentum_, costs=costs_)
 
         a = 2. * ((p_ / p_0) > 0.5) - 1.
 
@@ -145,11 +148,11 @@ class StepsizeSchedule(object):
             # Reset all sampler parameters to their initial values
             sampler.session.run(tf.global_variables_initializer())
 
-            theta_, costs_, r_ = sampler.leapfrog(
+            theta_, costs_, momentum_ = sampler.leapfrog(
                 feed_dict={sampler.epsilon: epsilon}
             )
 
-            p_ = p(costs=costs_, r=r_)
+            p_ = probability_value(costs=costs_, momentum=momentum_)
 
         self.stepsize = epsilon
 
@@ -216,7 +219,7 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
 def DualAveragingStepsizeSchedule(StepsizeSchedule):
     """ Stepsize schedule based on dual averaging."""
 
-    def __init__(self, n_intermediate_leapfrogs=1,
+    def __init__(self, lambda_=0.5,
                  desired_acceptance_rate=0.651,
                  n_adaptation_iterations=float("inf"),
                  gamma=0.05,
@@ -233,7 +236,6 @@ def DualAveragingStepsizeSchedule(StepsizeSchedule):
 
         self.n_iterations = 0
         self.n_adaptation_iterations = n_adaptation_iterations
-        self.n_intermediate_leapfrogs = n_intermediate_leapfrogs
 
         self.last_r, self.last_costs = None, None
 
@@ -242,34 +244,32 @@ def DualAveragingStepsizeSchedule(StepsizeSchedule):
         self.desired_acceptance_rate = desired_acceptance_rate
 
         self.gamma = gamma
-        # XXX: How to set up mu properly? We run into trouble since
-        # it should be set based on results of "find_reasonable_epsilon"
+        self.lambda_ = lambda_
 
     @property
     def should_adapt_stepsize(self):
         if self.n_iterations == 0:
             return False
-        return self.n_iterations % self.n_intermediate_leapfrogs == 0
+
+        # n_intermediate leapfrogs is called L_m in the paper
+        n_intermediate_leapfrogs = max(1., round(self.lambda_ / self.stepsize))
+        return self.n_iterations % n_intermediate_leapfrogs == 0
 
     def update(self, momentum, costs, *args, **kwargs):
+        if self.n_iterations == 0:
+            # initialize mu
+            self.mu = np.log(10 * self.stepsize)
+
         if self.n_iterations > self.n_adaptation_iterations:
             self.stepsize = self.stepsize_bar
             return
-
-        # XXX: Move somewhere appropriate,
-        # then call from here and up in `find_reasonable_epsilon`
-        def p(r, costs):
-            log_likelihood = -np.squeeze(costs)
-            r_squeezed = np.squeeze(r)
-            return np.exp(
-                log_likelihood - 0.5 * np.dot(np.transpose(r_squeezed), r_squeezed)
-            )
 
         if self.should_adapt_stepsize:
             # acceptance rate is called alpha in nuts paper
             acceptance_rate = np.min(
                 1.,
-                p(r=momentum, costs=costs) / p(momentum=self.last_r, costs=self.last_costs)
+                probability_value(r=momentum, costs=costs) /
+                probability_value(momentum=self.last_r, costs=self.last_costs)
             )
 
             acceptance_difference = self.desired_acceptance_rate - acceptance_rate
@@ -292,5 +292,8 @@ def DualAveragingStepsizeSchedule(StepsizeSchedule):
                 (1. - moving_average_coefficient) * np.log(self.stepsize_bar)
             )
 
+            # update cached r_0 and costs(theta_0)
             self.last_momentum = momentum
             self.last_costs = costs
+
+        self.n_iterations += 1
