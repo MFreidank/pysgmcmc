@@ -8,7 +8,9 @@ class StepsizeSchedule(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, initial_value, initialize_from_heuristic=False):
-        self.initial_value = initial_value
+        assert isinstance(initialize_from_heuristic, bool)
+
+        self.stepsize = initial_value
         self.initialize_from_heuristic = initialize_from_heuristic
 
     @abstractmethod
@@ -149,6 +151,8 @@ class StepsizeSchedule(object):
 
             p_ = p(costs=costs_, r=r_)
 
+        self.stepsize = epsilon
+
         return epsilon
 
 
@@ -170,7 +174,7 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
         Proof of concept:
 
         >>> schedule = ConstantStepsizeSchedule(0.01)
-        >>> schedule.initial_value
+        >>> schedule.stepsize
         0.01
         >>> next(schedule)
         0.01
@@ -179,7 +183,7 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
         [0.01, 0.01, 0.01, 0.01]
 
         """
-        return self.initial_value
+        return self.stepsize
 
     def __str__(self):
         """ Pretty string representation of `ConstantStepsizeSchedule`.
@@ -202,7 +206,7 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
         'ConstantStepsizeSchedule(stepsize=0.1)'
 
         """
-        return "ConstantStepsizeSchedule(stepsize={})".format(self.initial_value)
+        return "ConstantStepsizeSchedule(stepsize={})".format(self.stepsize)
 
     def update(self, *args, **kwargs):
         """ Updating a constant stepsize schedule is a no-op. """
@@ -211,43 +215,82 @@ class ConstantStepsizeSchedule(StepsizeSchedule):
 
 def DualAveragingStepsizeSchedule(StepsizeSchedule):
     """ Stepsize schedule based on dual averaging."""
-    # XXX Is epsilon bar really necessary in Algorithm 5 of NUTS paper?
-    # It does not really appear to be..
-    def __init__(self, delta=0.65, gamma=0.05, t_0=10,):
-        # XXX Give references here and as many insights for params as one
-        # can squeeze out of them.
 
-        # always initialize dual averaging from heuristic
-        super().__init__(initial_value=1., initialize_from_heuristic=True)
-        self.stepsize, self.mu = None, None
+    def __init__(self, n_intermediate_leapfrogs=1,
+                 desired_acceptance_rate=0.651,
+                 n_adaptation_iterations=float("inf"),
+                 gamma=0.05,
+                 t_0=10., initial_value=1., initialize_from_heuristic=True):
+        # n_adaptation iterations is called m_adapt in nuts paper
+        # n_intermediate_leapfrogs is called L_m in nuts paper
+        # desired_acceptance_rate is called delta in nuts paper
+        super().__init__(
+            initial_value=initial_value,
+            initialize_from_heuristic=initialize_from_heuristic
+        )
+
+        self.stepsize_bar = 1.
+
         self.n_iterations = 0
-        self.m = 1
+        self.n_adaptation_iterations = n_adaptation_iterations
+        self.n_intermediate_leapfrogs = n_intermediate_leapfrogs
 
-        self.delta, self.gamma, self.t_0 = delta, gamma, t_0
+        self.last_r, self.last_costs = None, None
 
-        self.H = 0.
+        self.statistics = 0.
+        self.t_0 = t_0
+        self.desired_acceptance_rate = desired_acceptance_rate
 
-        self.costs, self.last_costs = None, None
+        self.gamma = gamma
+        # XXX: How to set up mu properly? We run into trouble since
+        # it should be set based on results of "find_reasonable_epsilon"
 
-    def update(self, costs, momentum):
-        # XXX: Handling momentum properly?
-        if self.last_costs is not None:
-            self.costs, self.last_costs = costs, self.costs
-        else:
-            self.last_costs = costs
+    @property
+    def should_adapt_stepsize(self):
+        if self.n_iterations == 0:
+            return False
+        return self.n_iterations % self.n_intermediate_leapfrogs == 0
 
-    def __next__(self):
-        if self.last_costs is not None and self.costs is not None:
-            alpha = None  # compute alpha here
+    def update(self, momentum, costs, *args, **kwargs):
+        if self.n_iterations > self.n_adaptation_iterations:
+            self.stepsize = self.stepsize_bar
+            return
 
-            delta_difference = (1. / (self.m + self.t_0)) * (self.delta - alpha)
-
-            self.H = (1. - (1. / (self.m + self.t_0))) * self.H + delta_difference
-
-            self.stepsize = np.exp(
-                self.mu - (np.sqrt(self.m) / self.gamma) * self.H
+        # XXX: Move somewhere appropriate,
+        # then call from here and up in `find_reasonable_epsilon`
+        def p(r, costs):
+            log_likelihood = -np.squeeze(costs)
+            r_squeezed = np.squeeze(r)
+            return np.exp(
+                log_likelihood - 0.5 * np.dot(np.transpose(r_squeezed), r_squeezed)
             )
 
-            self.m += 1
-        else:
-            self.m += 1
+        if self.should_adapt_stepsize:
+            # acceptance rate is called alpha in nuts paper
+            acceptance_rate = np.min(
+                1.,
+                p(r=momentum, costs=costs) / p(momentum=self.last_r, costs=self.last_costs)
+            )
+
+            acceptance_difference = self.desired_acceptance_rate - acceptance_rate
+            moving_average_coefficient = (1. / (self.n_iterations + self._t0))
+
+            # statistics is called H_m in nuts paper
+            self.statistics = (
+                (1 - moving_average_coefficient) * self.statistics +
+                moving_average_coefficient * acceptance_difference
+            )
+
+            self.stepsize = np.exp(
+                self.mu - (np.sqrt(self.n_iterations) / self.gamma) * self.statistics
+            )
+
+            moving_average_coefficient = self.n_iterations ** -self.kappa
+
+            self.stepsize_bar = np.exp(
+                moving_average_coefficient * np.log(self.stepsize) +
+                (1. - moving_average_coefficient) * np.log(self.stepsize_bar)
+            )
+
+            self.last_momentum = momentum
+            self.last_costs = costs
