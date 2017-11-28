@@ -107,7 +107,7 @@ class SVGDSampler(MCMCSampler):
 
         assert hasattr(stepsize_schedule, "update")
         assert hasattr(stepsize_schedule, "__next__")
-        assert hasattr(stepsize_schedule, "initial_value")
+        assert hasattr(stepsize_schedule, "stepsize")
 
         self.stepsize_schedule = stepsize_schedule
 
@@ -121,7 +121,7 @@ class SVGDSampler(MCMCSampler):
         self.cost = self.cost_fun(self.params)
 
         self.epsilon = tf.Variable(
-            self.stepsize_schedule.initial_value,
+            self.stepsize_schedule.stepsize,
             dtype=self.dtype,
             name="epsilon",
             trainable=False
@@ -141,10 +141,6 @@ class SVGDSampler(MCMCSampler):
 
         fudge_factor = tf.constant(
             fudge_factor, dtype=self.dtype, name="fudge_factor"
-        )
-
-        self.epsilon = tf.Variable(
-            stepsize_schedule.initial_value, dtype=self.dtype, name="stepsize"
         )
 
         self.n_particles = tf.cast(
