@@ -1,7 +1,8 @@
 import tensorflow as tf
 from pysgmcmc.tensor_utils import pdist, squareform, median
-from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 from pysgmcmc.samplers.base_classes import MCMCSampler
+from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
+from pysgmcmc.tensor_utils import uninitialized_params
 
 
 # XXX: Interface needs to change more: particles should be List[List[tensorflow.Variable]]
@@ -89,13 +90,54 @@ class SVGDSampler(MCMCSampler):
 
         cost_fun_wrapper.__name__ = cost_fun.__name__
 
-        super().__init__(
-            params=particles,
-            cost_fun=cost_fun_wrapper,
-            batch_generator=batch_generator,
-            session=session, seed=seed, dtype=dtype,
-            stepsize_schedule=stepsize_schedule
+        # Sanitize inputs
+        assert batch_generator is None or hasattr(batch_generator, "__next__")
+        assert seed is None or isinstance(seed, int)
+
+        assert isinstance(session, (tf.Session, tf.InteractiveSession))
+        assert isinstance(dtype, tf.DType)
+
+        assert callable(cost_fun)
+
+        self.dtype = dtype
+
+        self.n_iterations = 0
+
+        self.seed = seed
+
+        assert hasattr(stepsize_schedule, "update")
+        assert hasattr(stepsize_schedule, "__next__")
+        assert hasattr(stepsize_schedule, "initial_value")
+
+        self.stepsize_schedule = stepsize_schedule
+
+        self.batch_generator = batch_generator
+        self.session = session
+
+        self.params = particles
+
+        # set up costs
+        self.cost_fun = cost_fun_wrapper
+        self.cost = self.cost_fun(self.params)
+
+        self.epsilon = tf.Variable(
+            self.stepsize_schedule.initial_value,
+            dtype=self.dtype,
+            name="epsilon",
+            trainable=False
         )
+
+        # Initialize uninitialized parameters before usage in any sampler.
+        init = tf.variables_initializer(
+            uninitialized_params(
+                session=self.session,
+                params=self.params + [self.epsilon]
+            )
+        )
+        self.session.run(init)
+
+        # query this later to determine the next sample
+        self.theta_t = [None] * len(self.params)
 
         fudge_factor = tf.constant(
             fudge_factor, dtype=self.dtype, name="fudge_factor"
@@ -142,6 +184,26 @@ class SVGDSampler(MCMCSampler):
                 param,
                 self.epsilon * adj_grad[i]
             )
+
+    def __next__(self):
+        # Ensure self.theta_t and self.cost are defined
+        assert hasattr(self, "theta_t") and hasattr(self, "cost")
+
+        feed_dict = dict()
+        feed_dict.update(self._next_batch())
+        feed_dict.update(self._next_stepsize())
+
+        params, cost, _ = self.session.run(
+            [self.params, self.cost, self.theta_t], feed_dict=feed_dict
+        )
+        if len(params) == 1:
+            # unravel single-element lists to scalars
+            params = params[0]
+
+        self.stepsize_schedule.update(params, cost)
+
+        self.n_iterations += 1
+        return params, cost
 
     def svgd_kernel(self, particles):
         """ Calculate a kernel matrix with corresponding derivatives

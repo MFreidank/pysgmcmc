@@ -312,7 +312,7 @@ class MCMCSampler(object):
         """
         assert (feed_dict is None or hasattr(feed_dict, "update"))
         # Ensure self.theta_t and self.cost are defined
-        assert hasattr(self, "theta_t") or not hasattr(self, "cost")
+        assert hasattr(self, "theta_t") and hasattr(self, "cost")
 
         params, cost, _ = self.leapfrog(feed_dict=feed_dict)
 
@@ -324,7 +324,7 @@ class MCMCSampler(object):
     def leapfrog(self, feed_dict=None):
         assert (feed_dict is None or hasattr(feed_dict, "update"))
         # Ensure self.theta_t and self.cost are defined
-        assert hasattr(self, "theta_t") or not hasattr(self, "cost")
+        assert hasattr(self, "theta_t") and hasattr(self, "cost")
 
         if feed_dict is None:
             feed_dict = dict()
