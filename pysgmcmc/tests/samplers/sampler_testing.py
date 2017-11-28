@@ -85,5 +85,6 @@ def reset_test(sampler_constructor, **sampler_args):
         sampler.reset()
 
         theta_ = session.run(sampler.params)
+        print(theta, theta_)
 
-        assert allclose(theta, theta_, atol=1e-02)
+        assert allclose(theta, theta_, atol=1e-01)
