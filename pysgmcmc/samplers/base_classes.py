@@ -90,7 +90,7 @@ class MCMCSampler(object):
 
         assert hasattr(stepsize_schedule, "update")
         assert hasattr(stepsize_schedule, "__next__")
-        assert hasattr(stepsize_schedule, "initial_value")
+        assert hasattr(stepsize_schedule, "stepsize")
 
         self.stepsize_schedule = stepsize_schedule
 
@@ -107,7 +107,7 @@ class MCMCSampler(object):
         self.vectorized_params = [vectorize(param) for param in self.params]
 
         self.epsilon = tf.Variable(
-            self.stepsize_schedule.initial_value,
+            self.stepsize_schedule.stepsize,
             dtype=self.dtype,
             name="epsilon",
             trainable=False
@@ -124,6 +124,22 @@ class MCMCSampler(object):
 
         # query this later to determine the next sample
         self.theta_t = [None] * len(params)
+
+    def reset(self):
+        """
+        Reset all of this samplers parameters back to their initial value.
+        Useful if we want to do multiple leapfrog steps from the same initial
+        starting parameters (e.g. in `find_reasonable_epsilon` heuristic).
+
+        Note: This does not allow full sampler chain reproducibility, even
+        with a fixed random seed.  Tensorflow is currently not designed to
+        allow resetting of its random streams,
+        so `_draw_noise_sample` will return different random variables even
+        after resetting sampler parameters.
+        """
+        # XXX: Make this sampler parameter aware instead of resetting *all*
+        # global variables.
+        self.session.run(tf.global_variables_initializer())
 
     def _next_batch(self):
         """

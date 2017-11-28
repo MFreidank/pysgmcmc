@@ -57,3 +57,33 @@ def seed_test(sampler_constructor, **sampler_args):
     for (sample1, cost1), (sample2, cost2) in zip(chain1, chain2):
         assert allclose(cost1, cost2)
         assert allclose(sample1, sample2)
+
+
+def reset_test(sampler_constructor, **sampler_args):
+    objective_function = choice(objective_functions)
+    seed = randint(0, 2 ** 32 - 1)
+
+    function, param_generator = objective_function
+
+    graph = tf.Graph()
+    with tf.Session(graph=graph) as session:
+        params = param_generator()
+        sampler = sampler_constructor(
+            params=params,
+            cost_fun=cost_function(function),
+            seed=seed,
+            session=session,
+            **sampler_args
+        )
+
+        session.run(tf.global_variables_initializer())
+
+        theta = session.run(sampler.params)
+
+        theta, costs, _ = sampler.leapfrog()
+        # resetting sampler
+        sampler.reset()
+
+        theta_ = session.run(sampler.params)
+
+        assert allclose(theta, theta_, atol=1e-02)

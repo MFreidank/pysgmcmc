@@ -128,15 +128,15 @@ class SGLDSampler(BurnInMCMCSampler):
                          trainable=False)
              for i, param in enumerate(self.vectorized_params)]
 
-        v_hat = [tf.Variable(tf.ones_like(param, dtype=dtype),
-                             dtype=dtype, name="v_hat_{}".format(i),
-                             trainable=False)
-                 for i, param in enumerate(self.vectorized_params)]
+        self.momentum = [tf.Variable(tf.ones_like(param, dtype=dtype),
+                         dtype=dtype, name="v_hat_{}".format(i),
+                         trainable=False)
+                         for i, param in enumerate(self.vectorized_params)]
 
         #  Initialize mass matrix inverse {{{ #
 
         minv = [tf.Variable(tf.divide(tf.constant(1., dtype=dtype),
-                            tf.sqrt(v_hat[i].initialized_value())),
+                            tf.sqrt(self.momentum[i].initialized_value())),
                             name="minv_{}".format(i), trainable=False)
                 for i, param in enumerate(self.vectorized_params)]
 
@@ -156,13 +156,13 @@ class SGLDSampler(BurnInMCMCSampler):
             with tf.control_dependencies([r_t]):
                 tau_t = tf.assign_add(
                     tau[i],
-                    safe_divide(-g[i] * g[i] * tau[i], v_hat[i]) + 1,
+                    safe_divide(-g[i] * g[i] * tau[i], self.momentum[i]) + 1,
                     name="tau_t_{}".format(i)
                 )
 
                 self.minv_t[i] = tf.assign(
                     minv[i],
-                    safe_divide(1., safe_sqrt(v_hat[i])),
+                    safe_divide(1., safe_sqrt(self.momentum[i])),
                     name="minv_t_{}".format(i)
                 )
                 # tau_t, minv_t should always use the old values of g, g2
@@ -174,8 +174,8 @@ class SGLDSampler(BurnInMCMCSampler):
                     )
 
                     v_hat_t = tf.assign_add(
-                        v_hat[i],
-                        - r_t * v_hat[i] + r_t * grad ** 2,
+                        self.momentum[i],
+                        - r_t * self.momentum[i] + r_t * grad ** 2,
                         name="v_hat_t_{}".format(i)
                     )
 
