@@ -4,7 +4,7 @@ from pysgmcmc.samplers.base_classes import MCMCSampler
 from pysgmcmc.stepsize_schedules import ConstantStepsizeSchedule
 
 from pysgmcmc.tensor_utils import (
-    vectorize, unvectorize
+    vectorize, unvectorize, tf_dot
 )
 
 from arspy.ars import adaptive_rejection_sampling
@@ -105,24 +105,44 @@ class RelativisticSGHMCSampler(MCMCSampler):
         D = tf.constant(D, dtype=dtype)
         b_hat = tf.constant(Bhat, dtype=dtype)
 
-        self.momentum = [
-            tf.Variable(momentum_sample, dtype=dtype)
-            for momentum_sample in _sample_relativistic_momentum(
-                m=mass, c=speed_of_light, n_params=len(self.params), seed=self.seed
+        def momentum_for(vectorized_param):
+            squeezed_param = tf.squeeze(vectorized_param)
+            n_dimensions, = tuple(squeezed_param.shape) or (1,)
+
+            return tf.Variable(
+                _sample_relativistic_momentum(
+                    m=mass, c=speed_of_light,
+                    n_params=n_dimensions, seed=self.seed
+                ), dtype=self.dtype
             )
+
+        self.momentum = [
+            momentum_for(vectorized_param)
+            for vectorized_param in self.vectorized_params
         ]
 
-        # In internal implementation, stick to mathematical formulas.
-        # For users, prefer readability.
         m = tf.constant(mass, dtype=dtype)
         c = tf.constant(speed_of_light, dtype=dtype)
 
         for i, (param, grad) in enumerate(zip(params, grads)):
             vectorized_param = self.vectorized_params[i]
 
-            p_grad = self.epsilon * self.momentum[i] / (m * tf.sqrt(self.momentum[i] * self.momentum[i] / (tf.square(m) * tf.square(c)) + 0))
+            # XXX: Existing shape problems in computations below this line
+            # XXX: Rework the part below to accomodate bnn inputs
+            p_grad = tf.divide(
+                self.epsilon * self.momentum[i],
+                m * tf.sqrt(
+                    tf.divide(
+                        vector_square(self.momentum[i]),
+                        (tf.square(m) * tf.square(c))
+                    )
+                )
+            )
 
-            n = tf.sqrt(self.epsilon * (2 * D - self.epsilon * b_hat)) * tf.random_normal(shape=vectorized_param.shape, dtype=dtype, seed=seed)
+            n = tf.sqrt(
+                self.epsilon * (2 * D - self.epsilon * b_hat)
+            ) * tf.random_normal(shape=vectorized_param.shape, dtype=dtype, seed=seed)
+
             momentum_t = tf.assign_add(
                 self.momentum[i],
                 tf.reshape(self.epsilon * grad + n - D * p_grad, self.momentum[i].shape)
@@ -138,6 +158,10 @@ class RelativisticSGHMCSampler(MCMCSampler):
                 param,
                 unvectorize(vectorized_theta_t, original_shape=param.shape)
             )
+
+
+def vector_square(vector):
+    return tf_dot(vector, vector, transpose_a=True)
 
 
 def _sample_relativistic_momentum(m, c, n_params,

@@ -61,7 +61,7 @@ class Sampler(Enum):
         False
 
         """
-        return sampling_method in (Sampler.SGHMC, Sampler.SGLD)
+        return sampling_method in (Sampler.SGHMC, Sampler.SGLD, Sampler.RelativisticSGHMC)
 
     @classmethod
     def get_sampler(cls, sampling_method, **sampler_args):

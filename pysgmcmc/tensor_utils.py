@@ -14,6 +14,44 @@ __all__ = (
 )
 
 
+def tf_dot(vector1, vector2, transpose_a=False, transpose_b=False):
+    """TODO: Docstring for tf_dot.
+
+    Parameters
+    ----------
+    vector1 : TODO
+    vector2 : TODO
+    transpose_a : TODO, optional
+    transpose_b : TODO, optional
+
+    Returns
+    ----------
+    TODO
+
+    Examples
+    ----------
+
+    A test
+
+    >>> vector1 = tf.constant([1, 2, 3, 4])
+    >>> vector2 = tf.constant([1, 2, 3, 4])
+    >>> session = tf.Session()
+    >>> result = tf_dot(vector1, vector2, transpose_a=True).eval(session=session)
+    >>> session.close()
+    >>> result
+    30
+
+
+    """
+    n_dimensions1, = tuple(map(int, vector1.shape)) or (1,)
+    n_dimensions2, = tuple(map(int, vector2.shape)) or (1,)
+
+    m1 = tf.reshape(vector1, shape=(n_dimensions1, 1))
+    m2 = tf.reshape(vector1, shape=(n_dimensions2, 1))
+
+    return tf.squeeze(tf.matmul(m1, m2, transpose_a=transpose_a, transpose_b=transpose_b))
+
+
 def vectorize(tensor):
     """ Turn any matrix into a long vector by expanding it.
         Tranforms `[[a, b], [c, d]]` into `[a, b, c, d]`.

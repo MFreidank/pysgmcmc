@@ -128,12 +128,18 @@ class StepsizeSchedule(object):
         """
         epsilon = 1.
 
+        feed_dict = dict()
+
+        feed_dict.update(sampler._next_batch())
+
         theta, costs, momentum = sampler.session.run(
-            [sampler.params, sampler.cost, sampler.momentum]
+            [sampler.params, sampler.cost, sampler.momentum],
+            feed_dict=feed_dict
         )
 
+        feed_dict.update({sampler.epsilon: epsilon})
         theta_, costs_, momentum_ = sampler.leapfrog(
-            feed_dict={sampler.epsilon: epsilon}
+            feed_dict=feed_dict
         )
 
         # Compute old and new likelihood: p(theta, r)
@@ -148,8 +154,9 @@ class StepsizeSchedule(object):
             # Reset all sampler parameters to their initial values
             sampler.session.run(tf.global_variables_initializer())
 
+            feed_dict.update({sampler.epsilon: epsilon})
             theta_, costs_, momentum_ = sampler.leapfrog(
-                feed_dict={sampler.epsilon: epsilon}
+                feed_dict=feed_dict
             )
 
             p_ = probability_value(costs=costs_, momentum=momentum_)
