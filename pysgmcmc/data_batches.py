@@ -6,6 +6,7 @@ __all__ = (
     "generate_shuffled_batches",
 )
 
+
 def keras_generate_batches(x, y, batch_size=20, seed=None, shuffle=False):
 
     n_examples, *_ = x.shape

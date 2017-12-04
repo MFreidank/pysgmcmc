@@ -1,10 +1,10 @@
 import numpy as np
 from keras import backend as K
 from keras.models import Sequential
-from keras.layers import Concatenate, Dense, Lambda
+from keras.layers import Concatenate, Layer, Dense
 from keras.callbacks import LambdaCallback
 from keras.activations import tanh
-from keras.initializers import VarianceScaling
+from keras.initializers import Constant, VarianceScaling
 from pysgmcmc.diagnostics.metrics import metric_function
 from pysgmcmc.keras_utils import safe_division
 from pysgmcmc.data_batches import keras_generate_batches as generate_batches
@@ -37,7 +37,25 @@ def weight_prior(parameters, wdecay=1.):
 
 
 def default_network(input_dimension, seed=None):
-    concat = Concatenate(axis=1)
+    class AppendLayer(Layer):
+        def __init__(self, b, **kwargs):
+            self.b = b
+            self.concat = Concatenate(axis=1)
+            super().__init__(**kwargs)
+
+        def build(self, input_shape):
+            self.bias = self.add_weight(
+                name="bias",
+                shape=(1, 1),
+                initializer=Constant(value=self.b)
+            )
+            super().build(input_shape)
+
+        def call(self, x):
+            return self.concat([x, self.bias * K.ones_like(x)])
+
+        def compute_output_shape(self, input_shape):
+            return (input_shape[0], input_shape[1] * 2)
 
     model = Sequential([
         Dense(
@@ -53,11 +71,7 @@ def default_network(input_dimension, seed=None):
             kernel_initializer=VarianceScaling(seed=seed),
         ),
         Dense(units=1, kernel_initializer=VarianceScaling(seed=seed)),
-        Lambda(
-            lambda dense_inputs: concat(
-                [dense_inputs, K.log(1e-3) * K.ones_like(dense_inputs)]
-            )
-        )
+        AppendLayer(b=np.log(1e-3))
     ])
 
     return model
@@ -101,25 +115,39 @@ def negative_log_likelihood(model, n_datapoints, batch_size=20):
     return cost_function
 
 
-# XXX Introduce parameters to control how many samples to keep
 class BayesianNeuralNetwork(object):
     def __init__(self, network_architecture=default_network,
                  train_callbacks=None,
                  loss_function=negative_log_likelihood,
                  metrics=("mse", "mae",),
                  normalize_input=True, normalize_output=True,
-                 n_steps=10000, n_burn_in_steps=3000,
+                 n_steps=50000, n_burn_in_steps=3000,
+                 keep_every=100,
+                 n_nets=100,
                  batch_size=20,
                  optimizer=SGHMC,
                  seed=None,
                  **optimizer_hyperparameters):
 
         assert n_steps > n_burn_in_steps
-        self.n_steps = n_steps
         self.n_burn_in_steps = n_burn_in_steps
+        self.n_steps = n_steps - self.n_burn_in_steps
 
         assert batch_size > 0
         self.batch_size = batch_size
+
+        assert keep_every > 0
+        self.keep_every = keep_every
+
+        assert n_nets > 0
+        self.n_nets = n_nets
+
+        self.n_steps = min(
+            self.n_steps, self.keep_every * self.n_nets
+        )
+        print("Performing '{}' iterations in total.".format(
+            self.n_steps + self.n_burn_in_steps)
+        )
 
         assert isinstance(normalize_input, bool)
         self.normalize_input = normalize_input
@@ -151,9 +179,12 @@ class BayesianNeuralNetwork(object):
         self.sampled_weights = []
 
     def _extract_samples(self, epoch, logs):
-        if epoch > self.n_burn_in_steps:
-            weight_values = K.batch_get_value(self.model.trainable_weights)
-            self.sampled_weights.append(weight_values)
+        if epoch >= self.n_burn_in_steps:
+            sample_t = epoch - self.n_burn_in_steps
+            if sample_t % self.keep_every == 0:
+                weight_values = K.batch_get_value(self.model.trainable_weights)
+                self.sampled_weights.append(weight_values)
+                print("SAMPLED WEIGHTS:", len(self.sampled_weights))
 
     def train(self, x_train, y_train, validation_data=None):
         self.sampled_weights.clear()
@@ -178,6 +209,10 @@ class BayesianNeuralNetwork(object):
             self.optimizer = self.optimizer(
                 seed=self.seed, burn_in_steps=self.n_burn_in_steps,
                 scale_grad=n_datapoints,
+                parameter_shapes=[
+                    K.int_shape(parameter)
+                    for parameter in self.model.trainable_weights
+                ],
                 **self.optimizer_hyperparameters
             )
 
@@ -197,10 +232,12 @@ class BayesianNeuralNetwork(object):
                 batch_size=self.batch_size, seed=self.seed
             ),
             epochs=1,
-            steps_per_epoch=self.n_steps,
+            steps_per_epoch=self.n_steps + self.n_burn_in_steps,
             callbacks=self.train_callbacks,
             # validation_data
         )
+
+        print(self.optimizer.get_config())
 
         self.is_trained = True
 
@@ -225,7 +262,9 @@ class BayesianNeuralNetwork(object):
 
         mean_prediction = np.mean(network_outputs, axis=0)
         # Total variance
-        variance_prediction = np.mean((network_outputs - mean_prediction) ** 2, axis=0)
+        variance_prediction = np.mean(
+            (network_outputs - mean_prediction) ** 2, axis=0
+        )
 
         if self.normalize_output:
             mean_prediction = zero_mean_unit_var_unnormalization(

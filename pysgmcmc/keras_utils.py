@@ -3,13 +3,14 @@ import tensorflow as tf
 from keras import backend as K
 
 
-def vectorize(tensor):
-    def vectorized_shape(tensor):
-        # Compute vectorized shape
-        n_elements = K.prod(tensor.shape)
-        return (n_elements, 1)
+def vectorized_shape(original_shape):
+    n_elements = K.prod(original_shape)
+    return (n_elements, 1)
 
-    return K.reshape(tensor, shape=vectorized_shape(tensor))
+
+def vectorize(tensor):
+    new_shape = vectorized_shape(tensor.shape)
+    return K.reshape(tensor, shape=new_shape)
 
 
 def safe_division(x, y, small_constant=1e-16):
