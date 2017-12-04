@@ -14,6 +14,7 @@ from pysgmcmc.models.base_model import (
 )
 from pysgmcmc.optimizers import get_optimizer
 from pysgmcmc.optimizers.sghmc import SGHMC
+import logging
 
 
 def log_variance_prior(log_variance, mean=1e-6, variance=0.01):
@@ -146,8 +147,10 @@ class BayesianNeuralNetwork(object):
         self.n_steps = min(
             self.n_steps, self.keep_every * self.n_nets
         )
-        print("Performing '{}' iterations in total.".format(
-            self.n_steps + self.n_burn_in_steps)
+        logging.info(
+            "Performing '{}' iterations in total.".format(
+                self.n_steps + self.n_burn_in_steps
+            )
         )
 
         assert isinstance(normalize_input, bool)
@@ -179,14 +182,17 @@ class BayesianNeuralNetwork(object):
 
         self.sampled_weights = []
 
+        self.iterations = 0
+
     def _extract_samples(self, epoch, logs):
-        if epoch >= self.n_burn_in_steps:
-            sample_t = epoch - self.n_burn_in_steps
+        self.iterations += 1
+        if self.iterations >= self.n_burn_in_steps:
+            sample_t = self.iterations - self.n_burn_in_steps
             if sample_t % self.keep_every == 0:
                 weight_values = K.batch_get_value(self.model.trainable_weights)
                 self.sampled_weights.append(weight_values)
 
-    def train(self, x_train, y_train, validation_data=None):
+    def train(self, x_train, y_train):
         self.sampled_weights.clear()
 
         self.x_train, self.y_train = x_train, y_train
@@ -195,6 +201,7 @@ class BayesianNeuralNetwork(object):
             self.x_train, self.x_mean, self.x_std = zero_mean_unit_var_normalization(
                 self.x_train
             )
+
         if self.normalize_output:
             self.y_train, self.y_mean, self.y_std = zero_mean_unit_var_normalization(
                 self.y_train
@@ -237,7 +244,6 @@ class BayesianNeuralNetwork(object):
             epochs=1,
             steps_per_epoch=self.n_steps + self.n_burn_in_steps,
             callbacks=self.train_callbacks,
-            # validation_data
         )
 
         self.is_trained = True
