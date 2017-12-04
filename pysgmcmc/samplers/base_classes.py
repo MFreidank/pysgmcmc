@@ -508,3 +508,21 @@ class BurnInMCMCSampler(MCMCSampler):
             feed_dict = dict(zip(self.minv_t, self.minv))
 
         return super().__next__(feed_dict=feed_dict)
+
+
+def sampler_from_optimizer(optimizer_cls):
+    class Sampler(optimizer_cls):
+        def __init__(self, loss, params, **optimizer_args):
+            super().__init__(optimizer_args)
+            self.loss = loss
+            self.params = params
+
+            self.updates = self.get_updates(self.loss, self.params)
+
+        def __next__(self):
+            # XXX Evaluate self.updates just like keras does and return
+            # updated params with costs
+            pass
+
+    Sampler.__name__ = optimizer_cls.__name__
+    return Sampler

@@ -1,6 +1,9 @@
+# vim:foldmethod=marker
 from keras import backend as K
 from keras.optimizers import Optimizer
-from pysgmcmc.keras_utils import vectorize, safe_division
+from pysgmcmc.keras_utils import (
+    vectorize, safe_division, safe_sqrt, keras_control_dependencies
+)
 
 
 class SGHMC(Optimizer):
@@ -83,66 +86,92 @@ class SGHMC(Optimizer):
 
         #  }}} Initialize internal sampler parameters #
 
-        # XXX Keep everything in lists? I think this might be an issue with
-        # pythons reference handling
+        for i, (param, grad) in enumerate(zip(params, vectorized_gradients)):
+            vectorized_param = vectorized_params[i]
+            #  Burn-in logic {{{ #
+            r_t = self._update_during_burn_in(
+                r[i], 1. / (tau[i] + 1)
+            )
 
-        for index, (vectorized_parameter, gradient) in enumerate(zip(vectorized_params, vectorized_gradients)):
-            parameter = params[index]
-            tau_, r_, g_, v_hat_ = tau[index], r[index], g[index], v_hat[index]
-            minv_, momentum_ = minv[index], momentum[index]
-
-            r_t = self._update_during_burn_in(r_, safe_division(1., (tau_ + 1)))
             self.updates.append(r_t)
 
-            tau_t = self._update_during_burn_in(
-                tau_, tau_ + safe_division(-g_ * g_ * tau_, v_hat_) + 1,
-            )
-            self.updates.append(tau_t)
-
-            minv_t = self._update_during_burn_in(
-                minv_, safe_division(1., K.sqrt(v_hat_))
-            )
-            self.updates.append(minv_t)
-
-            g_t = self._update_during_burn_in(
-                g_, g_ - r_t * g_ + r_t * gradient
-            )
-            self.updates.append(g_t)
-
-            v_hat_t = self._update_during_burn_in(
-                v_hat_, v_hat_ - r_t * v_hat_ + r_t * gradient ** 2
-            )
-            self.updates.append(v_hat_t)
-
-            noise_scale = (
-                2. * self.lr_scaled ** 2. *
-                self.mdecay * minv_t - 2. *
-                self.lr_scaled ** 3. *
-                K.square(minv_t) * self.noise - self.lr_scaled ** 4
-            )
-
-            sigma = K.sqrt(K.clip(noise_scale, min_value=1e-16, max_value=float("inf")))
-
-            sample = sigma * K.random_normal(
-                shape=vectorized_parameter.shape, seed=self.seed
-            )
-
-            momentum_t = K.update_add(
-                momentum_,
-                - self.lr ** 2 * minv_t * gradient -
-                self.mdecay * momentum_ + sample
-
-            )
-            self.updates.append(momentum_t)
-
-            vectorized_new_parameter = vectorized_parameter + momentum_t
-
-            self.updates.append(
-                K.update(
-                    parameter,
-                    K.reshape(vectorized_new_parameter, parameter.shape)
+            # r_t should always use the old value of tau
+            with keras_control_dependencies([r_t]):
+                tau_t = self._update_during_burn_in(
+                    tau[i],
+                    tau[i] + safe_division(
+                        -g[i] * g[i] * tau[i], v_hat[i]
+                    ) + 1
                 )
-            )
+
+                # minv = v_hat^{-1/2} = 1 / sqrt(v_hat)
+                minv_t = self._update_during_burn_in(
+                    minv[i],
+                    safe_division(1., safe_sqrt(v_hat[i]))
+                )
+                # tau_t, minv_t should always use the old values of G, v_hat
+                with keras_control_dependencies([tau_t, minv_t]):
+                    g_t = self._update_during_burn_in(
+                        g[i], g[i] - r_t * g[i] + r_t * grad
+                    )
+
+                    v_hat_t = self._update_during_burn_in(
+                        v_hat[i], v_hat[i] - r_t * v_hat[i] + r_t * grad ** 2
+                    )
+
+            #  }}} Burn-in logic #
+
+                    with keras_control_dependencies([g_t, v_hat_t]):
+
+                        #  Draw random normal sample {{{ #
+
+                        # Equation 10, variance of normal sample
+
+                        # 2 * epsilon ** 2 * mdecay * Minv - 0 (noise is 0) - epsilon ** 4
+                        # = 2 * epsilon ** 2 * epsilon * v_hat^{-1/2} * C * Minv
+                        # = 2 * epsilon ** 3 * v_hat^{-1/2} * C * v_hat^{-1/2} - epsilon ** 4
+
+                        # (co-) variance of normal sample
+                        noise_scale = (
+                            2. * self.lr_scaled ** 2 * self.mdecay * minv_t -
+                            2. * self.lr_scaled ** 3 *
+                            K.square(minv_t) * self.noise - self.lr_scaled ** 4
+                        )
+
+                        # turn into stddev
+                        sigma = K.sqrt(
+                            K.clip(
+                                noise_scale,
+                                min_value=1e-16,
+                                max_value=float("inf")
+                            )
+                        )
+
+                        sample = sigma * K.random_normal(shape=vectorized_param.shape)
+
+                        #  }}} Draw random sample #
+
+                        #  HMC Update {{{ #
+
+                        # Equation 10: right side, where:
+                        # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
+                        momentum_ = K.update_add(
+                            momentum[i],
+                            - self.lr ** 2 * minv_t * grad -
+                            self.mdecay * momentum[i] + sample
+                        )
+
+                        # Equation 10: left side
+                        vectorized_theta_t = vectorized_param + momentum_
+
+                        self.updates.append(
+                            K.update(
+                                param,
+                                K.reshape(vectorized_theta_t, param.shape)
+                            )
+                        )
+
+                        #  }}} HMC Update #
         return self.updates
 
     def get_config(self):

@@ -12,6 +12,7 @@ from pysgmcmc.models.base_model import (
     zero_mean_unit_var_normalization,
     zero_mean_unit_var_unnormalization
 )
+from pysgmcmc.optimizers.sghmc import SGHMC
 
 
 def log_variance_prior(log_variance, mean=1e-6, variance=0.01):
@@ -32,14 +33,11 @@ def weight_prior(parameters, wdecay=1.):
         log_likelihood += K.sum(-wdecay * 0.5 * K.square(parameter))
         n_parameters += K.prod(parameter.shape)
 
-    return log_likelihood / K.cast(n_parameters, K.floatx())
+    return safe_division(log_likelihood, K.cast(n_parameters, K.floatx()))
 
 
 def default_network(input_dimension, seed=None):
     concat = Concatenate(axis=1)
-
-    def concat_func(*args, **kwargs):
-        return concat([args[0], K.log(1e-3) * K.ones_like(args[0])])
 
     model = Sequential([
         Dense(
@@ -65,7 +63,6 @@ def default_network(input_dimension, seed=None):
     return model
 
 
-# XXX: Check that batch size is correctly passed below
 def negative_log_likelihood(model, n_datapoints, batch_size=20):
     def cost_function(y_true, y_pred):
         f_mean = K.reshape(y_pred[:, 0], shape=(-1, 1))
@@ -113,7 +110,7 @@ class BayesianNeuralNetwork(object):
                  normalize_input=True, normalize_output=True,
                  n_steps=10000, n_burn_in_steps=3000,
                  batch_size=20,
-                 optimizer="rmsprop",
+                 optimizer=SGHMC,
                  seed=None,
                  **optimizer_hyperparameters):
 
@@ -208,6 +205,7 @@ class BayesianNeuralNetwork(object):
         self.is_trained = True
 
     def predict(self, x_test, return_individual_predictions=False):
+        # XXX: return_individual_predictions
         assert self.is_trained
 
         x_test_ = x_test
