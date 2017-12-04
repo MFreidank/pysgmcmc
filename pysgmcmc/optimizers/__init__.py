@@ -38,6 +38,7 @@ def get_optimizer(optimizer_name, seed=None, n_datapoints=None, batch_size=None,
         )
 
     if isinstance(optimizer, tf_optimizer.Optimizer):
-        return TFOptimizer(optimizer)
+        optimizer = TFOptimizer(optimizer)
+        optimizer.__class__.__name__ = optimizer_name
 
     return optimizer

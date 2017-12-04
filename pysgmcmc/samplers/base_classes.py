@@ -509,20 +509,40 @@ class BurnInMCMCSampler(MCMCSampler):
 
         return super().__next__(feed_dict=feed_dict)
 
+from keras import backend as K
+
 
 def sampler_from_optimizer(optimizer_cls):
     class Sampler(optimizer_cls):
-        def __init__(self, loss, params, **optimizer_args):
-            super().__init__(optimizer_args)
+        def __init__(self, loss, params, inputs=None, **optimizer_args):
+            optimizer_args["parameter_shapes"] = [
+                param.shape for param in params
+            ]
+            super().__init__(**optimizer_args)
             self.loss = loss
             self.params = params
 
             self.updates = self.get_updates(self.loss, self.params)
+            inputs = inputs if inputs is not None else []
+
+            self.function = K.function(
+                inputs,
+                [self.loss] + self.params,
+                updates=self.updates,
+                name="sampler_function"
+            )
+
+        def step(self, inputs=None):
+            if inputs is None:
+                inputs = []
+            loss, *params = self.function(inputs)
+            return loss, params
 
         def __next__(self):
-            # XXX Evaluate self.updates just like keras does and return
-            # updated params with costs
-            pass
+            return self.step()
+
+        def __iter__(self):
+            return self
 
     Sampler.__name__ = optimizer_cls.__name__
     return Sampler
