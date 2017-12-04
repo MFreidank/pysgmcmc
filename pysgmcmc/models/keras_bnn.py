@@ -182,12 +182,9 @@ class BayesianNeuralNetwork(object):
 
         self.sampled_weights = []
 
-        self.iterations = 0
-
     def _extract_samples(self, epoch, logs):
-        self.iterations += 1
-        if self.iterations >= self.n_burn_in_steps:
-            sample_t = self.iterations - self.n_burn_in_steps
+        if epoch >= self.n_burn_in_steps:
+            sample_t = epoch - self.n_burn_in_steps
             if sample_t % self.keep_every == 0:
                 weight_values = K.batch_get_value(self.model.trainable_weights)
                 self.sampled_weights.append(weight_values)
