@@ -9,7 +9,7 @@ from pysgmcmc.keras_utils import (
 
 class SGHMC(Optimizer):
     def __init__(self, parameter_shapes,
-                 lr=0.01, mdecay=0.05, burn_in_steps=1, scale_grad=1.0,
+                 lr=0.01, mdecay=0.05, burn_in_steps=3000, scale_grad=1.0,
                  seed=None, **kwargs):
         super(SGHMC, self).__init__(**kwargs)
         self.seed = seed
