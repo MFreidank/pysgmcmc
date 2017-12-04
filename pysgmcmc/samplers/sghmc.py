@@ -105,6 +105,7 @@ class SGHMCSampler(BurnInMCMCSampler):
             seed=seed, dtype=dtype, session=session,
             stepsize_schedule=stepsize_schedule
         )
+        print("N_PARAMS", len(params))
 
         #  Initialize graph constants {{{ #
 

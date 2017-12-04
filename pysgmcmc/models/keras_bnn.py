@@ -12,6 +12,7 @@ from pysgmcmc.models.base_model import (
     zero_mean_unit_var_normalization,
     zero_mean_unit_var_unnormalization
 )
+from pysgmcmc.optimizers import get_optimizer
 from pysgmcmc.optimizers.sghmc import SGHMC
 
 
@@ -184,7 +185,6 @@ class BayesianNeuralNetwork(object):
             if sample_t % self.keep_every == 0:
                 weight_values = K.batch_get_value(self.model.trainable_weights)
                 self.sampled_weights.append(weight_values)
-                print("SAMPLED WEIGHTS:", len(self.sampled_weights))
 
     def train(self, x_train, y_train, validation_data=None):
         self.sampled_weights.clear()
@@ -206,14 +206,17 @@ class BayesianNeuralNetwork(object):
         )
 
         if callable(self.optimizer):
-            self.optimizer = self.optimizer(
-                seed=self.seed, burn_in_steps=self.n_burn_in_steps,
-                scale_grad=n_datapoints,
+            self.optimizer = get_optimizer(
+                optimizer_name=self.optimizer.__name__,
+                n_datapoints=n_datapoints,
+                batch_size=self.batch_size,
+                burn_in_steps=self.n_burn_in_steps,
+                learning_rate=self.optimizer_hyperparameters["learning_rate"],
+                seed=self.seed,
                 parameter_shapes=[
                     K.int_shape(parameter)
                     for parameter in self.model.trainable_weights
-                ],
-                **self.optimizer_hyperparameters
+                ]
             )
 
         self.model.compile(
@@ -236,8 +239,6 @@ class BayesianNeuralNetwork(object):
             callbacks=self.train_callbacks,
             # validation_data
         )
-
-        print(self.optimizer.get_config())
 
         self.is_trained = True
 
