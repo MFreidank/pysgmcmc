@@ -18,18 +18,27 @@ class SGHMC(Optimizer):
             (np.prod(shape), 1) for shape in parameter_shapes
         ]
 
+        if isinstance(lr, float):
+            initial_learning_rates = [lr] * len(vectorized_parameter_shapes)
+
         with K.name_scope(self.__class__.__name__):
             self.iterations = K.variable(0, dtype="int64", name="iterations")
-            self.learning_rate = K.variable(lr, name="lr")
+            self.learning_rates = [
+                K.variable(lr, name="lr")
+                for lr in initial_learning_rates
+            ]
 
             #  Initialize Graph Constants {{{ #
             self.noise = K.constant(0., name="noise")
 
             self.scale_grad = K.constant(scale_grad, name="scale_grad")
 
-            self.learning_rate_scaled = safe_division(
-                self.learning_rate, safe_sqrt(self.scale_grad)
-            )
+            self.learning_rates_scaled = [
+                safe_division(
+                    lr, safe_sqrt(self.scale_grad)
+                )
+                for lr in self.learning_rates
+            ]
 
             self.burn_in_steps = K.constant(
                 burn_in_steps, dtype="int64", name="burn_in_steps"
@@ -99,7 +108,8 @@ class SGHMC(Optimizer):
 
         sghmc_parameters = zip(
             self.taus, self.rs, self.gs,
-            self.v_hats, self.minvs, self.momentums
+            self.v_hats, self.minvs, self.momentums,
+            self.learning_rates, self.learning_rates_scaled
         )
 
         parameters_with_gradients = zip(vectorized_params, gradients)
@@ -109,7 +119,8 @@ class SGHMC(Optimizer):
         )
 
         for parameter, (theta, gradient), optimizer_parameters in loop_variables:
-            tau, r, g, v_hat, minv, momentum = optimizer_parameters
+            (tau, r, g, v_hat, minv, momentum,
+             learning_rate, learning_rate_scaled) = optimizer_parameters
 
             #  Burn-in logic {{{ #
             r_t = self._update_during_burn_in(
@@ -154,10 +165,10 @@ class SGHMC(Optimizer):
 
                         # (co-) variance of normal sample
                         noise_scale = (
-                            2. * K.square(self.learning_rate_scaled) *
+                            2. * K.square(learning_rate_scaled) *
                             self.mdecay * minv_t - 2. *
-                            K.pow(self.learning_rate_scaled, 3) * K.square(minv_t) *
-                            self.noise - self.learning_rate_scaled ** 4
+                            K.pow(learning_rate_scaled, 3) * K.square(minv_t) *
+                            self.noise - learning_rate_scaled ** 4
                         )
 
                         # turn into stddev
@@ -179,7 +190,7 @@ class SGHMC(Optimizer):
                         # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
                         momentum_t = K.update_add(
                             momentum,
-                            - K.square(self.learning_rate) * minv_t * gradient -
+                            - K.square(learning_rate) * minv_t * gradient -
                             self.mdecay * momentum + sample
                         )
 
@@ -204,8 +215,8 @@ class SGHMC(Optimizer):
 
     def get_config(self):
         config = {
-            'learning_rate': float(K.get_value(self.learning_rate)),
-            'learning_rate_scaled': float(K.get_value(self.learning_rate_scaled)),
+            'learning_rates': list(map(float, K.batch_get_value(self.learning_rates))),
+            'learning_rates_scaled': list(map(float, K.batch_get_value(self.learning_rates_scaled))),
             'noise': float(K.get_value(self.noise)),
             'scale_grad': float(K.get_value(self.scale_grad)),
             'burn_in_steps': float(K.get_value(self.burn_in_steps)),
