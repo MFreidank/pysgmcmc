@@ -106,7 +106,7 @@ class SGLD(optimizer.Optimizer):
             self._diagonal_bias = ops.convert_to_tensor(
                 diagonal_bias, name='diagonal_bias'
             )
-            self._learning_rate = ops.convert_to_tensor(
+            self.learning_rate = ops.convert_to_tensor(
                 lr, name='learning_rate'
             )
 
@@ -127,7 +127,7 @@ class SGLD(optimizer.Optimizer):
     def _prepare(self):
         # We need to put the conversion and check here because a user will likely
         # want to decay the learning rate dynamically.
-        self._learning_rate_tensor = tf.convert_to_tensor(self._learning_rate, name='learning_rate_tensor')
+        self.learning_rate_tensor = tf.convert_to_tensor(self.learning_rate, name='learning_rate_tensor')
         self._decay_tensor = tf.convert_to_tensor(
             self._preconditioner_decay_rate, name='preconditioner_decay_rate')
 
@@ -142,7 +142,7 @@ class SGLD(optimizer.Optimizer):
 
         return training_ops.apply_gradient_descent(
             var,
-            math_ops.cast(self._learning_rate_tensor, var.dtype.base_dtype),
+            math_ops.cast(self.learning_rate_tensor, var.dtype.base_dtype),
             new_grad,
             use_locking=self._use_locking).op
 
@@ -155,7 +155,7 @@ class SGLD(optimizer.Optimizer):
 
         return tf.apply_gradient_descent(
             var,
-            tf.cast(self._learning_rate_tensor, var.dtype.base_dtype),
+            tf.cast(self.learning_rate_tensor, var.dtype.base_dtype),
             new_grad,
             use_locking=self._use_locking).op
 
@@ -169,7 +169,7 @@ class SGLD(optimizer.Optimizer):
         # preconditioned Langevin dynamics
         stddev = tf.where(
             tf.squeeze(self._counter > self._burnin),
-            tf.cast(tf.rsqrt(self._learning_rate), grad.dtype),
+            tf.cast(tf.rsqrt(self.learning_rate), grad.dtype),
             tf.zeros([], grad.dtype))
 
         preconditioner = tf.rsqrt(

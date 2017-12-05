@@ -1,3 +1,4 @@
+# vim:foldmethod=marker
 import numpy as np
 from keras import backend as K
 from keras.models import Sequential
@@ -15,6 +16,10 @@ from pysgmcmc.models.base_model import (
 from pysgmcmc.optimizers import get_optimizer
 from pysgmcmc.optimizers.sghmc import SGHMC
 import logging
+
+#  Utils {{{ #
+
+#  Priors {{{ #
 
 
 def log_variance_prior(log_variance, mean=1e-6, variance=0.01):
@@ -37,6 +42,10 @@ def weight_prior(parameters, wdecay=1.):
 
     return safe_division(log_likelihood, K.cast(n_parameters, K.floatx()))
 
+
+#  }}} Priors #
+
+#  Network Architecture {{{ #
 
 def default_network(input_dimension, seed=None):
     class AppendLayer(Layer):
@@ -78,6 +87,10 @@ def default_network(input_dimension, seed=None):
 
     return model
 
+#  }}} Network Architecture #
+
+#  Loss function (Negative Log Likelihood) {{{ #
+
 
 def negative_log_likelihood(model, n_datapoints, batch_size=20):
     def cost_function(y_true, y_pred):
@@ -116,6 +129,10 @@ def negative_log_likelihood(model, n_datapoints, batch_size=20):
         return -log_likelihood
     return cost_function
 
+#  }}} Loss function (Negative Log Likelihood) #
+
+#  }}} Utils #
+
 
 class BayesianNeuralNetwork(object):
     def __init__(self, network_architecture=default_network,
@@ -123,6 +140,7 @@ class BayesianNeuralNetwork(object):
                  loss_function=negative_log_likelihood,
                  metrics=("mse", "mae",),
                  normalize_input=True, normalize_output=True,
+                 adapt_learning_rate=True,
                  n_steps=50000, n_burn_in_steps=3000,
                  keep_every=100,
                  n_nets=100,
@@ -170,6 +188,14 @@ class BayesianNeuralNetwork(object):
             LambdaCallback(on_batch_end=self._extract_samples)
         )
 
+        assert isinstance(adapt_learning_rate, bool)
+        self.adapt_learning_rate = adapt_learning_rate
+
+        if self.adapt_learning_rate:
+            self.train_callbacks.append(
+                LambdaCallback(on_batch_end=self._tune_learning_rate)
+            )
+
         self.seed = seed
 
         self.network_architecture = network_architecture
@@ -188,6 +214,30 @@ class BayesianNeuralNetwork(object):
             if sample_t % self.keep_every == 0:
                 weight_values = K.batch_get_value(self.model.trainable_weights)
                 self.sampled_weights.append(weight_values)
+
+    def _tune_learning_rate(self, epoch, logs):
+        # XXX Here should be dragons, flying, lying and (hopefully not) dying.
+        # From here we can run a step (or multiple ones) of our meta optimizer
+        # on sampler specific metric data to obtain a new learning rate
+        # then feed it back into our optimizer.
+        if self.adapt_learning_rate:
+            try:
+                prior_learning_rate = K.get_value(self.optimizer.learning_rate)
+            except AttributeError:
+                self.adapt_learning_rate = False
+
+                logging.warn(
+                    " Learning rate of optimizer cannot be tuned, skipping!"
+                )
+            else:
+                # XXX Adaptation of learning rate through meta optimizer
+                # happens here!
+                decay_factor = 0.0
+
+                new_learning_rate = prior_learning_rate * (1. - decay_factor)
+
+                K.set_value(self.optimizer.learning_rate, new_learning_rate)
+                print("Set learning rate to: {}".format(new_learning_rate))
 
     def train(self, x_train, y_train):
         self.sampled_weights.clear()

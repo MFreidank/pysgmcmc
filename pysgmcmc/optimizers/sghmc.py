@@ -20,15 +20,15 @@ class SGHMC(Optimizer):
 
         with K.name_scope(self.__class__.__name__):
             self.iterations = K.variable(0, dtype="int64", name="iterations")
-            self.lr = K.variable(lr, name="lr")
+            self.learning_rate = K.variable(lr, name="lr")
 
             #  Initialize Graph Constants {{{ #
             self.noise = K.constant(0., name="noise")
 
             self.scale_grad = K.constant(scale_grad, name="scale_grad")
 
-            self.lr_scaled = safe_division(
-                self.lr, safe_sqrt(self.scale_grad)
+            self.learning_rate_scaled = safe_division(
+                self.learning_rate, safe_sqrt(self.scale_grad)
             )
 
             self.burn_in_steps = K.constant(
@@ -154,9 +154,10 @@ class SGHMC(Optimizer):
 
                         # (co-) variance of normal sample
                         noise_scale = (
-                            2. * K.square(self.lr_scaled) * self.mdecay * minv_t -
-                            2. * K.pow(self.lr_scaled, 3) *
-                            K.square(minv_t) * self.noise - self.lr_scaled ** 4
+                            2. * K.square(self.learning_rate_scaled) *
+                            self.mdecay * minv_t - 2. *
+                            K.pow(self.learning_rate_scaled, 3) * K.square(minv_t) *
+                            self.noise - self.learning_rate_scaled ** 4
                         )
 
                         # turn into stddev
@@ -178,7 +179,7 @@ class SGHMC(Optimizer):
                         # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
                         momentum_t = K.update_add(
                             momentum,
-                            - K.square(self.lr) * minv_t * gradient -
+                            - K.square(self.learning_rate) * minv_t * gradient -
                             self.mdecay * momentum + sample
                         )
 
@@ -203,8 +204,8 @@ class SGHMC(Optimizer):
 
     def get_config(self):
         config = {
-            'learning_rate': float(K.get_value(self.lr)),
-            'learning_rate_scaled': float(K.get_value(self.lr_scaled)),
+            'learning_rate': float(K.get_value(self.learning_rate)),
+            'learning_rate_scaled': float(K.get_value(self.learning_rate_scaled)),
             'noise': float(K.get_value(self.noise)),
             'scale_grad': float(K.get_value(self.scale_grad)),
             'burn_in_steps': float(K.get_value(self.burn_in_steps)),
