@@ -42,3 +42,15 @@ def get_optimizer(optimizer_name, seed=None, n_datapoints=None, batch_size=None,
         optimizer.__class__.__name__ = optimizer_name
 
     return optimizer
+
+
+def to_metaoptimizer(optimizer):
+    # Turn any keras.optimizer into a metaoptimizer we can use to tune
+    # our learning rate parameter
+    old_get_updates = optimizer.get_updates
+
+    def new_get_updates(self, gradients, params):
+        self.get_gradients = lambda *args, **kwargs: gradients
+        return old_get_updates(loss=None, params=params)
+    optimizer.get_updates = new_get_updates
+    return optimizer

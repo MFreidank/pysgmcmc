@@ -220,24 +220,7 @@ class BayesianNeuralNetwork(object):
         # From here we can run a step (or multiple ones) of our meta optimizer
         # on sampler specific metric data to obtain a new learning rate
         # then feed it back into our optimizer.
-        if self.adapt_learning_rate:
-            try:
-                prior_learning_rate = K.get_value(self.optimizer.learning_rate)
-            except AttributeError:
-                self.adapt_learning_rate = False
-
-                logging.warn(
-                    " Learning rate of optimizer cannot be tuned, skipping!"
-                )
-            else:
-                # XXX Adaptation of learning rate through meta optimizer
-                # happens here!
-                decay_factor = 0.0
-
-                new_learning_rate = prior_learning_rate * (1. - decay_factor)
-
-                K.set_value(self.optimizer.learning_rate, new_learning_rate)
-                print("Set learning rate to: {}".format(new_learning_rate))
+        pass
 
     def train(self, x_train, y_train):
         self.sampled_weights.clear()
