@@ -10,50 +10,55 @@ from pysgmcmc.optimizers.sgdhd import SGDHD
 from keras import backend as K
 from keras.callbacks import LambdaCallback
 
-batch_size = 128
-num_classes = 10
-epochs = 20
+def main():
 
-# the data, shuffled and split between train and test sets
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+    batch_size = 128
+    num_classes = 10
+    epochs = 20
 
-x_train = x_train.reshape(60000, 784)
-x_test = x_test.reshape(10000, 784)
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
-x_train /= 255
-x_test /= 255
-print(x_train.shape[0], 'train samples')
-print(x_test.shape[0], 'test samples')
+    # the data, shuffled and split between train and test sets
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-# convert class vectors to binary class matrices
-y_train = keras.utils.to_categorical(y_train, num_classes)
-y_test = keras.utils.to_categorical(y_test, num_classes)
+    x_train = x_train.reshape(60000, 784)
+    x_test = x_test.reshape(10000, 784)
+    x_train = x_train.astype('float32')
+    x_test = x_test.astype('float32')
+    x_train /= 255
+    x_test /= 255
+    print(x_train.shape[0], 'train samples')
+    print(x_test.shape[0], 'test samples')
 
-model = Sequential()
-model.add(Dense(1000, activation="relu", input_shape=(784,)))
-model.add(Dense(1000, activation="relu"))
-model.add(Dense(num_classes, activation='softmax'))
+    # convert class vectors to binary class matrices
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
 
-model.summary()
+    model = Sequential()
+    model.add(Dense(1000, activation="relu", input_shape=(784,)))
+    model.add(Dense(1000, activation="relu"))
+    model.add(Dense(num_classes, activation='softmax'))
 
-sgd = SGDHD(lr=0.,)
+    model.summary()
 
-
-def print_stepsize(epoch, logs):
-    print(" STEPSIZE: {}".format(K.batch_get_value([model.optimizer.lr])))
+    sgd = SGDHD(lr=0.,)
 
 
-model.compile(loss='categorical_crossentropy',
-              optimizer=sgd,
-              metrics=['accuracy'])
+    def print_stepsize(epoch, logs):
+        print(" STEPSIZE: {}".format(K.batch_get_value([model.optimizer.lr])))
 
-history = model.fit(x_train, y_train,
-                    batch_size=batch_size,
-                    epochs=epochs,
-                    verbose=1,
-                    callbacks=[LambdaCallback(on_epoch_end=print_stepsize)],
-                    validation_data=(x_test, y_test))
-score = model.evaluate(x_test, y_test, verbose=0)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=sgd,
+                  metrics=['accuracy'])
+
+    history = model.fit(x_train, y_train,
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        verbose=1,
+                        callbacks=[LambdaCallback(on_epoch_end=print_stepsize)],
+                        validation_data=(x_test, y_test))
+    score = model.evaluate(x_test, y_test, verbose=0)
+    print('Test loss:', score[0])
+    print('Test accuracy:', score[1])
+
+if __name__ == "__main__":
+    main()
