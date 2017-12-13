@@ -1,15 +1,22 @@
 # vim:foldmethod=marker
+import typing
 from keras import backend as K
 from keras.optimizers import Optimizer
 from pysgmcmc.keras_utils import (
     safe_division, safe_sqrt, keras_control_dependencies,
     n_dimensions, to_vector, updates_for
 )
+from pysgmcmc.typing import KerasTensor, KerasVariable
 
 
 class SGHMC(Optimizer):
-    def __init__(self, lr=0.01, mdecay=0.05, burn_in_steps=3000, scale_grad=1.0,
-                 seed=None, **kwargs):
+    def __init__(self,
+                 lr: float=0.01,
+                 mdecay: float=0.05,
+                 burn_in_steps: int=3000,
+                 scale_grad: float=1.0,
+                 seed: int=None,
+                 **kwargs):
         super(SGHMC, self).__init__(**kwargs)
         self.seed = seed
 
@@ -29,14 +36,19 @@ class SGHMC(Optimizer):
             self.mdecay = K.constant(mdecay, name="mdecay")
             #  }}} Initialize Graph Constants #
 
-    def _during_burn_in(self, variable, update_value):
+    def _during_burn_in(self,
+                        variable: KerasVariable,
+                        update_value: KerasTensor)-> KerasTensor:
         return K.switch(
             self.iterations <= self.burn_in_steps,
             update_value, K.identity(variable)
         )
 
-    def get_updates(self, loss, params):
+    def get_updates(self,
+                    loss: KerasTensor,
+                    params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
         self.updates = [K.update_add(self.iterations, 1)]
+
         #  Initialize internal sampler parameters {{{ #
         n_params = n_dimensions(params)
         tau = K.ones((n_params,), name="tau")
@@ -133,7 +145,12 @@ class SGHMC(Optimizer):
                     # Equation 10: left side
                     x = x + momentum_t
 
-                    self.updates.extend(updates_for(params, update_tensor=x))
+                    updates = updates_for(params, update_tensor=x)
+
+                    self.updates.extend([
+                        (param, K.reshape(update, param.shape))
+                        for param, update in zip(params, updates)
+                    ])
 
                     #  }}} HMC Update #
             return self.updates

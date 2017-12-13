@@ -1,23 +1,31 @@
 # vim:foldmethod=marker
+import typing
 from keras import backend as K
 from pysgmcmc.keras_utils import (
-    keras_control_dependencies, to_vector, tensor_size, keras_split, n_dimensions
+    keras_control_dependencies, to_vector, n_dimensions, updates_for
 )
 from pysgmcmc.optimizers.hyperoptimizer import Hyperoptimizer
 
 from keras.optimizers import Adam
+from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 
 
 class SGDHD(Hyperoptimizer):
-    def __init__(self, lr=0.0, metaoptimizer=Adam(), seed=None, **kwargs):
-        super(SGDHD, self).__init__(metaoptimizer=metaoptimizer, **kwargs)
+    def __init__(self,
+                 lr: float=0.0,
+                 hyperoptimizer: KerasOptimizer=Adam(),
+                 seed: int=None,
+                 **kwargs):
+        super(SGDHD, self).__init__(hyperoptimizer=hyperoptimizer, **kwargs)
         self.seed = seed
 
         with K.name_scope(self.__class__.__name__):
             self.iterations = K.variable(0, dtype="int64", name="iterations")
             self.lr = K.variable(lr, name="lr")
 
-    def get_updates(self, loss, params):
+    def get_updates(self,
+                    loss: KerasTensor,
+                    params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
         self.updates = [K.update_add(self.iterations, 1)]
 
         n_params = n_dimensions(params)
@@ -42,9 +50,11 @@ class SGDHD(Hyperoptimizer):
         with keras_control_dependencies([lr_t]):
             self.updates.append(K.update(self.dxdlr, dfdx))
 
-            param_sizes = [tensor_size(param) for param in params]
+            updates = updates_for(params, update_tensor=x)
 
-            for param, param_t in zip(params, keras_split(x, param_sizes, axis=0)):
-                self.updates.append((param, K.reshape(param_t, param.shape)))
+            self.updates.extend([
+                (param, K.reshape(update, param.shape))
+                for param, update in zip(params, updates)
+            ])
 
         return self.updates

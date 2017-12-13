@@ -1,12 +1,20 @@
+import typing
+import numpy as np
 from keras import backend as K
 from keras.optimizers import TFOptimizer
 from tensorflow.python.training.optimizer import Optimizer as tf_optimizer
 from inspect import signature
 
+from pysgmcmc.typing import KerasTensor, KerasVariable
 
-def sampler_from_optimizer(optimizer_cls):
+
+def sampler_from_optimizer(optimizer_cls: type):
     class Sampler(optimizer_cls):
-        def __init__(self, loss, params, inputs=None, **optimizer_args):
+        def __init__(self,
+                     loss: KerasTensor,
+                     params: typing.List[KerasVariable],
+                     inputs=None,
+                     **optimizer_args):
             if "parameter_shapes" in signature(optimizer_cls.__init__).parameters:
                 optimizer_args["parameter_shapes"] = [
                     param.shape for param in params
@@ -33,13 +41,13 @@ def sampler_from_optimizer(optimizer_cls):
                 name="sampler_function"
             )
 
-        def step(self, inputs=None):
+        def step(self, inputs=None) -> typing.Tuple[np.ndarray, np.ndarray]:
             if inputs is None:
                 inputs = []
             loss, *params = self.function(inputs)
             return loss, params
 
-        def __next__(self):
+        def __next__(self) -> typing.Tuple[np.ndarray, np.ndarray]:
             return self.step()
 
         def __iter__(self):
