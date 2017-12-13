@@ -44,7 +44,13 @@ def updates_for(params, update_tensor):
 
     param_updates = keras_split(update_tensor, param_sizes, axis=0)
     # XXX: This methods needs to be finished
-    raise NotImplementedError("Finish updates for method like in sghdhd towards the bottom")
+
+    updates = [
+        (param, K.reshape(update_value, param.shape))
+        for param, update_value in zip(params, param_updates)
+    ]
+
+    return updates
 
 
 def n_dimensions(tensors):

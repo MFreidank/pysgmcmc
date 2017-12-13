@@ -1,35 +1,21 @@
 # vim:foldmethod=marker
 from keras import backend as K
-from keras.optimizers import Optimizer
 from pysgmcmc.keras_utils import (
     keras_control_dependencies, to_vector, tensor_size, keras_split, n_dimensions
 )
+from pysgmcmc.optimizers.hyperoptimizer import Hyperoptimizer
 
 from keras.optimizers import Adam
-from pysgmcmc.optimizers import to_metaoptimizer
 
 
-class SGDHD(Optimizer):
+class SGDHD(Hyperoptimizer):
     def __init__(self, lr=0.0, metaoptimizer=Adam(), seed=None, **kwargs):
-        super(SGDHD, self).__init__(**kwargs)
+        super(SGDHD, self).__init__(metaoptimizer=metaoptimizer, **kwargs)
         self.seed = seed
 
         with K.name_scope(self.__class__.__name__):
             self.iterations = K.variable(0, dtype="int64", name="iterations")
             self.lr = K.variable(lr, name="lr")
-
-            self.metaoptimizer = to_metaoptimizer(metaoptimizer)
-
-    def hypergradient_update(self, dfdx, dxdlr):
-        gradient = K.reshape(K.dot(K.transpose(dfdx), dxdlr), self.lr.shape)
-        metaupdates = self.metaoptimizer.get_updates(
-            self.metaoptimizer,
-            gradients=[gradient], params=[self.lr]
-        )
-
-        self.updates.extend(metaupdates)
-        *_, lr_t = metaupdates
-        return lr_t
 
     def get_updates(self, loss, params):
         self.updates = [K.update_add(self.iterations, 1)]
