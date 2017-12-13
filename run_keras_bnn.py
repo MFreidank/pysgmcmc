@@ -8,7 +8,7 @@ from keras.callbacks import TensorBoard
 from pysgmcmc.diagnostics.objective_functions import sinc
 from pysgmcmc.optimizers.sghmc import SGHMC
 from pysgmcmc.optimizers.sgld import SGLD
-from pysgmcmc.models.keras_bnn import (
+from pysgmcmc.models.bayesian_neural_network import (
     BayesianNeuralNetwork
 )
 from pysgmcmc.keras_utils import optimizer_name
