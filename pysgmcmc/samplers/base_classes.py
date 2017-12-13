@@ -3,8 +3,6 @@ import numpy as np
 from keras import backend as K
 from keras.optimizers import TFOptimizer
 from tensorflow.python.training.optimizer import Optimizer as tf_optimizer
-from inspect import signature
-
 from pysgmcmc.typing import KerasTensor, KerasVariable
 
 
@@ -15,10 +13,6 @@ def sampler_from_optimizer(optimizer_cls: type):
                      params: typing.List[KerasVariable],
                      inputs=None,
                      **optimizer_args):
-            if "parameter_shapes" in signature(optimizer_cls.__init__).parameters:
-                optimizer_args["parameter_shapes"] = [
-                    param.shape for param in params
-                ]
             is_tf_optimizer = False
             super().__init__(**optimizer_args)
             if issubclass(optimizer_cls, tf_optimizer):
@@ -28,7 +22,9 @@ def sampler_from_optimizer(optimizer_cls: type):
             self.params = params
 
             if is_tf_optimizer:
-                self.updates = self.optimizer_obj.get_updates(self.loss, self.params)
+                self.updates = self.optimizer_obj.get_updates(
+                    self.loss, self.params
+                )
             else:
                 self.updates = self.get_updates(self.loss, self.params)
 

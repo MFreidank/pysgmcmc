@@ -7,7 +7,10 @@ from pysgmcmc.typing import KerasVariable, KerasTensor
 
 
 def n_dimensions(tensors: typing.List[KerasTensor]) -> int:
-    return sum(prod(K.int_shape(tensor)) for tensor in tensors)
+    dimensions = sum(prod(K.int_shape(tensor)) for tensor in tensors)
+    is_integer = dimensions % 1 == 0
+    assert is_integer
+    return int(dimensions)
 
 
 def tensor_size(tensor: KerasTensor) -> int:
@@ -31,6 +34,7 @@ def keras_split(tensor: KerasTensor,
                 name: str='split') -> typing.List[tf.Tensor]:
 
     backend = K.backend()
+
     if backend == "tensorflow":
         return tf.split(
             tensor, num_or_size_splits, axis=axis, num=num, name=name
