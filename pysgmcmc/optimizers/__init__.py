@@ -42,7 +42,7 @@ def get_optimizer(optimizer_name, seed=None, n_datapoints=None, batch_size=None,
         optimizer = optimizer_cls(
             seed=seed, burn_in_steps=burn_in_steps,
             scale_grad=n_datapoints,
-            lr=0.
+            lr=learning_rate
         )
 
     if isinstance(optimizer, tf_optimizer.Optimizer):
