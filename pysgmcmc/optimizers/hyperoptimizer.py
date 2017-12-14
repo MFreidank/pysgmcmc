@@ -22,7 +22,7 @@ def to_hyperoptimizer(optimizer: KerasOptimizer):
 
 
 class Hyperoptimizer(Optimizer):
-    def __init__(self, hyperoptimizer: KerasOptimizer, **kwargs):
+    def __init__(self, hyperoptimizer: KerasOptimizer, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.hyperoptimizer = to_hyperoptimizer(hyperoptimizer)

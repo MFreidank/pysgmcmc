@@ -239,7 +239,7 @@ class BayesianNeuralNetwork(object):
 
         n_datapoints, input_dimension = self.x_train.shape
         self.model = self.network_architecture(
-            input_dimension=input_dimension, seed=self.seed
+            input_dimension, self.seed
         )
 
         if callable(self.optimizer):
@@ -259,9 +259,7 @@ class BayesianNeuralNetwork(object):
         self.model.compile(
             optimizer=self.optimizer,
             loss=self.loss_function(
-                model=self.model,
-                n_datapoints=n_datapoints,
-                batch_size=self.batch_size
+                self.model, n_datapoints, self.batch_size
             ),
             metrics=list(self.metrics.values())
         )
