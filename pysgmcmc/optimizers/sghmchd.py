@@ -66,12 +66,17 @@ class SGHMCHD(Hyperoptimizer):
 
         momentum = K.zeros((n_params,), name="momentum")
 
+        dxdlr = K.zeros((n_params,), name="learning_rate_gradient")
+
         #  }}} Initialize internal sampler parameters #
 
         gradient = self.get_gradients(loss, params)
         # XXX: Hypergradient update
         # dfdx = K.expand_dims(gradient, axis=1)
-        # lr_t = self.hypergradient_update(dfdx=dfdx, dxdlr=None)
+        lr_t = self.hypergradient_update(
+            dfdx=K.expand_dims(gradient, axis=1),
+            dxdlr=K.expand_dims(dxdlr, axis=1)
+        )
 
         x = to_vector(params)
 
@@ -80,7 +85,7 @@ class SGHMCHD(Hyperoptimizer):
         )
         self.updates.append((r, r_t))
 
-        with keras_control_dependencies([r_t]):
+        with keras_control_dependencies([r_t, lr_t]):
             tau_t = self._during_burn_in(
                 tau, 1. + tau - tau * safe_division(g * g, v_hat)
             )
@@ -115,14 +120,23 @@ class SGHMCHD(Hyperoptimizer):
                     # = 2 * epsilon ** 3 * v_hat^{-1/2} * C * v_hat^{-1/2} - epsilon ** 4
 
                     # (co-) variance of normal sample
-                    lr_scaled = safe_division(
-                        self.lr, safe_sqrt(self.scale_grad)
+                    # lr_scaled = safe_division(
+                    #    self.lr, safe_sqrt(self.scale_grad)
+                    # )
+                    lr_scaled_t = safe_division(
+                        lr_t, safe_sqrt(self.scale_grad)
                     )
 
+                    # noise_scale = (
+                    #    2. * K.square(lr_scaled) * self.mdecay * minv_t -
+                    #    2. * K.pow(lr_scaled, 3) * K.square(minv_t) * self.noise -
+                    #    lr_scaled ** 4
+                    #  )
+
                     noise_scale = (
-                        2. * K.square(lr_scaled) * self.mdecay * minv_t -
-                        2. * K.pow(lr_scaled, 3) * K.square(minv_t) * self.noise -
-                        lr_scaled ** 4
+                        2. * K.square(lr_scaled_t) * self.mdecay * minv_t -
+                        2. * K.pow(lr_scaled_t, 3) * K.square(minv_t) * self.noise -
+                        lr_scaled_t ** 4
                     )
 
                     # turn into stddev
@@ -133,31 +147,51 @@ class SGHMCHD(Hyperoptimizer):
                             max_value=float("inf")
                         )
                     )
+                    normal_sample = K.random_normal(shape=momentum.shape)
 
-                    sample = sigma * K.random_normal(shape=momentum.shape)
+                    sample = sigma * normal_sample
 
                     #  }}} Draw random sample #
 
                     #  HMC Update {{{ #
-
                     # Equation 10: right side, where:
                     # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
+                    # momentum_t = (
+                    #    momentum - K.square(self.lr) * minv_t * gradient -
+                    #    self.mdecay * momentum + sample
+                    # )
                     momentum_t = (
-                        momentum - K.square(self.lr) * minv_t * gradient -
+                        momentum - K.square(lr_t) * minv_t * gradient -
                         self.mdecay * momentum + sample
                     )
+
                     self.updates.append((momentum, momentum_t))
+
+                    # Pre-computed gradient of parameters with respect to
+                    # our learning rate hyperparameter.
+                    dxdlr_t = (
+                        -2. * gradient * lr_t * minv_t + normal_sample *
+                        (-2. * lr_t ** 3 / self.scale_grad - 3.0 * lr_t ** 2 *
+                         minv_t ** 2 * self.noise / self.scale_grad ** (3. / 2) +
+                         2. * lr_t * self.mdecay * minv_t / self.scale_grad) /
+                        K.sqrt(
+                            -lr_t ** 4 / self.scale_grad ** 2 -
+                            2. * lr_t ** 3 * minv_t ** 2 *
+                            self.noise / self.scale_grad ** (3. / 2) +
+                            2. * lr_t ** 2 * self.mdecay * minv_t / self.scale_grad
+                        )
+                    )
+                    self.updates.append((dxdlr, -dxdlr_t))
 
                     # Equation 10: left side
                     x = x + momentum_t
+
                     updates = updates_for(params, update_tensor=x)
 
                     self.updates.extend([
                         (param, K.reshape(update, param.shape))
                         for param, update in zip(params, updates)
                     ])
-
-                    # self.updates.extend(updates_for(params, update_tensor=x))
 
                     #  }}} HMC Update #
             return self.updates

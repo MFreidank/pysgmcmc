@@ -155,7 +155,7 @@ class BayesianNeuralNetwork(object):
                  loss_function: KerasModelLoss=negative_log_likelihood,
                  metrics: typing.Tuple[str, ...]=("mse", "mae",),
                  normalize_input: bool=True, normalize_output: bool=True,
-                 n_steps: int=50000, n_burn_in_steps: int=3000,
+                 n_steps: int=50000, burn_in_steps: int=3000,
                  keep_every: int=100,
                  n_nets: int=100,
                  batch_size: int=20,
@@ -163,9 +163,9 @@ class BayesianNeuralNetwork(object):
                  seed: int=None,
                  **optimizer_hyperparameters) -> None:
 
-        assert n_steps > n_burn_in_steps
-        self.n_burn_in_steps = n_burn_in_steps
-        self.n_steps = n_steps - self.n_burn_in_steps
+        assert n_steps > burn_in_steps
+        self.burn_in_steps = burn_in_steps
+        self.n_steps = n_steps - self.burn_in_steps
 
         assert batch_size > 0
         self.batch_size = batch_size
@@ -181,7 +181,7 @@ class BayesianNeuralNetwork(object):
         )
         logging.info(
             "Performing '{}' iterations in total.".format(
-                self.n_steps + self.n_burn_in_steps
+                self.n_steps + self.burn_in_steps
             )
         )
 
@@ -216,11 +216,14 @@ class BayesianNeuralNetwork(object):
         self.sampled_weights = []  # type: typing.List[typing.List[np.ndarray]]
 
     def _extract_samples(self, epoch: int, logs: typing.Dict[str, typing.Any]):
-        if epoch >= self.n_burn_in_steps:
-            sample_t = epoch - self.n_burn_in_steps
+        if epoch >= self.burn_in_steps:
+            sample_t = epoch - self.burn_in_steps
             if sample_t % self.keep_every == 0:
                 weight_values = K.batch_get_value(self.model.trainable_weights)
                 self.sampled_weights.append(weight_values)
+
+    def log_learning_rate(self, epoch: int, logs: typing.Dict[str, typing.Any]):
+        logging.debug(" Learning rate: {}".format(K.batch_get_value([self.optimizer.lr])))
 
     def train(self, x_train: np.ndarray, y_train: np.ndarray):
         self.sampled_weights.clear()
@@ -247,13 +250,9 @@ class BayesianNeuralNetwork(object):
                 optimizer_name=self.optimizer.__name__,
                 n_datapoints=n_datapoints,
                 batch_size=self.batch_size,
-                burn_in_steps=self.n_burn_in_steps,
+                burn_in_steps=self.burn_in_steps,
                 learning_rate=self.optimizer_hyperparameters["learning_rate"],
                 seed=self.seed,
-                parameter_shapes=[
-                    K.int_shape(parameter)
-                    for parameter in self.model.trainable_weights
-                ]
             )
 
         self.model.compile(
@@ -270,8 +269,8 @@ class BayesianNeuralNetwork(object):
                 batch_size=self.batch_size, seed=self.seed
             ),
             epochs=1,
-            steps_per_epoch=self.n_steps + self.n_burn_in_steps,
-            callbacks=self.train_callbacks,
+            steps_per_epoch=self.n_steps + self.burn_in_steps,
+            callbacks=self.train_callbacks + [LambdaCallback(on_batch_end=self.log_learning_rate)],
         )
 
         self.is_trained = True
