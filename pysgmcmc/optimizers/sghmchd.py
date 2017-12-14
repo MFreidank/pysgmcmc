@@ -19,7 +19,7 @@ class SGHMCHD(Hyperoptimizer):
                  burn_in_steps: int=3000,
                  scale_grad: float=1.0,
                  seed: int=None,
-                 **kwargs):
+                 **kwargs) -> None:
         super().__init__(hyperoptimizer=hyperoptimizer, **kwargs)
         self.seed = seed
 

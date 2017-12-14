@@ -16,7 +16,7 @@ class SGHMC(Optimizer):
                  burn_in_steps: int=3000,
                  scale_grad: float=1.0,
                  seed: int=None,
-                 **kwargs):
+                 **kwargs) -> None:
         super(SGHMC, self).__init__(**kwargs)
         self.seed = seed
 
@@ -135,9 +135,8 @@ class SGHMC(Optimizer):
 
                     # Equation 10: right side, where:
                     # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
-                    momentum_t = K.update_add(
-                        momentum,
-                        - K.square(self.lr) * minv_t * gradient -
+                    momentum_t = (
+                        momentum - K.square(self.lr) * minv_t * gradient -
                         self.mdecay * momentum + sample
                     )
                     self.updates.append((momentum, momentum_t))

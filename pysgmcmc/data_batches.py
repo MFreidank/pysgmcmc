@@ -1,12 +1,15 @@
-import numpy as np
 import logging
+import numpy as np
 
 __all__ = (
     "generate_batches",
 )
 
 
-def generate_batches(x, y, batch_size=20, seed=None, shuffle=False):
+# XXX: Annotate return type for this generator
+def generate_batches(x: np.ndarray, y: np.ndarray,
+                     batch_size: int=20, seed: int=None,
+                     shuffle: bool=False):
 
     n_examples, *_ = x.shape
 

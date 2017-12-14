@@ -12,7 +12,7 @@ def sampler_from_optimizer(optimizer_cls: type):
                      loss: KerasTensor,
                      params: typing.List[KerasVariable],
                      inputs=None,
-                     **optimizer_args):
+                     **optimizer_args) -> None:
             is_tf_optimizer = False
             super().__init__(**optimizer_args)
             if issubclass(optimizer_cls, tf_optimizer):

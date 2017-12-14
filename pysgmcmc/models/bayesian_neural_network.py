@@ -161,7 +161,7 @@ class BayesianNeuralNetwork(object):
                  batch_size: int=20,
                  optimizer: KerasOptimizer=SGHMC,
                  seed: int=None,
-                 **optimizer_hyperparameters):
+                 **optimizer_hyperparameters) -> None:
 
         assert n_steps > n_burn_in_steps
         self.n_burn_in_steps = n_burn_in_steps
@@ -194,8 +194,9 @@ class BayesianNeuralNetwork(object):
         assert train_callbacks is None or hasattr(train_callbacks, "__len__")
 
         if train_callbacks is None:
-            self.train_callbacks = []
+            self.train_callbacks = []  # type: typing.List[keras.callbacks.Callback]
         else:
+
             self.train_callbacks = list(train_callbacks)
 
         self.train_callbacks.append(
@@ -212,7 +213,7 @@ class BayesianNeuralNetwork(object):
 
         self.metrics = {metric: metric_function(metric) for metric in metrics}
 
-        self.sampled_weights = []
+        self.sampled_weights = []  # type: typing.List[typing.List[np.ndarray]]
 
     def _extract_samples(self, epoch: int, logs: typing.Dict[str, typing.Any]):
         if epoch >= self.n_burn_in_steps:
