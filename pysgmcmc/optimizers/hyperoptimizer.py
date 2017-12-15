@@ -37,9 +37,6 @@ class Hyperoptimizer(Optimizer):
         self.dfdx = K.expand_dims(gradient, axis=1)
         return gradient
 
-        # XXX: SGHMC Update using *new, updated* learning rate lr_t
-        # dfdx = K.expand_dims(gradient, axis=1)
-
     def hypergradient_update(self,
                              dfdx: KerasTensor,
                              dxdlr: KerasTensor) -> KerasTensor:

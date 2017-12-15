@@ -1,23 +1,23 @@
-# vim:foldmethod=marker
+import sympy
 import typing
-from keras import backend as K
-from pysgmcmc.keras_utils import (
-    keras_control_dependencies, to_vector, n_dimensions, updates_for
-)
-from pysgmcmc.optimizers.hyperoptimizer import Hyperoptimizer
 
 from keras.optimizers import Adam
+from keras import backend as K
+
+from pysgmcmc.optimizers.hyperoptimizer import Hyperoptimizer
+from pysgmcmc.keras_utils import (
+    to_vector, updates_for, n_dimensions
+)
 from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 
 
 class SGDHD(Hyperoptimizer):
     def __init__(self,
-                 lr: float=0.0,
+                 lr: float=0.01,
                  hyperoptimizer: KerasOptimizer=Adam(),
-                 seed: int=None,
                  **kwargs):
-        super(SGDHD, self).__init__(hyperoptimizer=hyperoptimizer, **kwargs)
-        self.seed = seed
+
+        super().__init__(hyperoptimizer=hyperoptimizer, **kwargs)
 
         with K.name_scope(self.__class__.__name__):
             self.iterations = K.variable(0, dtype="int64", name="iterations")
@@ -25,36 +25,50 @@ class SGDHD(Hyperoptimizer):
 
     def get_updates(self,
                     loss: KerasTensor,
-                    params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
+                    params: typing.List[KerasVariable]) -> typing.List[KerasVariable]:
         self.updates = [K.update_add(self.iterations, 1)]
 
         n_params = n_dimensions(params)
+        dfdx = to_vector(K.gradients(loss, params))
+        dxdlr = K.zeros((n_params, 1))
 
-        self.dxdlr = K.zeros((n_params, 1))
+        tensornames = ("x", "lr", "dfdx")
 
-        x = to_vector(params)
+        sympy_tensors = {
+            tensorname: sympy.symbols(tensorname) for tensorname in tensornames
+        }
 
-        dfdx = K.expand_dims(to_vector(K.gradients(loss, params)), axis=1)
+        tensorflow_tensors = {
+            "x": to_vector(params),
+            "lr": self.hypergradient_update(dfdx=K.expand_dims(dfdx), dxdlr=dxdlr),
+            # "lr": self.lr,
+            "dfdx": dfdx,
+        }
 
-        lr_t = self.hypergradient_update(dfdx=dfdx, dxdlr=-self.dxdlr)
+        x, lr, dfdx = sympy_tensors["x"], sympy_tensors["lr"], sympy_tensors["dfdx"]
 
-        # NOTE: function f for dfdx *can* be loss function, but it might just
-        # as well be any other function that takes parameters and returns
-        # a value that we want to minimize, e.g. sampler specific errors etc.
-        # lr_t = self.hypergradient(dfdx=dfdx, dxdlr=self.u)
+        update_sympy = x - lr * dfdx
+        dxdlr_sympy = sympy.diff(x - lr * dfdx, lr)
 
-        # self.updates.append((self.lr, lr_t))
+        x_t = sympy.lambdify(
+            (x, lr, dfdx), update_sympy, K.backend()
+        )(tensorflow_tensors["x"],
+          tensorflow_tensors["lr"],
+          tensorflow_tensors["dfdx"])
 
-        x = x - lr_t * K.reshape(dfdx, x.shape)
+        dxdlr_t = sympy.lambdify(
+            (x, lr, dfdx), dxdlr_sympy, K.backend()
+        )(tensorflow_tensors["x"],
+          tensorflow_tensors["lr"],
+          tensorflow_tensors["dfdx"])
 
-        with keras_control_dependencies([lr_t]):
-            self.updates.append(K.update(self.dxdlr, dfdx))
+        self.updates.append((dxdlr, K.expand_dims(dxdlr_t, axis=1)))
 
-            updates = updates_for(params, update_tensor=x)
+        updates = updates_for(params, update_tensor=x_t)
 
-            self.updates.extend([
-                (param, K.reshape(update, param.shape))
-                for param, update in zip(params, updates)
-            ])
+        self.updates.extend([
+            (param, K.reshape(update, param.shape))
+            for param, update in zip(params, updates)
+        ])
 
         return self.updates
