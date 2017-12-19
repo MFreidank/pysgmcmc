@@ -1,5 +1,6 @@
 import typing
 from contextlib import contextmanager
+import sympy
 from numpy import prod
 import tensorflow as tf
 from keras import backend as K
@@ -74,3 +75,12 @@ def keras_control_dependencies(control_inputs: typing.List[KerasTensor]):
             yield
     else:
         yield
+
+
+def sympy_to_keras(sympy_expression,
+                   sympy_tensors: typing.Tuple[sympy.Symbol, ...],
+                   tensorflow_tensors: typing.Tuple[KerasTensor, ...]):
+    lambdified_function = sympy.lambdify(
+        args=sympy_tensors, expr=sympy_expression, modules=K.backend()
+    )
+    return lambdified_function(*tensorflow_tensors)
