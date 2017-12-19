@@ -1,12 +1,13 @@
+from collections import OrderedDict
 import sympy
 import typing
 
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 from keras import backend as K
 
 from pysgmcmc.optimizers.hyperoptimizer import Hyperoptimizer
 from pysgmcmc.keras_utils import (
-    to_vector, updates_for, n_dimensions
+    to_vector, updates_for, n_dimensions, sympy_to_keras
 )
 from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 
@@ -14,8 +15,8 @@ from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 class SGDHD(Hyperoptimizer):
     def __init__(self,
                  lr: float=0.01,
-                 hyperoptimizer: KerasOptimizer=Adam(),
-                 **kwargs):
+                 hyperoptimizer: KerasOptimizer=SGD(),
+                 **kwargs) -> None:
 
         super().__init__(hyperoptimizer=hyperoptimizer, **kwargs)
 
@@ -23,45 +24,55 @@ class SGDHD(Hyperoptimizer):
             self.iterations = K.variable(0, dtype="int64", name="iterations")
             self.lr = K.variable(lr, name="lr")
 
+    def hypergradient_update(self,
+                             dfdx: KerasTensor,
+                             dxdlr: KerasTensor) -> KerasTensor:
+
+        gradient = K.reshape(K.dot(K.transpose(dfdx), dxdlr), self.lr.shape)
+        hyperupdates = self.hyperoptimizer.get_updates(
+            self.hyperoptimizer,
+            gradients=[gradient], params=[self.lr]
+        )
+
+        self.updates.extend(hyperupdates)
+        *_, lr_t = hyperupdates
+        return lr_t
+
     def get_updates(self,
                     loss: KerasTensor,
                     params: typing.List[KerasVariable]) -> typing.List[KerasVariable]:
         self.updates = [K.update_add(self.iterations, 1)]
 
         n_params = n_dimensions(params)
+
         dfdx = to_vector(K.gradients(loss, params))
         dxdlr = K.zeros((n_params, 1))
 
-        tensornames = ("x", "lr", "dfdx")
+        x_sympy, lr_sympy, dfdx_sympy = sympy.symbols("x lr dfdx")
 
-        sympy_tensors = {
-            tensorname: sympy.symbols(tensorname) for tensorname in tensornames
-        }
+        tensors = OrderedDict((
+            (x_sympy, to_vector(params)),
+            (lr_sympy, self.hypergradient_update(dfdx=K.expand_dims(dfdx), dxdlr=dxdlr)),
+            (dfdx_sympy, dfdx)
 
-        tensorflow_tensors = {
-            "x": to_vector(params),
-            "lr": self.hypergradient_update(dfdx=K.expand_dims(dfdx), dxdlr=dxdlr),
-            # "lr": self.lr,
-            "dfdx": dfdx,
-        }
+        ))
 
-        x, lr, dfdx = sympy_tensors["x"], sympy_tensors["lr"], sympy_tensors["dfdx"]
+        update_sympy = x_sympy - lr_sympy * dfdx_sympy
+        dxdlr_sympy = sympy.diff(x_sympy - lr_sympy * dfdx_sympy, lr_sympy)
 
-        update_sympy = x - lr * dfdx
-        dxdlr_sympy = sympy.diff(x - lr * dfdx, lr)
+        x_t = sympy_to_keras(
+            sympy_expression=update_sympy,
+            sympy_tensors=tuple(tensors.keys()),
+            tensorflow_tensors=tuple(tensors.values())
+        )
 
-        x_t = sympy.lambdify(
-            (x, lr, dfdx), update_sympy, K.backend()
-        )(tensorflow_tensors["x"],
-          tensorflow_tensors["lr"],
-          tensorflow_tensors["dfdx"])
+        dxdlr_t = sympy_to_keras(
+            sympy_expression=dxdlr_sympy,
+            sympy_tensors=tuple(tensors.keys()),
+            tensorflow_tensors=tuple(tensors.values())
+        )
 
-        dxdlr_t = sympy.lambdify(
-            (x, lr, dfdx), dxdlr_sympy, K.backend()
-        )(tensorflow_tensors["x"],
-          tensorflow_tensors["lr"],
-          tensorflow_tensors["dfdx"])
-
+        print(dxdlr.shape, dxdlr_t.shape)
         self.updates.append((dxdlr, K.expand_dims(dxdlr_t, axis=1)))
 
         updates = updates_for(params, update_tensor=x_t)
