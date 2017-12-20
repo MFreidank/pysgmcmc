@@ -3,7 +3,7 @@ import typing
 from keras import backend as K
 from keras.optimizers import Optimizer
 from pysgmcmc.keras_utils import (
-    safe_division, safe_sqrt, keras_control_dependencies,
+    keras_control_dependencies,
     n_dimensions, to_vector, updates_for
 )
 from pysgmcmc.typing import KerasTensor, KerasVariable
@@ -36,6 +36,8 @@ class SGHMC(Optimizer):
             self.mdecay = K.constant(mdecay, name="mdecay")
             #  }}} Initialize Graph Constants #
 
+            self._initialized = False
+
     def _during_burn_in(self,
                         variable: KerasVariable,
                         update_value: KerasTensor)-> KerasTensor:
@@ -44,56 +46,60 @@ class SGHMC(Optimizer):
             update_value, K.identity(variable)
         )
 
+    def _initialize_parameters(self, n_params):
+        if not self._initialized:
+            self._initialized = True
+            self.tau = K.ones((n_params,), name="tau")
+            self.r = K.variable(1. / (self.tau.initialized_value() + 1), name="r")
+            self.g = K.ones((n_params,), name="g")
+            self.v_hat = K.ones((n_params,), name="v_hat")
+            self.minv = K.variable(1. / K.sqrt(self.v_hat.initialized_value()))
+            self.momentum = K.zeros((n_params,), name="momentum")
+            self.dxdlr = K.zeros((n_params,), name="dxdlr")
+
     def get_updates(self,
                     loss: KerasTensor,
                     params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
         self.updates = [K.update_add(self.iterations, 1)]
 
-        #  Initialize internal sampler parameters {{{ #
         n_params = n_dimensions(params)
-        tau = K.ones((n_params,), name="tau")
 
-        r = K.variable(safe_division(1., (tau.initialized_value() + 1)), name="r")
+        self._initialize_parameters(n_params=n_params)
 
-        g = K.ones((n_params,), name="g")
-
-        v_hat = K.ones((n_params,), name="v_hat")
-
-        minv = K.variable(safe_division(1., K.sqrt(v_hat.initialized_value())))
-
-        momentum = K.zeros((n_params,), name="momentum")
-
-        #  }}} Initialize internal sampler parameters #
-
-        gradient = to_vector(self.get_gradients(loss, params))
         x = to_vector(params)
+        gradient = to_vector(K.gradients(loss, params))
+
+        #  Burn-in logic {{{ #
 
         r_t = self._during_burn_in(
-            r, safe_division(1., (tau + 1.))
+            self.r, 1. / (self.tau + 1.)
         )
-        self.updates.append((r, r_t))
+        self.updates.append((self.r, r_t))
 
         with keras_control_dependencies([r_t]):
             tau_t = self._during_burn_in(
-                tau, 1. + tau - tau * safe_division(g * g, v_hat)
+                self.tau,
+                1. + self.tau - self.tau *
+                (self.g * self.g / self.v_hat)
             )
-            self.updates.append((tau, tau_t))
+            self.updates.append((self.tau, tau_t))
 
             minv_t = self._during_burn_in(
-                minv, safe_division(1., safe_sqrt(v_hat))
+                self.minv, 1. / K.sqrt(self.v_hat)
             )
-            self.updates.append((minv, minv_t))
+            self.updates.append((self.minv, minv_t))
 
             with keras_control_dependencies([tau_t, minv_t]):
                 g_t = self._during_burn_in(
-                    g, g - g * r_t + r_t * gradient
+                    self.g, self.g - self.g * r_t + r_t * gradient
                 )
-                self.updates.append((g, g_t))
+                self.updates.append((self.g, g_t))
 
                 v_hat_t = self._during_burn_in(
-                    v_hat, v_hat - v_hat * r_t + r_t * K.square(gradient)
+                    self.v_hat,
+                    self.v_hat - self.v_hat * r_t + r_t * K.square(gradient)
                 )
-                self.updates.append((v_hat, v_hat_t))
+                self.updates.append((self.v_hat, v_hat_t))
 
             #  }}} Burn-in logic #
 
@@ -101,25 +107,25 @@ class SGHMC(Optimizer):
 
                     #  Draw random normal sample {{{ #
 
-                    # Equation 10, variance of normal sample
+                    # Bohamiann paper, Equation 10: variance of normal sample
 
                     # 2 * epsilon ** 2 * mdecay * Minv - 0 (noise is 0) - epsilon ** 4
                     # = 2 * epsilon ** 2 * epsilon * v_hat^{-1/2} * C * Minv
                     # = 2 * epsilon ** 3 * v_hat^{-1/2} * C * v_hat^{-1/2} - epsilon ** 4
 
                     # (co-) variance of normal sample
-                    lr_scaled = safe_division(
-                        self.lr, safe_sqrt(self.scale_grad)
+                    lr_scaled = (
+                        self.lr / K.sqrt(self.scale_grad)
                     )
 
                     noise_scale = (
                         2. * K.square(lr_scaled) * self.mdecay * minv_t -
-                        2. * K.pow(lr_scaled, 3) * K.square(minv_t) * self.noise -
-                        lr_scaled ** 4
+                        2. * K.pow(lr_scaled, 3) *
+                        K.square(minv_t) * self.noise - lr_scaled ** 4
                     )
 
                     # turn into stddev
-                    sigma = safe_sqrt(
+                    sigma = K.sqrt(
                         K.clip(
                             noise_scale,
                             min_value=1e-16,
@@ -127,19 +133,19 @@ class SGHMC(Optimizer):
                         )
                     )
 
-                    sample = sigma * K.random_normal(shape=momentum.shape)
+                    sample = sigma * self.random_sample
 
                     #  }}} Draw random sample #
 
-                    #  HMC Update {{{ #
+                    #  Parameter Update {{{ #
 
                     # Equation 10: right side, where:
                     # Minv = v_hat^{-1/2}, Mdecay = epsilon * v_hat^{-1/2} C
                     momentum_t = (
-                        momentum - K.square(self.lr) * minv_t * gradient -
-                        self.mdecay * momentum + sample
+                        self.momentum - K.square(self.lr) * minv_t * gradient -
+                        self.mdecay * self.momentum + sample
                     )
-                    self.updates.append((momentum, momentum_t))
+                    self.updates.append((self.momentum, momentum_t))
 
                     # Equation 10: left side
                     x = x + momentum_t
@@ -151,5 +157,5 @@ class SGHMC(Optimizer):
                         for param, update in zip(params, updates)
                     ])
 
-                    #  }}} HMC Update #
-            return self.updates
+                    #  }}} Parameter Update #
+                    return self.updates

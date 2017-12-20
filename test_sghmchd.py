@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from keras.callbacks import TensorBoard
 
 from pysgmcmc.diagnostics.objective_functions import sinc
-from pysgmcmc.optimizers.sghmchd import SGHMCHD
+from pysgmcmc.optimizers.sghmchd_sympy import SGHMCHD
 # from pysgmcmc.optimizers.sghmc import SGHMC
 from pysgmcmc.models.bayesian_neural_network import (
     BayesianNeuralNetwork
@@ -24,14 +24,36 @@ def init_random_uniform(lower, upper, n_points, rng=None):
     )
 
 
+from tensorflow.python.debug.lib.debug_data import InconvertibleTensorProto
+
+def has_nan(datum, tensor):
+  if isinstance(tensor, InconvertibleTensorProto):
+    # Uninitialized tensor doesn't have bad numerical values.
+    # Also return False for data types that cannot be represented as numpy
+    # arrays.
+    return False
+  elif (np.issubdtype(tensor.dtype, np.float) or
+        np.issubdtype(tensor.dtype, np.complex) or
+        np.issubdtype(tensor.dtype, np.integer)):
+    return np.any(np.isnan(tensor))
+  else:
+    return False
+
 def main():
     import logging
+    # from tensorflow.python import debug as tf_debug
+    from keras import backend as K
     logging.basicConfig(level=logging.DEBUG)
+
+    sess = K.get_session()
+    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+    # sess.add_tensor_filter('has_nan', has_nan)
+    K.set_session(sess)
 
     # optimizer = SGHMC
     optimizer = SGHMCHD
 
-    sghmc_arguments = {"learning_rate": 0.000001}
+    sghmc_arguments = {"learning_rate": 0.000000001}
 
     n_datapoints = 100
     x_train = init_random_uniform(
@@ -50,7 +72,7 @@ def main():
         log_dir="./logs", histogram_freq=0, write_graph=True, write_grads=True,
     )
 
-    burn_in_steps = 100000
+    burn_in_steps = 3000
     model = BayesianNeuralNetwork(
         burn_in_steps=burn_in_steps,
         n_steps=burn_in_steps + 50000,
