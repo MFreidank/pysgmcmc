@@ -117,4 +117,4 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
                 _, *sghmc_updates = super().get_updates(loss, params)
                 self.all_updates.extend(sghmc_updates)
 
-        return self.all_updates
+        return self.sghmcd_updates
