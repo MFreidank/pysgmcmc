@@ -83,7 +83,8 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
         # Run hyperoptimizer update, skip increment of iteration counter.
         _, *hyperupdates = self.hypergradient_update(
             dfdx=K.expand_dims(gradient, axis=1),
-            dxdlr=K.expand_dims(self.dxdlr, axis=1)
+            dxdlr=K.expand_dims(self.dxdlr, axis=1),
+            hyperparameter=self.lr
         )
 
         self.all_updates.extend(hyperupdates)

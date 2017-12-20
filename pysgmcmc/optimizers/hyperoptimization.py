@@ -3,7 +3,7 @@ import typing
 from keras import backend as K
 from keras.optimizers import Adam
 
-from pysgmcmc.typing import KerasTensor, KerasVariable
+from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 
 
 def to_hyperoptimizer(optimizer):
@@ -22,16 +22,22 @@ def to_hyperoptimizer(optimizer):
 
 
 class Hyperoptimizer(object):
-    def __init__(self, hyperoptimizer=Adam(lr=1e-5), **kwargs):
+    def __init__(self,
+                 hyperoptimizer: KerasOptimizer=Adam(lr=1e-5),
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.hyperoptimizer = to_hyperoptimizer(hyperoptimizer)
 
-    def hypergradient_update(self, dfdx, dxdlr):
-        gradient = K.reshape(K.dot(K.transpose(dfdx), dxdlr), self.lr.shape)
+    def hypergradient_update(self,
+                             dfdx: KerasTensor,
+                             dxdlr: KerasTensor,
+                             hyperparameter: KerasVariable) -> typing.List[KerasTensor]:
+
+        gradient = K.reshape(K.dot(K.transpose(dfdx), dxdlr), hyperparameter.shape)
 
         hyperupdates = self.hyperoptimizer.get_updates(
             self.hyperoptimizer,
-            gradients=[gradient], params=[self.lr]
+            gradients=[gradient], params=[hyperparameter]
         )
 
         return hyperupdates
