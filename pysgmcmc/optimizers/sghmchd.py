@@ -115,6 +115,6 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
             with keras_control_dependencies([dxdlr_t]):
                 # SGHMC Update, skip increment of iteration counter.
                 _, *sghmc_updates = super().get_updates(loss, params)
-                self.all_updates.extend(sghmc_updates)
+                self.sghmcd_updates.extend(sghmc_updates)
 
         return self.sghmcd_updates
