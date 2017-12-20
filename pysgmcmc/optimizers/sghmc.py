@@ -56,6 +56,7 @@ class SGHMC(Optimizer):
             self.minv = K.variable(1. / K.sqrt(self.v_hat.initialized_value()))
             self.momentum = K.zeros((n_params,), name="momentum")
             self.dxdlr = K.zeros((n_params,), name="dxdlr")
+            self.random_sample = K.random_normal(shape=self.momentum.shape)
 
     def get_updates(self,
                     loss: KerasTensor,

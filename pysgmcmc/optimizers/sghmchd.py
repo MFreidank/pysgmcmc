@@ -77,8 +77,6 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
         x = to_vector(params)
         gradient = to_vector(K.gradients(loss, params))
 
-        self.random_sample = K.random_normal(shape=self.momentum.shape)
-
         #  Hypergradient Update to tune the learning rate {{{ #
 
         # Run hyperoptimizer update, skip increment of iteration counter.
