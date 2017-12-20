@@ -5,38 +5,23 @@ import typing
 from keras.optimizers import Adam, SGD
 from keras import backend as K
 
-from pysgmcmc.optimizers.hyperoptimizer import Hyperoptimizer
+from pysgmcmc.optimizers.hyperoptimization import Hyperoptimizer
 from pysgmcmc.keras_utils import (
     to_vector, updates_for, n_dimensions, sympy_to_keras
 )
 from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 
 
-class SGDHD(Hyperoptimizer):
+class SGDHD(Hyperoptimizer, SGD):
     def __init__(self,
                  lr: float=0.01,
-                 hyperoptimizer: KerasOptimizer=SGD(),
+                 hyperoptimizer: KerasOptimizer=Adam(lr=1e-5),
                  **kwargs) -> None:
 
-        super().__init__(hyperoptimizer=hyperoptimizer, **kwargs)
-
         with K.name_scope(self.__class__.__name__):
-            self.iterations = K.variable(0, dtype="int64", name="iterations")
-            self.lr = K.variable(lr, name="lr")
-
-    def hypergradient_update(self,
-                             dfdx: KerasTensor,
-                             dxdlr: KerasTensor) -> KerasTensor:
-
-        gradient = K.reshape(K.dot(K.transpose(dfdx), dxdlr), self.lr.shape)
-        hyperupdates = self.hyperoptimizer.get_updates(
-            self.hyperoptimizer,
-            gradients=[gradient], params=[self.lr]
-        )
-
-        self.updates.extend(hyperupdates)
-        *_, lr_t = hyperupdates
-        return lr_t
+            super().__init__(
+                hyperoptimizer=hyperoptimizer, lr=lr, **kwargs
+            )
 
     def get_updates(self,
                     loss: KerasTensor,
@@ -50,11 +35,16 @@ class SGDHD(Hyperoptimizer):
 
         x_sympy, lr_sympy, dfdx_sympy = sympy.symbols("x lr dfdx")
 
+        *hyperupdates, lr_t = self.hypergradient_update(
+            dfdx=K.expand_dims(dfdx),
+            dxdlr=dxdlr,
+            hyperparameter=self.lr
+        )
+
         tensors = OrderedDict((
             (x_sympy, to_vector(params)),
-            (lr_sympy, self.hypergradient_update(dfdx=K.expand_dims(dfdx), dxdlr=dxdlr)),
+            (lr_sympy, lr_t),
             (dfdx_sympy, dfdx)
-
         ))
 
         update_sympy = x_sympy - lr_sympy * dfdx_sympy
