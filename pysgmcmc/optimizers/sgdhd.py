@@ -21,7 +21,10 @@ class SGDHD(Hyperoptimizer, SGD):
 
         with K.name_scope(self.__class__.__name__):
             super().__init__(
-                hyperoptimizer=hyperoptimizer, hyperloss=None, lr=lr, **kwargs
+                hyperoptimizer=hyperoptimizer,
+                hyperloss=None,
+                lr=lr,
+                **kwargs
             )
 
     def get_updates(self,
