@@ -18,7 +18,7 @@ from pysgmcmc.models.base_model import (
 )
 from pysgmcmc.optimizers import get_optimizer
 from pysgmcmc.optimizers.sghmc import SGHMC
-from pysgmcmc.typing import (
+from pysgmcmc.custom_typing import (
     KerasLossFunction, KerasModelLoss, KerasNetworkFactory, KerasOptimizer,
     KerasTensor, KerasVariable
 )
