@@ -24,15 +24,16 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
                  scale_grad: float=1.0,
                  seed: int=None,
                  **kwargs) -> None:
+
         with K.name_scope(self.__class__.__name__):
             super(SGHMCHD, self).__init__(
-                hyperoptimizer=hyperoptimizer,
-                lr=lr, mdecay=mdecay, burn_in_steps=burn_in_steps,
+                hyperoptimizer=hyperoptimizer, lr=lr,
+                mdecay=mdecay, burn_in_steps=burn_in_steps,
                 scale_grad=scale_grad, seed=seed, **kwargs
             )
 
     def get_updates(self, loss: KerasTensor, params: typing.List[KerasVariable]):
-        self.all_updates = [K.update_add(self.iterations, 1)]
+        self.sghmcd_updates = [K.update_add(self.iterations, 1)]
 
         n_params = n_dimensions(params)
 
@@ -87,7 +88,7 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
             hyperparameter=self.lr
         )
 
-        self.all_updates.extend(hyperupdates)
+        self.sghmcd_updates.extend(hyperupdates)
 
         # recover tuned learning rate
         *_, lr_t = hyperupdates
@@ -111,7 +112,7 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
             dxdlr_t = sympy_to_keras(
                 dxdlr_, tuple(tensors.keys()), tuple(tensors.values())
             )
-            self.all_updates.append((self.dxdlr, dxdlr_t))
+            self.sghmcd_updates.append((self.dxdlr, dxdlr_t))
 
             with keras_control_dependencies([dxdlr_t]):
                 # SGHMC Update, skip increment of iteration counter.
