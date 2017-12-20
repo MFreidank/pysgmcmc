@@ -12,7 +12,7 @@ from pysgmcmc.keras_utils import (
 )
 from pysgmcmc.optimizers.sghmc import SGHMC
 from pysgmcmc.optimizers.hyperoptimization import Hyperoptimizer
-from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
+from pysgmcmc.custom_typing import KerasOptimizer, KerasTensor, KerasVariable
 
 
 class SGHMCHD(Hyperoptimizer, SGHMC):

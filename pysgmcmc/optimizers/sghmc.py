@@ -6,7 +6,7 @@ from pysgmcmc.keras_utils import (
     keras_control_dependencies,
     n_dimensions, to_vector, updates_for
 )
-from pysgmcmc.typing import KerasTensor, KerasVariable
+from pysgmcmc.custom_typing import KerasTensor, KerasVariable
 
 
 class SGHMC(Optimizer):

@@ -3,7 +3,7 @@ import typing
 from keras import backend as K
 from keras.optimizers import Adam
 
-from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
+from pysgmcmc.custom_typing import KerasOptimizer, KerasTensor, KerasVariable
 from pysgmcmc.keras_utils import to_vector
 
 

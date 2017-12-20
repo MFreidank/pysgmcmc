@@ -4,7 +4,7 @@ import sympy
 from numpy import prod
 import tensorflow as tf
 from keras import backend as K
-from pysgmcmc.typing import KerasVariable, KerasTensor
+from pysgmcmc.custom_typing import KerasVariable, KerasTensor
 
 
 def n_dimensions(tensors: typing.List[KerasTensor]) -> int:

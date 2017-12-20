@@ -9,7 +9,7 @@ from pysgmcmc.optimizers.hyperoptimization import Hyperoptimizer
 from pysgmcmc.keras_utils import (
     to_vector, updates_for, n_dimensions, sympy_to_keras
 )
-from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
+from pysgmcmc.custom_typing import KerasOptimizer, KerasTensor, KerasVariable
 
 
 class SGDHD(Hyperoptimizer, SGD):
