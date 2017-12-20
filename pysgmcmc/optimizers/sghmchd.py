@@ -18,7 +18,7 @@ from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 class SGHMCHD(Hyperoptimizer, SGHMC):
     def __init__(self,
                  hyperoptimizer: KerasOptimizer=Adam(lr=1e-5),
-                 metaloss: typing.Union[None, typing.Callable[..., KerasTensor]]=None,
+                 hyperloss: typing.Union[None, typing.Callable[..., KerasTensor]]=None,
                  lr: float=0.01,
                  mdecay: float=0.05,
                  burn_in_steps: int=3000,
@@ -29,7 +29,7 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
         with K.name_scope(self.__class__.__name__):
             super(SGHMCHD, self).__init__(
                 hyperoptimizer=hyperoptimizer, lr=lr,
-                metaloss=metaloss,
+                hyperloss=hyperloss,
                 mdecay=mdecay, burn_in_steps=burn_in_steps,
                 scale_grad=scale_grad, seed=seed, **kwargs
             )

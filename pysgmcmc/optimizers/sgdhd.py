@@ -16,11 +16,12 @@ class SGDHD(Hyperoptimizer, SGD):
     def __init__(self,
                  lr: float=0.01,
                  hyperoptimizer: KerasOptimizer=Adam(lr=1e-5),
+                 hyperloss=None,
                  **kwargs) -> None:
 
         with K.name_scope(self.__class__.__name__):
             super().__init__(
-                hyperoptimizer=hyperoptimizer, lr=lr, **kwargs
+                hyperoptimizer=hyperoptimizer, hyperloss=None, lr=lr, **kwargs
             )
 
     def get_updates(self,
