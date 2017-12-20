@@ -223,7 +223,13 @@ class BayesianNeuralNetwork(object):
                 self.sampled_weights.append(weight_values)
 
     def log_learning_rate(self, epoch: int, logs: typing.Dict[str, typing.Any]):
-        logging.debug(" Learning rate: {}".format(K.batch_get_value([self.optimizer.lr])))
+        if hasattr(self.optimizer, "lr"):
+            logging.debug(" Learning rate: {}".format(K.batch_get_value([self.optimizer.lr])))
+        else:
+            logging.debug(
+                " Cannot print learning rate of optimizer,"
+                " ensure the corresponding parameter is named 'lr'."
+            )
 
     def train(self, x_train: np.ndarray, y_train: np.ndarray):
         self.sampled_weights.clear()
