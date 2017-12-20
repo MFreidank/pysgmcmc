@@ -36,7 +36,7 @@ class SGDHD(Hyperoptimizer, SGD):
         x_sympy, lr_sympy, dfdx_sympy = sympy.symbols("x lr dfdx")
 
         *hyperupdates, lr_t = self.hypergradient_update(
-            dfdx=K.expand_dims(dfdx),
+            loss=loss, params=params,
             dxdlr=dxdlr,
             hyperparameter=self.lr
         )
