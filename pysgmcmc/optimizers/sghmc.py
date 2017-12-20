@@ -38,13 +38,13 @@ class SGHMC(Optimizer):
 
             self._initialized = False
 
+    def _burning_in(self):
+        return self.iterations <= self.burn_in_steps
+
     def _during_burn_in(self,
-                        variable: KerasVariable,
-                        update_value: KerasTensor)-> KerasTensor:
-        return K.switch(
-            self.iterations <= self.burn_in_steps,
-            update_value, K.identity(variable)
-        )
+                        variable,
+                        update_value):
+        return K.switch(self._burning_in(), update_value, K.identity(variable))
 
     def _initialize_parameters(self, n_params):
         if not self._initialized:

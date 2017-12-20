@@ -1,85 +1,37 @@
 # vim:foldmethod=marker
 import typing
-import sympy
-from keras import backend as K
-from keras.optimizers import Optimizer, Adam
-from pysgmcmc.keras_utils import (
-    keras_control_dependencies,
-    n_dimensions, to_vector, updates_for
-)
-from pysgmcmc.optimizers.sghmc import SGHMC
-from pysgmcmc.typing import KerasTensor, KerasVariable
 from collections import OrderedDict
 
+import sympy
+from keras import backend as K
+from keras.optimizers import Adam
 
-def to_tensorflow(sympy_expression, sympy_tensors, tensorflow_tensors):
-    return sympy.lambdify(sympy_tensors, sympy_expression, "tensorflow")(*tensorflow_tensors)
-
-
-def to_hyperoptimizer(optimizer):
-    # Turn any keras.optimizer into a metaoptimizer we can use to tune
-    # our learning rate parameter
-    old_get_updates = optimizer.get_updates
-
-    def new_get_updates(self,
-                        gradients: typing.List[KerasTensor],
-                        params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
-        self.get_gradients = lambda *args, **kwargs: gradients
-        return old_get_updates(loss=None, params=params)
-    optimizer.get_updates = new_get_updates
-    return optimizer
+from pysgmcmc.keras_utils import (
+    keras_control_dependencies,
+    n_dimensions, to_vector, sympy_to_keras
+)
+from pysgmcmc.optimizers.sghmc import SGHMC
+from pysgmcmc.optimizers.hyperoptimization import Hyperoptimizer
+from pysgmcmc.typing import KerasOptimizer, KerasTensor, KerasVariable
 
 
-class SGHMCHD(SGHMC):
+class SGHMCHD(Hyperoptimizer, SGHMC):
     def __init__(self,
-                 hyperoptimizer=Adam(lr=1e-5),
+                 hyperoptimizer: KerasOptimizer=Adam(lr=1e-5),
                  lr: float=0.01,
-                 independent_stepsizes: bool=True,
                  mdecay: float=0.05,
                  burn_in_steps: int=3000,
                  scale_grad: float=1.0,
                  seed: int=None,
                  **kwargs) -> None:
-        super(SGHMCHD, self).__init__(**kwargs)
-        self.seed = seed
-        self.hyperoptimizer = to_hyperoptimizer(hyperoptimizer)
-
         with K.name_scope(self.__class__.__name__):
-            self.iterations = K.variable(0, dtype="int64", name="iterations")
-
-            self.lr = K.variable(lr, name="lr")
-
-            #  Initialize Graph Constants {{{ #
-            self.noise = K.constant(0., name="noise")
-
-            self.scale_grad = K.constant(scale_grad, name="scale_grad")
-
-            self.burn_in_steps = K.constant(
-                burn_in_steps, dtype="int64", name="burn_in_steps"
+            super(SGHMCHD, self).__init__(
+                hyperoptimizer=hyperoptimizer,
+                lr=lr, mdecay=mdecay, burn_in_steps=burn_in_steps,
+                scale_grad=scale_grad, seed=seed, **kwargs
             )
 
-            self.mdecay = K.constant(mdecay, name="mdecay")
-            #  }}} Initialize Graph Constants #
-
-    def hypergradient_update(self, dfdx, dxdlr):
-        gradient = K.reshape(K.dot(K.transpose(dfdx), dxdlr), self.lr.shape)
-
-        hyperupdates = self.hyperoptimizer.get_updates(
-            self.hyperoptimizer,
-            gradients=[gradient], params=[self.lr]
-        )
-
-        return hyperupdates
-
-    def _burning_in(self):
-        return self.iterations <= self.burn_in_steps
-
-    def _during_burn_in(self,
-                        variable,
-                        update_value):
-        return K.switch(self._burning_in(), update_value, K.identity(variable))
-
-    def get_updates(self, loss, params):
+    def get_updates(self, loss: KerasTensor, params: typing.List[KerasVariable]):
         self.all_updates = [K.update_add(self.iterations, 1)]
 
         n_params = n_dimensions(params)
@@ -155,7 +107,7 @@ class SGHMCHD(SGHMC):
         with keras_control_dependencies([lr_t]):
             # Update gradient of learning rate with respect to parameters
             # by evaluating our sympy graph.
-            dxdlr_t = to_tensorflow(
+            dxdlr_t = sympy_to_keras(
                 dxdlr_, tuple(tensors.keys()), tuple(tensors.values())
             )
             self.all_updates.append((self.dxdlr, dxdlr_t))
