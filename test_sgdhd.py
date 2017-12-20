@@ -41,7 +41,7 @@ def main():
 
     model.summary()
 
-    sgd = SGDHD(lr=0.01)
+    sgd = SGDHD(lr=0.0)
 
 
     def print_stepsize(epoch, logs):

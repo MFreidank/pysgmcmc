@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 from keras.callbacks import TensorBoard
 
 from pysgmcmc.diagnostics.objective_functions import sinc
-from pysgmcmc.optimizers.sghmchd_sympy import SGHMCHD
-# from pysgmcmc.optimizers.sghmc import SGHMC
+from pysgmcmc.optimizers.sghmchd import SGHMCHD
 from pysgmcmc.models.bayesian_neural_network import (
     BayesianNeuralNetwork
 )
@@ -23,21 +22,6 @@ def init_random_uniform(lower, upper, n_points, rng=None):
         [rng.uniform(lower, upper, n_dims) for _ in range(n_points)]
     )
 
-
-from tensorflow.python.debug.lib.debug_data import InconvertibleTensorProto
-
-def has_nan(datum, tensor):
-  if isinstance(tensor, InconvertibleTensorProto):
-    # Uninitialized tensor doesn't have bad numerical values.
-    # Also return False for data types that cannot be represented as numpy
-    # arrays.
-    return False
-  elif (np.issubdtype(tensor.dtype, np.float) or
-        np.issubdtype(tensor.dtype, np.complex) or
-        np.issubdtype(tensor.dtype, np.integer)):
-    return np.any(np.isnan(tensor))
-  else:
-    return False
 
 def main():
     import logging
