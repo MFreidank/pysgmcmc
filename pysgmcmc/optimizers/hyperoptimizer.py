@@ -1,6 +1,6 @@
 # Base class
 import typing
-from keras.optimizers import Optimizer
+from keras.optimizers import Optimizer, clip_norm
 from keras import backend as K
 
 from pysgmcmc.keras_utils import to_vector
@@ -15,7 +15,15 @@ def to_hyperoptimizer(optimizer: KerasOptimizer):
     def new_get_updates(self,
                         gradients: typing.List[KerasTensor],
                         params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
-        self.get_gradients = lambda *args, **kwargs: gradients
+        def new_get_gradients(*args, **kwargs):
+            grads = gradients
+            if hasattr(self, 'clipnorm') and self.clipnorm > 0:
+                norm = K.sqrt(sum([K.sum(K.square(g)) for g in grads]))
+                grads = [clip_norm(g, self.clipnorm, norm) for g in grads]
+            if hasattr(self, 'clipvalue') and self.clipvalue > 0:
+                grads = [K.clip(g, -self.clipvalue, self.clipvalue) for g in grads]
+            return grads
+        self.get_gradients = new_get_gradients
         return old_get_updates(loss=None, params=params)
     optimizer.get_updates = new_get_updates
     return optimizer
