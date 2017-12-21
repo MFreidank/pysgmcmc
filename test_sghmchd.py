@@ -34,7 +34,6 @@ def main():
     # sess.add_tensor_filter('has_nan', has_nan)
     K.set_session(sess)
 
-    # optimizer = SGHMC
     optimizer = SGHMCHD
 
     sghmc_arguments = {"learning_rate": 0.000000001}

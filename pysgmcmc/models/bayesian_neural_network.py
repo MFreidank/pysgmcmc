@@ -31,25 +31,28 @@ from pysgmcmc.custom_typing import (
 def log_variance_prior(log_variance: KerasTensor,
                        mean: float=1e-6,
                        variance: float=0.01) -> KerasTensor:
-    return K.mean(
-        K.sum(
-            safe_division(
-                -K.square(log_variance - K.log(mean)),
-                (2. * variance)
-            ) - 0.5 * K.log(variance), axis=1
+
+    with K.name_scope(log_variance_prior.__name__):
+        return K.mean(
+            K.sum(
+                safe_division(
+                    -K.square(log_variance - K.log(mean)),
+                    (2. * variance)
+                ) - 0.5 * K.log(variance), axis=1
+            )
         )
-    )
 
 
 def weight_prior(parameters: typing.List[KerasVariable],
                  wdecay: float=1.) -> KerasTensor:
-    log_likelihood, n_parameters = 0., 0
+    with K.name_scope(weight_prior.__name__):
+        log_likelihood, n_parameters = 0., 0
 
-    for parameter in parameters:
-        log_likelihood += K.sum(-wdecay * 0.5 * K.square(parameter))
-        n_parameters += K.prod(parameter.shape)
+        for parameter in parameters:
+            log_likelihood += K.sum(-wdecay * 0.5 * K.square(parameter))
+            n_parameters += K.prod(parameter.shape)
 
-    return safe_division(log_likelihood, K.cast(n_parameters, K.floatx()))
+        return safe_division(log_likelihood, K.cast(n_parameters, K.floatx()))
 
 
 #  }}} Priors #
@@ -108,39 +111,40 @@ def negative_log_likelihood(model: Sequential,
                             batch_size: int=20) -> KerasLossFunction:
 
     def cost_function(y_true: KerasTensor, y_pred: KerasTensor):
-        f_mean = K.reshape(y_pred[:, 0], shape=(-1, 1))
-        mean_squared_error = K.square(y_true - f_mean)
+        with K.name_scope("negative_log_likelihood"):
+            f_mean = K.reshape(y_pred[:, 0], shape=(-1, 1))
+            mean_squared_error = K.square(y_true - f_mean)
 
-        f_log_var = K.reshape(y_pred[:, 1], shape=(-1, 1))
+            f_log_var = K.reshape(y_pred[:, 1], shape=(-1, 1))
 
-        f_var_inv = safe_division(1., (K.exp(f_log_var) + 1e-16))
+            f_var_inv = safe_division(1., (K.exp(f_log_var) + 1e-16))
 
-        log_likelihood = K.sum(
-            K.sum(
-                -mean_squared_error * 0.5 * f_var_inv - 0.5 * f_log_var,
-                axis=1
+            log_likelihood = K.sum(
+                K.sum(
+                    -mean_squared_error * 0.5 * f_var_inv - 0.5 * f_log_var,
+                    axis=1
+                )
             )
-        )
 
-        log_likelihood = safe_division(log_likelihood, batch_size)
+            log_likelihood = safe_division(log_likelihood, batch_size)
 
-        log_variance_prior_log_likelihood = log_variance_prior(
-            f_log_var
-        )
+            log_variance_prior_log_likelihood = log_variance_prior(
+                f_log_var
+            )
 
-        log_likelihood += safe_division(
-            log_variance_prior_log_likelihood, n_datapoints
-        )
+            log_likelihood += safe_division(
+                log_variance_prior_log_likelihood, n_datapoints
+            )
 
-        weight_prior_log_likelihood = weight_prior(
-            model.trainable_weights
-        )
+            weight_prior_log_likelihood = weight_prior(
+                model.trainable_weights
+            )
 
-        log_likelihood += safe_division(
-            weight_prior_log_likelihood, n_datapoints
-        )
+            log_likelihood += safe_division(
+                weight_prior_log_likelihood, n_datapoints
+            )
 
-        return -log_likelihood
+            return -log_likelihood
     return cost_function
 
 #  }}} Loss function (Negative Log Likelihood) #
@@ -247,9 +251,11 @@ class BayesianNeuralNetwork(object):
             )
 
         n_datapoints, input_dimension = self.x_train.shape
-        self.model = self.network_architecture(
-            input_dimension, self.seed
-        )
+
+        with K.name_scope("neural_network"):
+            self.model = self.network_architecture(
+                input_dimension, self.seed
+            )
 
         if callable(self.optimizer):
             self.optimizer = get_optimizer(
@@ -284,7 +290,8 @@ class BayesianNeuralNetwork(object):
     def predict(self,
                 x_test: np.ndarray,
                 return_individual_predictions: bool=False) -> typing.Tuple[np.ndarray, np.ndarray]:
-        # XXX: return_individual_predictions
+
+        # XXX: implement return_individual_predictions
         assert self.is_trained
         assert isinstance(return_individual_predictions, bool)
 

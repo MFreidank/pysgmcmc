@@ -1,3 +1,4 @@
+""" Type aliases for custom types, in particular for keras."""
 from typing import (
     Union, Callable,
 )
