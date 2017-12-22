@@ -3,7 +3,7 @@ import numpy as np
 from keras import backend as K
 from keras.optimizers import TFOptimizer
 from tensorflow.python.training.optimizer import Optimizer as tf_optimizer
-from pysgmcmc.typing import KerasTensor, KerasVariable
+from pysgmcmc.custom_typing import KerasTensor, KerasVariable
 
 
 def sampler_from_optimizer(optimizer_cls: type):
