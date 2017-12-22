@@ -1,3 +1,4 @@
+import copy
 import typing
 
 from keras import backend as K
@@ -10,7 +11,8 @@ from pysgmcmc.keras_utils import to_vector
 def to_hyperoptimizer(optimizer):
     # Turn any keras.optimizer into a metaoptimizer we can use to tune
     # our learning rate parameter
-    old_get_updates = optimizer.get_updates
+    optimizer_ = copy.copy(optimizer)
+    old_get_updates = optimizer_.get_updates
 
     def new_get_updates(self,
                         gradients: typing.List[KerasTensor],
@@ -18,8 +20,8 @@ def to_hyperoptimizer(optimizer):
         self.get_gradients = lambda *args, **kwargs: gradients
         return old_get_updates(loss=None, params=params)
 
-    optimizer.get_updates = new_get_updates
-    return optimizer
+    optimizer_.get_updates = new_get_updates
+    return optimizer_
 
 
 class Hyperoptimizer(object):
