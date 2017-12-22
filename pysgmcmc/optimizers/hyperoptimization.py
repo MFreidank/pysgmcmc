@@ -25,11 +25,11 @@ def to_hyperoptimizer(optimizer):
 class Hyperoptimizer(object):
     def __init__(self,
                  hyperoptimizer: KerasOptimizer=Adam(lr=1e-5),
-                 # XXX: How to specify nonetype?
                  hyperloss: typing.Union[None, typing.Callable[..., KerasTensor]]=None,
                  **kwargs) -> None:
-        """ Set up a (learning rate) hyperoptimizer for a given loss.
-
+        """ Set up a hyperoptimizer for a given loss.
+            A hyperoptimizer is a standard optimizer that tunes hyperparameters
+            of a different optimizer using gradient information.
 
         Parameters
         ----------
@@ -37,10 +37,8 @@ class Hyperoptimizer(object):
             Hyperloss for which we want to optimize hyperparameters.
             Defaults to `None`, which indicates that we should optimize
             for the normal loss that all parameters are optimized for.
-
         hyperoptimizer: KerasOptimizer, optional
-            Keras optimizer that should be used to minimize our loss and tune
-            the hyperparameter.
+            Keras optimizer used to minimize our loss and tune a hyperparameter.
             Defaults to `Adam` with (deliberately small) learning rate `1e-5`.
 
         """
@@ -55,7 +53,25 @@ class Hyperoptimizer(object):
                              params: typing.List[KerasVariable],
                              dxdlr: KerasTensor,
                              hyperparameter: KerasVariable) -> typing.List[KerasTensor]:
+        """TODO: Docstring for hypergradient_update.
 
+        Parameters
+        ----------
+        loss: KerasTensor
+            TODO
+        params: typing.List[KerasVariable]
+            TODO
+        dxdlr: KerasTensor
+            TODO
+        hyperparameter: KerasVariable
+            TODO
+
+        Returns
+        ----------
+        hyperupdates: typing.List[KerasTensor]
+            TODO
+
+        """
         if self.hyperloss:
             # Derive hyperloss(params) wrt params to get dfdx
             hyperloss = self.hyperloss(params)

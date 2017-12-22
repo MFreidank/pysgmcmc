@@ -25,16 +25,75 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
                  scale_grad: float=1.0,
                  seed: int=None,
                  **kwargs) -> None:
+        """TODO: Docstring for __init__.
+
+        Parameters
+        ----------
+        hyperloss: typing.Union[None, typing.Callable[..., KerasTensor]]
+            TODO: Documentation
+        hyperoptimizer: KerasOptimizer, optional
+            Keras optimizer used to tune learning rate.
+            If `hyperloss` is given it specifies the loss used to
+            tune the learning rate. Otherwise, this hyperoptimizer will
+            use this optimizers target loss to tune the learning rate.
+            Defaults to `None`.
+        lr: float, optional
+            Initial leapfrog stepsize of this sampler.
+            Note that this sampler tunes its stepsize using
+            hypergradient optimization with a given `hyperoptimizer`.
+            Defaults to `0.01`.
+        mdecay: float, optional
+            Controls (constant) momentum decay per time-step.
+            Defaults to `0.05`.
+            For reference see:
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
+        burn_in_steps: int, optional
+            Number of burn-in steps to perform.
+            In each burn-in step, this sampler will adapt its own internal
+            hyperparameters to decrease its error.
+            Defaults to `3000`.
+        scale_grad: float, optional
+            Value that is used to scale the magnitude of the noise used for sampling.
+            In a typical batches-of-data setting this usually corresponds to
+            the number of datapoints of the entire dataset.
+        seed: int, optional
+            Random seed to use.
+            Defaults to `None`.
+
+        """
 
         with K.name_scope(self.__class__.__name__):
             super(SGHMCHD, self).__init__(
-                hyperoptimizer=hyperoptimizer, lr=lr,
-                hyperloss=hyperloss,
-                mdecay=mdecay, burn_in_steps=burn_in_steps,
+                hyperoptimizer=hyperoptimizer, hyperloss=hyperloss,
+                lr=lr, mdecay=mdecay, burn_in_steps=burn_in_steps,
                 scale_grad=scale_grad, seed=seed, **kwargs
             )
 
-    def get_updates(self, loss: KerasTensor, params: typing.List[KerasVariable]):
+    def get_updates(self,
+                    loss: KerasTensor,
+                    params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
+        """ Perform an update iteration of this optimizer.
+            Update `params` and internal hyperparameters to minimize `loss`.
+
+        Parameters
+        ----------
+        loss: KerasTensor
+            Tensor representing a loss value that should be minimized.
+            Loss should depend on `params`.
+        params: typing.List[KerasVariable]
+            List of parameters that we want to update to minimize `loss`.
+
+        Returns
+        ----------
+        updates: typing.List[KerasTensor]
+            TODO
+
+        Examples
+        ----------
+        TODO GIVE EXAMPLE OF A SINGLE SGHMCHD STEP AND SHOW STEPSIZE CHANGES
+        AS WELL
+
+        """
         self.sghmcd_updates = [K.update_add(self.iterations, 1)]
 
         n_params = n_dimensions(params)

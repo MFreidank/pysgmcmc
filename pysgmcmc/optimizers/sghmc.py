@@ -17,6 +17,45 @@ class SGHMC(Optimizer):
                  scale_grad: float=1.0,
                  seed: int=None,
                  **kwargs) -> None:
+        """ Stochastic Gradient Hamiltonian Monte-Carlo Sampler.
+            Uses a burn-in prodedure to adapt its own hyperparameters during
+            the initial stages of sampling.
+
+            See [1] for more details on this burn-in procedure.\n
+            See [2] for more details on Stochastic Gradient Hamiltonian Monte Carlo.
+
+            [1] J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
+                        In Advances in Neural Information Processing Systems 29 (2016).\n
+                        `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
+
+            [2] T. Chen, E. B. Fox, C. Guestrin
+                In Proceedings of Machine Learning Research 32 (2014).\n
+                `Stochastic Gradient Hamiltonian Monte Carlo <https://arxiv.org/pdf/1402.4102.pdf>`_
+
+        Parameters
+        ----------
+        lr: float, optional
+            Leapfrog stepsize parameter of this sampler.
+            Defaults to `0.01`.
+        mdecay: float, optional
+            Controls (constant) momentum decay per time-step.
+            Defaults to `0.05`.
+            For reference see:
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
+        burn_in_steps: int, optional
+            Number of burn-in steps to perform.
+            In each burn-in step, this sampler will adapt its own internal
+            hyperparameters to decrease its error.
+            Defaults to `3000`.
+        scale_grad: float, optional
+            Value that is used to scale the magnitude of the noise used for sampling.
+            In a typical batches-of-data setting this usually corresponds to
+            the number of datapoints of the entire dataset.
+        seed: int, optional
+            Random seed to use.
+            Defaults to `None`.
+
+        """
         super(SGHMC, self).__init__(**kwargs)
         self.seed = seed
 
@@ -39,14 +78,64 @@ class SGHMC(Optimizer):
             self._initialized = False
 
     def _burning_in(self):
+        """ Return a boolean keras tensor that is `True` only during burn-in phase.
+
+        Returns
+        ----------
+        is_burning_in: KerasTensor
+            Boolean keras tensor that is `True` only during burn-in phase.
+            Burn-in phase ends when `self.iterations > self.burn_in_steps`.
+
+        Examples
+        ----------
+        For a positive amount of burn-in steps, this is `True` initially:
+
+        >>> from keras import backend as K
+        >>> sampler = SGHMCHD(burn_in_steps=1)
+        >>> K.get_value(sampler._burning_in)
+        True
+
+        If the number of performed iterations is equal to the number of
+        burn-in steps, it becomes `False`:
+
+        >>> from keras import backend as K
+        >>> sampler = SGHMCHD(burn_in_steps=0)
+        >>> K.get_value(sampler._burning_in)
+        False
+
+
+        """
         return self.iterations <= self.burn_in_steps
 
     def _during_burn_in(self,
-                        variable,
-                        update_value):
+                        variable: KerasVariable,
+                        update_value: KerasTensor) -> KerasTensor:
+        """TODO: Docstring for _during_burn_in.
+
+        Parameters
+        ----------
+        variable: KerasVariable
+            A keras variable that should be updated during burn-in phase.
+        update_value: KerasTensor
+            A value that serves to update `variable` during burn-in phase.
+
+        Returns
+        ----------
+        update_tensor: KerasTensor
+            TODO
+
+        """
         return K.switch(self._burning_in(), update_value, K.identity(variable))
 
-    def _initialize_parameters(self, n_params):
+    def _initialize_parameters(self, n_params: int):
+        """TODO: Docstring for _initialize_parameters.
+
+        Parameters
+        ----------
+        n_params: int
+            TODO
+
+        """
         if not self._initialized:
             self._initialized = True
             self.tau = K.ones((n_params,), name="tau")
@@ -56,11 +145,35 @@ class SGHMC(Optimizer):
             self.minv = K.variable(1. / K.sqrt(self.v_hat.initialized_value()))
             self.momentum = K.zeros((n_params,), name="momentum")
             self.dxdlr = K.zeros((n_params,), name="dxdlr")
-            self.random_sample = K.random_normal(shape=self.momentum.shape)
+            self.random_sample = K.random_normal(
+                shape=self.momentum.shape, seed=self.seed
+            )
 
     def get_updates(self,
                     loss: KerasTensor,
                     params: typing.List[KerasVariable]) -> typing.List[KerasTensor]:
+        """ Perform an update iteration of this optimizer.
+            Update `params` and internal hyperparameters to minimize `loss`.
+
+        Parameters
+        ----------
+        loss: KerasTensor
+            Tensor representing a loss value that should be minimized.
+            Loss should depend on `params`.
+        params: typing.List[KerasVariable]
+            List of parameters that we want to update to minimize `loss`.
+
+        Returns
+        ----------
+        updates: typing.List[KerasTensor]
+            TODO
+
+        Examples
+        ----------
+        TODO GIVE EXAMPLE OF A SINGLE SGHMCHD STEP AND SHOW STEPSIZE CHANGES
+        AS WELL
+
+        """
         self.updates = [K.update_add(self.iterations, 1)]
 
         n_params = n_dimensions(params)
