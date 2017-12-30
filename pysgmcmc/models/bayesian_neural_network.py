@@ -323,3 +323,39 @@ class BayesianNeuralNetwork(object):
             variance_prediction *= self.y_std ** 2
 
         return mean_prediction, variance_prediction
+
+    @property
+    def incumbent(self):
+        """
+        Returns the best observed point and its function value
+
+        Returns
+        ----------
+        incumbent: ndarray (D,)
+            current incumbent
+        incumbent_value: ndarray (N,)
+            the observed value of the incumbent
+        """
+        if self.normalize_input:
+            x = zero_mean_unit_var_unnormalization(
+                self.x_train, self.x_mean, self.x_std
+            )
+            mean, _ = self.predict(x)
+        else:
+            mean, _ = self.predict(self.x_train)
+
+        best_idx = np.argmin(self.y_train)
+        incumbent = self.x_train[best_idx]
+        incumbent_value = mean[best_idx]
+
+        if self.normalize_input:
+            incumbent = zero_mean_unit_var_unnormalization(
+                incumbent, self.x_mean, self.x_std
+            )
+
+        if self.normalize_output:
+            incumbent_value = zero_mean_unit_var_unnormalization(
+                incumbent_value, self.y_mean, self.y_std
+            )
+
+        return incumbent_value
