@@ -12,3 +12,4 @@ scikit_learn>=0.19.1
 sympy>=1.1.1
 nbval
 arspy
+moviepy>=0.2.3.2
