@@ -24,8 +24,10 @@ class UnsupportedBackendError(NotImplementedError):
 
 
 def supports_backends(supported_backends: typing.Iterable[str]):
-    """ Decorator that ensures that only `supported_backends` can be used with a decorated function.
-        Hereby, backends refers to keras backends.
+    """ Decorator that ensures that only `supported_backends`
+        can be used with a decorated function.
+        Raises `pysgmcmc.keras_utils.UnsupportedBackendError`
+        if a decorated function is called with an unsupported keras backend.
 
     Parameters
     ----------

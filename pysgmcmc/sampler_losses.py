@@ -12,9 +12,10 @@ from pysgmcmc.custom_typing import KerasTensor
 class SamplerLoss(object):
     """ Base class of all keras losses computed on chains of samples.
         Note: Inheriting from this class turns arbitrary (positive) diagnostics
-        into losses. Hereby minimizing the resulting loss will allow one to
+        into losses. Minimizing this resulting loss will allow one to
         maximize the original diagnostic.
-        Updating a loss object can be done using a simple call, for example for effective sample size ess:
+        Updating a loss object can be done using a simple call,
+        for example for effective sample size ess:
             `loss_tensor = ess(new_sample, iteration)`
         Now, minimizing `loss_tensor` maximizes effective sample size.
     """

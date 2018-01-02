@@ -1,7 +1,8 @@
 """
-This module contains adapter functions to obtain `pymc3.(Multi-)Trace` objects
-from any of our samplers.
-This allows us to directly apply `pymc3.diagnostics` to any of our traces.
+This module contains adapter functions to convert chains obtained by any of
+our samplers into `pymc3.MultiTrace` objects.
+This allows us to directly apply `pymc3.diagnostics` and `pymc3.plots` to
+any of our chains.
 """
 import numpy as np
 import logging
