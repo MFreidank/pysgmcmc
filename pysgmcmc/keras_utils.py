@@ -1,5 +1,6 @@
 from functools import wraps
 import typing
+import re
 from contextlib import contextmanager
 import sympy
 from numpy import prod
@@ -7,9 +8,13 @@ import tensorflow as tf
 from keras import backend as K
 from pysgmcmc.custom_typing import KerasVariable, KerasTensor
 
+FLOAT_DTYPE = K.floatx()
+PRECISION = re.search("[0-9]+", FLOAT_DTYPE).group()
+INTEGER_DTYPE = "int{}".format(PRECISION)
+
 
 class UnsupportedBackendError(NotImplementedError):
-    """ Raised if a given callable does not support the selected keras backend. """
+    """ Raised if a given callable does not support the current keras backend. """
     def __init__(self, callable_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = {"callable": callable_name, "backend": K.backend()}
@@ -63,8 +68,10 @@ def n_dimensions(tensors: typing.List[KerasTensor]) -> int:
 
     """
     dimensions = sum(prod(K.int_shape(tensor)) for tensor in tensors)
+
     is_integer = dimensions % 1 == 0
     assert is_integer
+
     return int(dimensions)
 
 
@@ -182,8 +189,8 @@ def updates_for(parameters: typing.List[KerasVariable],
 
 
 def safe_division(x: KerasTensor, y: KerasTensor, small_constant: float=1e-16):
-    c = K.constant(small_constant)
-    return x / (y + (2. * K.cast(K.sign(y), c.dtype) * c + c))
+    c = K.constant(small_constant, dtype=FLOAT_DTYPE)
+    return x / (y + (2. * K.cast(K.sign(y), FLOAT_DTYPE) * c + c))
 
 
 def safe_sqrt(x: KerasTensor, min_value: float=0., max_value: float=float("inf")):
@@ -226,7 +233,7 @@ def keras_control_dependencies(control_inputs: typing.List[KerasTensor]):
 def sympy_to_keras(sympy_expression: sympy.expr.Expr,
                    sympy_tensors: typing.Tuple[sympy.Symbol, ...],
                    keras_tensors: typing.Tuple[KerasTensor, ...]) -> KerasTensor:
-    """ Compute a given sympy expression using tensorflow.
+    """ Compute a given sympy expression using keras.
         Replace `sympy_tensors` with their corresponding `keras_tensors`
         and produce a keras tensor representing the result of the computation.
 
@@ -258,3 +265,52 @@ def sympy_to_keras(sympy_expression: sympy.expr.Expr,
         args=sympy_tensors, expr=sympy_expression, modules=K.backend()
     )
     return lambdified_function(*keras_tensors)
+
+
+@supports_backends(("tensorflow",))
+def while_loop(condition, body, loop_variables, shape_invariants=None, parallel_iterations=10):
+    if K.backend() == "tensorflow":
+        return tf.while_loop(
+            cond=condition,
+            body=body,
+            loop_vars=loop_variables,
+            shape_invariants=shape_invariants,
+            parallel_iterations=parallel_iterations
+        )
+
+    raise UnsupportedBackendError(while_loop.__name__)
+
+
+def moments(x, axis, keep_dims=False):
+    if K.backend() == "tensorflow":
+        return tf.nn.moments(x, axes=[axis], keep_dims=keep_dims)
+
+    mean = K.mean(x, axis=axis, keep_dims=keep_dims)
+    variance = K.var(x, axis=axis, keep_dims=keep_dims)
+    return mean, variance
+
+
+def logical_and(x, y):
+    if K.backend() == "tensorflow":
+        return tf.logical_and(x, y)
+    return K.all((x, y))
+
+
+def indicator(condition):
+    return K.cast(condition, dtype=INTEGER_DTYPE)
+
+
+@supports_backends(("tensorflow"),)
+def covariance(predictions, labels):
+    if K.backend() == "tensorflow":
+        return tf.contrib.metrics.streaming_covariance(
+            predictions=predictions, labels=labels
+        )
+    raise UnsupportedBackendError(covariance.__name__)
+
+
+@supports_backends(("tensorflow"),)
+def diagonal(tensor):
+    if K.backend() == "tensorflow":
+        return tf.diag(tensor)
+    raise UnsupportedBackendError(diagonal.__name__)

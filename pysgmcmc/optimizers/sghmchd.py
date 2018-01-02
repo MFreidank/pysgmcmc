@@ -95,6 +95,7 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
 
         """
         self.sghmcd_updates = [K.update_add(self.iterations, 1)]
+        print(params)
 
         n_params = n_dimensions(params)
 

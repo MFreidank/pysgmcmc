@@ -3,8 +3,9 @@ import typing
 from keras import backend as K
 from keras.optimizers import Optimizer
 from pysgmcmc.keras_utils import (
+    INTEGER_DTYPE, FLOAT_DTYPE,
     keras_control_dependencies,
-    n_dimensions, to_vector, updates_for
+    n_dimensions, to_vector, updates_for,
 )
 from pysgmcmc.custom_typing import KerasTensor, KerasVariable
 
@@ -60,19 +61,21 @@ class SGHMC(Optimizer):
         self.seed = seed
 
         with K.name_scope(self.__class__.__name__):
-            self.iterations = K.variable(0, dtype="int64", name="iterations")
-            self.lr = K.variable(lr, name="lr")
+            self.iterations = K.variable(0, dtype=INTEGER_DTYPE, name="iterations")
+            self.lr = K.variable(lr, name="lr", dtype=FLOAT_DTYPE)
 
             #  Initialize Graph Constants {{{ #
             self.noise = K.constant(0., name="noise")
 
-            self.scale_grad = K.constant(scale_grad, name="scale_grad")
-
-            self.burn_in_steps = K.constant(
-                burn_in_steps, dtype="int64", name="burn_in_steps"
+            self.scale_grad = K.constant(
+                scale_grad, name="scale_grad", dtype=FLOAT_DTYPE
             )
 
-            self.mdecay = K.constant(mdecay, name="mdecay")
+            self.burn_in_steps = K.constant(
+                burn_in_steps, name="burn_in_steps", dtype=INTEGER_DTYPE
+            )
+
+            self.mdecay = K.constant(mdecay, name="mdecay", dtype=FLOAT_DTYPE)
             #  }}} Initialize Graph Constants #
 
             self._initialized = False
@@ -138,15 +141,22 @@ class SGHMC(Optimizer):
         """
         if not self._initialized:
             self._initialized = True
-            self.tau = K.ones((n_params,), name="tau")
-            self.r = K.variable(1. / (self.tau.initialized_value() + 1), name="r")
-            self.g = K.ones((n_params,), name="g")
-            self.v_hat = K.ones((n_params,), name="v_hat")
-            self.minv = K.variable(1. / K.sqrt(self.v_hat.initialized_value()))
-            self.momentum = K.zeros((n_params,), name="momentum")
-            self.dxdlr = K.zeros((n_params,), name="dxdlr")
+            self.tau = K.ones((n_params,), name="tau", dtype=FLOAT_DTYPE)
+            self.r = K.variable(
+                1. / (self.tau.initialized_value() + 1),
+                name="r",
+                dtype=FLOAT_DTYPE
+            )
+            self.g = K.ones((n_params,), name="g", dtype=FLOAT_DTYPE)
+            self.v_hat = K.ones((n_params,), name="v_hat", dtype=FLOAT_DTYPE)
+            self.minv = K.variable(
+                1. / K.sqrt(self.v_hat.initialized_value()),
+                dtype=FLOAT_DTYPE
+            )
+            self.momentum = K.zeros((n_params,), name="momentum", dtype=FLOAT_DTYPE)
+            self.dxdlr = K.zeros((n_params,), name="dxdlr", dtype=FLOAT_DTYPE)
             self.random_sample = K.random_normal(
-                shape=self.momentum.shape, seed=self.seed
+                shape=self.momentum.shape, seed=self.seed, dtype=FLOAT_DTYPE
             )
 
     def get_updates(self,

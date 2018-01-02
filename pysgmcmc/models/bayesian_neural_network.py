@@ -10,7 +10,7 @@ from keras.callbacks import LambdaCallback
 from keras.activations import tanh
 from keras.initializers import Constant, VarianceScaling
 from pysgmcmc.diagnostics.metrics import metric_function
-from pysgmcmc.keras_utils import safe_division
+from pysgmcmc.keras_utils import safe_division, INTEGER_DTYPE, FLOAT_DTYPE
 from pysgmcmc.data_batches import generate_batches
 from pysgmcmc.models.base_model import (
     zero_mean_unit_var_normalization,
@@ -46,7 +46,8 @@ def log_variance_prior(log_variance: KerasTensor,
 def weight_prior(parameters: typing.List[KerasVariable],
                  wdecay: float=1.) -> KerasTensor:
     with K.name_scope(weight_prior.__name__):
-        log_likelihood, n_parameters = 0., 0
+        log_likelihood, = K.constant(0., dtype=FLOAT_DTYPE)
+        n_parameters = K.constant(0., dtype=FLOAT_DTYPE)
 
         for parameter in parameters:
             log_likelihood += K.sum(-wdecay * 0.5 * K.square(parameter))

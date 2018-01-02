@@ -1,13 +1,9 @@
 """
 This module contains adapter functions to obtain `pymc3.(Multi-)Trace` objects
 from any of our samplers.
-This allows us to use any diagnostics supported by `pymc3` to quantify
-our samplers.
+This allows us to directly apply `pymc3.diagnostics` to any of our traces.
 """
-
-import tensorflow as tf
 import numpy as np
-import pymc3
 import logging
 
 
@@ -15,6 +11,8 @@ class PYSGMCMCTrace(object):
     """
     Adapter class to connect the worlds of pysgmcmc and pymc3.
     Represents a single chain/trace of samples obtained from a sgmcmc sampler.
+    These can directly be passed to construct a `pymc3.MultiTrace` object
+    that can then be plotted/evaluated using all of pymc3s tools and diagnostics.
     """
     def __init__(self, chain_id, samples, varnames=None):
         """ Set up a trace with given (unique) `chain_id` and sampled values
@@ -136,8 +134,8 @@ class PYSGMCMCTrace(object):
 
         >>> import tensorflow as tf
         >>> from itertools import islice
-        >>> from pysgmcmc.samplers.relativistic_sghmc import RelativisticSGHMCSampler
-        >>> from pysgmcmc.diagnostics.objective_functions import gmm1_log_likelihood
+        >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
+        >>> from pysgmcmc.energy_functions import gmm1_log_likelihood
         >>> gmm1_negative_log_likelihood = lambda *args, **kwargs: -gmm1_log_likelihood(*args, **kwargs)
         >>> session = tf.Session()
         >>> params = [tf.Variable(0., dtype=tf.float32, name="p")]
@@ -147,7 +145,7 @@ class PYSGMCMCTrace(object):
         `PYSGMCMCTrace`.
 
         >>> n_burn_in_steps = 100
-        >>> sampler = RelativisticSGHMCSampler(params=params, cost_fun=gmm1_negative_log_likelihood, dtype=tf.float32, session=session)
+        >>> sampler = SGHMCSampler(params=params, loss=gmm1_negative_log_likelihood, dtype=tf.float32, session=session)
         >>> session.run(tf.global_variables_initializer())
         >>> _ = islice(sampler, n_burn_in_steps)
 
@@ -333,52 +331,3 @@ class PYSGMCMCTrace(object):
         return np.asarray(
             [sample[var_index] for sample in self.samples[burn::thin]]
         )
-
-
-def pymc3_multitrace(get_sampler, n_chains=2, samples_per_chain=100,
-                     keep_every=10,
-                     parameter_names=None):
-    """
-    Extract chains from `sampler` and return them as `pymc3.MultiTrace` object.
-
-    Parameters
-    ----------
-    get_sampler : callable
-        A callable that takes a `tensorflow.Session` object as input
-        and returns a (possibly already burnt-in) instance of a
-        `pysgmcmc.sampling.MCMCSampler` subclass.
-
-    parameter_names : List[String] or NoneType, optional
-        List of names for each target parameter of the sampler.
-        Defaults to `None`, which attempts to look the parameter names up
-        from the target parameters of the sampler returned by `get_sampler`.
-
-    Returns
-    ----------
-    multitrace : pymc3.backends.base.MultiTrace
-        TODO: DOKU
-
-    Examples
-    ----------
-    TODO ADD EXAMPLE
-
-    """
-
-    single_traces = []
-
-    for chain_id in range(n_chains):
-        graph = tf.Graph()
-        with tf.Session(graph=graph) as session:
-            sampler = get_sampler(session=session)
-            session.run(tf.global_variables_initializer())
-            trace = PYSGMCMCTrace.from_sampler(
-                chain_id=chain_id,
-                sampler=sampler,
-                n_samples=samples_per_chain,
-                keep_every=keep_every,
-                varnames=parameter_names
-            )
-
-            single_traces.append(trace)
-
-    return pymc3.backends.base.MultiTrace(single_traces)
