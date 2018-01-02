@@ -26,17 +26,21 @@ def branin(x):
     return y
 
 
-logging.basicConfig(level=logging.INFO)
+def main():
+    logging.basicConfig(level=logging.INFO)
 
+    # Defining the bounds and dimensions of the input space
+    lower = np.array([-5, 2])
+    upper = np.array([10, 20])
 
-# Defining the bounds and dimensions of the input space
-lower = np.array([-5, 2])
-upper = np.array([10, 20])
+    # Start Bayesian optimization to optimize the objective function
+    results = bayesian_optimization(branin, parameter_bounds=(lower, upper),
+                                    model_function=BayesianNeuralNetwork,
+                                    num_iterations=30, train_every=1,
+                                    acquisition_function=ei,
+                                    acquisition_maximizer=random_sample_maximizer,
+                                    num_initial_points=3, seed=None, learning_rate=1e-2)
+    print(results)
 
-# Start Bayesian optimization to optimize the objective function
-results = bayesian_optimization(branin, parameter_bounds=(lower, upper),
-                                model_function=BayesianNeuralNetwork,
-                                num_iterations=30, train_every=1,
-                                acquisition_function=ei,
-                                acquisition_maximizer=random_sample_maximizer,
-                                num_initial_points=3, seed=None, learning_rate=1e-2)
+if __name__ == "__main__":
+    main()
