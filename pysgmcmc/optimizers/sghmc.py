@@ -94,21 +94,21 @@ class SGHMC(Optimizer):
         For a positive amount of burn-in steps, this is `True` initially:
 
         >>> from keras import backend as K
-        >>> sampler = SGHMCHD(burn_in_steps=1)
-        >>> K.get_value(sampler._burning_in)
+        >>> sampler = SGHMC(burn_in_steps=1)
+        >>> K.get_value(sampler._burning_in())
         True
 
         If the number of performed iterations is equal to the number of
         burn-in steps, it becomes `False`:
 
         >>> from keras import backend as K
-        >>> sampler = SGHMCHD(burn_in_steps=0)
-        >>> K.get_value(sampler._burning_in)
+        >>> sampler = SGHMC(burn_in_steps=0)
+        >>> K.get_value(sampler._burning_in())
         False
 
 
         """
-        return self.iterations <= self.burn_in_steps
+        return self.iterations < self.burn_in_steps
 
     def _during_burn_in(self,
                         variable: KerasVariable,
@@ -180,8 +180,7 @@ class SGHMC(Optimizer):
 
         Examples
         ----------
-        TODO GIVE EXAMPLE OF A SINGLE SGHMCHD STEP AND SHOW STEPSIZE CHANGES
-        AS WELL
+        TODO GIVE EXAMPLE OF A SINGLE SGHMCHD STEP
 
         """
         self.updates = [K.update_add(self.iterations, 1)]

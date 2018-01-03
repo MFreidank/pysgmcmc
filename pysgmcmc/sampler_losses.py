@@ -112,18 +112,31 @@ class SamplerLoss(object):
         Examples
         ----------
 
+        For only a single sample, effective sample size cannot be computed
+        properly, which we catch by returning `0.0`:
+
         >>> x = K.ones((20000, 1))
-        >>> ess = EffectiveSampleSize(parameter_shape=K.int_shape(x), n_iterations=1)
+        >>> ess = EffectiveSampleSize(parameter_shape=K.int_shape(x), n_iterations=2)
         >>> K.get_value(ess(x, iteration=0))
+        0.0
+
+        For multiple samples, we get reasonable (negative) effective sample sizes:
+
+        >>> K.get_value(ess(K.zeros((20000, 1)), iteration=1))
+        -0.66666669
 
         """
         current_samples = self.add_sample(
             new_sample=new_sample, iteration=iteration
         )[:iteration + 1]
 
-        return -self.aggregation_function(
-            self.apply_nd(current_samples=current_samples)
+        effective_sample_size = K.switch(
+            K.greater(iteration, 0),
+            -self.aggregation_function(self.apply_nd(current_samples)),
+            K.constant(0., dtype=FLOAT_DTYPE)
         )
+
+        return effective_sample_size
 
 
 class EffectiveSampleSize(SamplerLoss):

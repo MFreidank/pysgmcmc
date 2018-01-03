@@ -133,33 +133,15 @@ class PYSGMCMCTrace(object):
         We start by defining our problem, as cost function we use the negative
         log likelihood of a mixture of gaussians (gmm1).
 
-        >>> import tensorflow as tf
-        >>> from itertools import islice
-        >>> from pysgmcmc.samplers.sghmc import SGHMCSampler
-        >>> from pysgmcmc.energy_functions import gmm1_log_likelihood
-        >>> gmm1_negative_log_likelihood = lambda *args, **kwargs: -gmm1_log_likelihood(*args, **kwargs)
-        >>> session = tf.Session()
-        >>> params = [tf.Variable(0., dtype=tf.float32, name="p")]
 
         Next, we set up our sampler and perform 100 steps of burn-in.
         We skip the samples obtained and do not record them as part of our
         `PYSGMCMCTrace`.
 
-        >>> n_burn_in_steps = 100
-        >>> sampler = SGHMCSampler(params=params, loss=gmm1_negative_log_likelihood, dtype=tf.float32, session=session)
-        >>> session.run(tf.global_variables_initializer())
-        >>> _ = islice(sampler, n_burn_in_steps)
 
         Finally, we extract a `PYSGMCMCTrace` from the (already burnt-in)
         sampler using `PYSGMCMCTrace.from_sampler`.
 
-        >>> n_samples = 1000
-        >>> varnames = ["p"]
-        >>> chain_id = 1234  # unique id
-        >>> trace = PYSGMCMCTrace.from_sampler(sampler=sampler, n_samples=n_samples, varnames=varnames, chain_id=chain_id)
-        >>> session.close()
-        >>> isinstance(trace, PYSGMCMCTrace), len(trace), trace.varnames
-        (True, 1000, ['p'])
 
         """
         from itertools import islice

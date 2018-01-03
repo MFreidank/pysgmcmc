@@ -75,10 +75,14 @@ class Hyperoptimizer(object):
 
         """
         if self.hyperloss:
-            # Derive hyperloss(params) wrt params to get dfdx
-            hyperloss = self.hyperloss(params)
+            x = to_vector(params)
+            # Derive hyperloss(x) wrt x (or params?) to get dfdx
+            hyperloss = self.hyperloss(new_sample=x, iteration=self.iterations)
+
+            # XXX: Handle cases where gradient does not yet exist, e.g.
+            # in first iterations for ess (maybe just use gradient wrt loss then?)
             dfdx = K.expand_dims(
-                to_vector(K.gradients(hyperloss, params)), axis=1
+                to_vector(K.gradients(hyperloss, x)), axis=1
             )
         else:
             # No hyperloss given, use normal loss function.

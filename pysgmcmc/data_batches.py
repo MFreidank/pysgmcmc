@@ -1,4 +1,6 @@
+import typing
 import logging
+
 import numpy as np
 
 __all__ = (
@@ -6,10 +8,42 @@ __all__ = (
 )
 
 
-# XXX: Annotate return type for this generator
 def generate_batches(x: np.ndarray, y: np.ndarray,
                      batch_size: int=20, seed: int=None,
-                     shuffle: bool=False):
+                     shuffle: bool=False) -> typing.Iterator[typing.Tuple[np.ndarray, np.ndarray]]:
+    """ Generate batches of data from numpy dataset `(x, y)`.
+        Also supports random shuffling prior to batch extraction.
+
+    Parameters
+    ----------
+    x: np.ndarray
+        Datapoints in an array of shape (N, D)
+    y: np.ndarray
+        Labels corresponding to datapoints in `x`, shape (N, 1)
+    batch_size: int, optional
+        Number of datapoints to put in a single batch.
+        Will be decreased appropriately if `x` does not have enough datapoints.
+        Defaults to `20`.
+    seed: int, optional
+        Integer random seed to use. Also controls shuffling, if specified.
+
+    shuffle:bool, optional
+        Flag that controls if (a copy of) the dataset is shuffled prior to batching.
+        Defaults to `False`.
+
+    Yields
+    ----------
+    batch: typing.Tuple[np.ndarray, np.ndarray]
+        A single batch of data.
+        Tuple of two numpy arrays `(x_batch, y_batch)` where:
+        x_batch has shape `(batch_size, D)` and has datapoints.
+        y_batch has shape `(batch_size, 1)` and has corresponding labels.
+
+    Examples
+    ----------
+    TODO
+
+    """
 
     n_examples, *_ = x.shape
 
