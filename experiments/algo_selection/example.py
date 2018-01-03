@@ -1,12 +1,4 @@
-import sys
-from os.path import dirname, realpath, join as path_join
-import logging
-
 import numpy as np
-
-from bayesian_optimizer import bayesian_optimization, scipy_maximizer, ei, random_sample_maximizer
-sys.path.insert(0, path_join(dirname(realpath(__file__)), "..", ".."))
-from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
 
 
 def branin(x):
@@ -27,6 +19,14 @@ def branin(x):
 
 
 def main():
+    import sys
+    from os.path import dirname, realpath, join as path_join
+    import logging
+
+    from bayesian_optimizer import bayesian_optimization, ei, random_sample_maximizer
+    sys.path.insert(0, path_join(dirname(realpath(__file__)), "..", ".."))
+    from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
+
     logging.basicConfig(level=logging.INFO)
 
     # Defining the bounds and dimensions of the input space
