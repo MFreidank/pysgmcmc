@@ -191,14 +191,58 @@ def updates_for(parameters: typing.List[KerasVariable],
 
 
 def safe_division(x: KerasTensor, y: KerasTensor, small_constant: float=1e-16):
+    """ Computes `x / y` after adding a small appropriately signed constant to `y`.
+        Adding a small constant avoids division-by-zero artefacts that may
+        occur due to precision errors.
+
+    Parameters
+    ----------
+    x: KerasTensor
+        Left-side operand of division.
+    y: KerasTensor
+        Right-side operand of division.
+    small_constant: float, optional
+        Small constant to add to/subtract from `y` before computing `x / y`.
+        Defaults to `1e-16`.
+
+    Returns
+    ----------
+    division_result : KerasTensor
+        Result of `x / y` after adding a small appropriately signed constant
+        to `y` to avoid division by zero.
+
+    Examples
+    ----------
+
+    Will safely avoid divisions-by-zero under normal circumstances:
+
+    >>> from keras import backend as K
+    >>> import numpy as np
+    >>> x = K.constant(1.0)
+    >>> inf_tensor = x / 0.0  # will produce "inf" due to division-by-zero
+    >>> np.isinf(K.get_value(inf_tensor))
+    True
+    >>> z = safe_division(x, 0., small_constant=1e-16)  # will avoid division-by-zero
+    >>> np.isinf(K.get_value(z))
+    False
+
+    To see that simply adding a positive constant may fail, consider the
+    following example. Note that this function handles such corner cases correctly:
+
+    >>> from keras import backend as K
+    >>> import numpy as np
+    >>> x, y = K.constant(1.0), K.constant(-1e-16)
+    >>> small_constant = 1e-16
+    >>> inf_tensor = x / (y + small_constant)  # simply adding constant exhibits division-by-zero
+    >>> np.isinf(K.get_value(inf_tensor))
+    True
+    >>> z = safe_division(x, y, small_constant=1e-16)  # will avoid division-by-zero
+    >>> np.isinf(K.get_value(z))
+    False
+
+    """
     c = K.constant(small_constant, dtype=FLOAT_DTYPE)
     return x / (y + (2. * K.cast(K.sign(y), FLOAT_DTYPE) * c + c))
-
-
-def safe_sqrt(x: KerasTensor, min_value: float=0., max_value: float=float("inf")):
-    return K.sqrt(
-        K.clip(x, min_value=min_value, max_value=max_value)
-    )
 
 
 def optimizer_name(optimizer: typing.Union[str, type]) -> str:
@@ -292,27 +336,33 @@ def moments(x, axis, keep_dims=False):
     return mean, variance
 
 
-def logical_and(x, y):
+def logical_and(x: KerasTensor, y: KerasTensor) -> KerasTensor:
+    """ Returns the truth value of x AND y element-wise.
+
+    Parameters
+    ----------
+    x: KerasTensor
+        A tensor of type `bool`.
+    y: KerasTensor
+        A tensor of type `bool`.
+
+    Returns
+    ----------
+    and_tensor: KerasTensor
+        Tensor of type `bool`.
+
+
+    Examples
+    ----------
+    TODO
+
+    """
+
     if K.backend() == "tensorflow":
         return tf.logical_and(x, y)
+
     return K.all((x, y))
 
 
 def indicator(condition):
     return K.cast(condition, dtype=INTEGER_DTYPE)
-
-
-@supports_backends(("tensorflow"),)
-def covariance(predictions, labels):
-    if K.backend() == "tensorflow":
-        return tf.contrib.metrics.streaming_covariance(
-            predictions=predictions, labels=labels
-        )
-    raise UnsupportedBackendError(covariance.__name__)
-
-
-@supports_backends(("tensorflow"),)
-def diagonal(tensor):
-    if K.backend() == "tensorflow":
-        return tf.diag(tensor)
-    raise UnsupportedBackendError(diagonal.__name__)
