@@ -6,7 +6,7 @@ from tensorflow.python.training.optimizer import Optimizer as tf_optimizer
 from pysgmcmc.custom_typing import KerasTensor, KerasVariable
 
 
-def sampler_from_optimizer(optimizer_cls: type):
+def sampler_from_optimizer(optimizer_cls):
     class Sampler(optimizer_cls):
         def __init__(self,
                      loss: KerasTensor,
