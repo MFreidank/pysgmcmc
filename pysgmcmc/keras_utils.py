@@ -254,9 +254,10 @@ def optimizer_name(optimizer: typing.Union[str, type]) -> str:
 @contextmanager
 def keras_control_dependencies(control_inputs: typing.List[KerasTensor]):
     """ Allows specifying control dependencies for keras tensors.
-        Equivalent to `tf.control_dependencies`, and essentially a no-op for
+        Equivalent to `tf.control_dependencies`, and a no-op for
         other backends.
-        NOTE: This implies that control order is only guaranteed for tensorflow.
+        NOTE: This implies that this operation fixes control order only for
+        tensorflow, for other backends it does not do anything.
 
     Parameters
     ----------
@@ -302,7 +303,43 @@ def sympy_to_keras(sympy_expression: sympy.expr.Expr,
 
     Examples
     ----------
-    TODO
+
+    Using this function, it is straightforward to compute simple sympy
+    expressions using keras/tensorflow:
+
+    >>> from keras import backend as K
+    >>> import sympy
+    >>> (a, b), (a_tensor, b_tensor) = sympy.symbols("a b"), (K.constant(1.0), K.constant(2.0))
+    >>> sympy_expression = a + b
+    >>> K.get_value(sympy_to_keras(sympy_expression, (a, b), (a_tensor, b_tensor)))
+    3.0
+
+    One use-case where this comes in handy is when trying to access a complicated
+    derivative in keras. Keras backends do not provide access to actual
+    full symbolic gradients but only to a sum of gradients.
+    In some cases, this information is not enough and using sympy to obtain
+    a full symbolic derivative can be useful.
+
+    To this end, we can construct a sympy graph for the symbolic derivative:
+
+    >>> import sympy
+    >>> a, b = sympy.symbols("a b")
+    >>> c = a * (a ** 2 + b) - a ** 2 * b ** 2   # complex term whose full derivative we are interested in
+    >>> derivative_sympy = sympy.diff(c, a)
+    >>> derivative_sympy
+    3*a**2 - 2*a*b**2 + b
+
+    Next, we can query this full symbolic derivative from keras for
+    any keras tensors we want. Note that it can be handy to keep track of
+    tensor correspondences in a `collections.OrderedDict`:
+
+    >>> from keras import backend as K
+    >>> from collections import OrderedDict
+    >>> a_tensor, b_tensor = K.constant([3.0, 5.0]), K.constant([4.0, 12.0])
+    >>> tensor_correspondences = OrderedDict(((a, a_tensor), (b, b_tensor)))
+    >>> derivative_keras = sympy_to_keras(derivative_sympy, tensor_correspondences.keys(), tensor_correspondences.values())
+    >>> K.get_value(derivative_keras)
+    array([  -65., -1353.], dtype=float32)
 
     """
     assert len(sympy_tensors) == len(keras_tensors)
@@ -327,15 +364,6 @@ def while_loop(condition, body, loop_variables, shape_invariants=None, parallel_
     raise UnsupportedBackendError(while_loop.__name__)
 
 
-def moments(x, axis, keep_dims=False):
-    if K.backend() == "tensorflow":
-        return tf.nn.moments(x, axes=[axis], keep_dims=keep_dims)
-
-    mean = K.mean(x, axis=axis, keep_dims=keep_dims)
-    variance = K.var(x, axis=axis, keep_dims=keep_dims)
-    return mean, variance
-
-
 def logical_and(x: KerasTensor, y: KerasTensor) -> KerasTensor:
     """ Returns the truth value of x AND y element-wise.
 
@@ -354,7 +382,24 @@ def logical_and(x: KerasTensor, y: KerasTensor) -> KerasTensor:
 
     Examples
     ----------
-    TODO
+
+    For two conditions that are truthy, `logical_and` returns `True`:
+
+    >>> from keras import backend as K
+    >>> conditions_true = (K.greater_equal(1.0, 0.0), K.less_equal(-1.0, 3.0))
+    >>> K.get_value(logical_and(*conditions_true))
+    True
+
+    In all other cases, `logical_and` returns `False`:
+
+    >>> from keras import backend as K
+    >>> import itertools as it
+    >>> conditions_false = (K.greater_equal(0.0, 5.0), K.less_equal(0.0, -3.0))
+    >>> K.get_value(logical_and(*conditions_false))
+    False
+    >>> conditions = it.product(conditions_true, conditions_false)
+    >>> any(K.get_value(logical_and(condition1, condition2)) for condition1, condition2 in conditions)
+    False
 
     """
 
@@ -364,5 +409,39 @@ def logical_and(x: KerasTensor, y: KerasTensor) -> KerasTensor:
     return K.all((x, y))
 
 
-def indicator(condition):
+def indicator(condition: KerasTensor):
+    """ Indicator function.
+        Returns a scalar tensor with value `1` if `condition` is `True`, else
+        a scalar `0` tensor.
+
+    Parameters
+    ----------
+    condition: KerasTensor
+        Tensor of type `bool`.
+
+    Returns
+    ----------
+    indicator_tensor: KerasTensor
+        Scalar integer tensor with value `1` if the given condition is `True`
+        and value `0` otherwise.
+
+    Examples
+    ----------
+
+    For truthy conditions, this function returns a scalar integer tensor
+    with value `1`:
+
+    >>> from keras import backend as K
+    >>> conditions_true = (K.greater_equal(1.0, 0.0), K.less_equal(-1.0, 3.0))
+    >>> all(K.get_value(indicator(condition)) == 1 for condition in conditions_true)
+    True
+
+    Otherwise, `indicator` returns a scalar integer tensor with value `0`:
+
+    >>> from keras import backend as K
+    >>> conditions_false = (K.greater_equal(0.0, 5.0), K.less_equal(0.0, -3.0))
+    >>> all(K.get_value(indicator(condition)) == 0 for condition in conditions_false)
+    True
+
+    """
     return K.cast(condition, dtype=INTEGER_DTYPE)

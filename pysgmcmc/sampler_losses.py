@@ -4,7 +4,7 @@ import typing
 from keras import backend as K
 
 from pysgmcmc.keras_utils import (
-    INTEGER_DTYPE, FLOAT_DTYPE, while_loop, moments, logical_and, indicator,
+    INTEGER_DTYPE, FLOAT_DTYPE, while_loop, logical_and, indicator,
 )
 from pysgmcmc.custom_typing import KerasTensor
 
@@ -145,7 +145,8 @@ class EffectiveSampleSize(SamplerLoss):
         n, = K.int_shape(samples)
 
         n_tensor = K.constant(n, dtype=INTEGER_DTYPE)
-        mu_hat, var = moments(samples, axis=0)
+        # mu_hat, var = moments(samples, axis=0)
+        mu_hat, var = K.mean(samples, axis=0), K.var(samples, axis=0)
 
         var_plus = var * K.cast(n_tensor, var.dtype) / K.cast(n_tensor, var.dtype)
 
