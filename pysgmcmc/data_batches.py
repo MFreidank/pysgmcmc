@@ -41,7 +41,53 @@ def generate_batches(x: np.ndarray, y: np.ndarray,
 
     Examples
     ----------
-    TODO
+
+    Simple batch extraction example:
+
+    >>> import numpy as np
+    >>> N, D = 100, 3  # 100 datapoints with 3 features each
+    >>> x = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
+    >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
+    >>> x.shape, y.shape
+    ((100, 3), (100,))
+    >>> batch_size = 20
+    >>> batch_generator = generate_batches(x, y, batch_size)
+    >>> batch_x, batch_y = next(batch_generator)
+    >>> batch_x.shape, batch_y.shape
+    ((20, 3), (20, 1))
+
+    Batch size is resized appropriately if dataset is too small:
+
+    >>> import numpy as np
+    >>> N, D = 10, 3  # 10 datapoints with 3 features each
+    >>> x = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
+    >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
+    >>> x.shape, y.shape
+    ((10, 3), (10,))
+    >>> batch_size = 20
+    >>> batch_generator = generate_batches(x, y, batch_size)
+    >>> batch_x, batch_y = next(batch_generator)
+    >>> batch_x.shape, batch_y.shape
+    ((10, 3), (10, 1))
+
+    In this case, the batches contain exactly all datapoints:
+
+    >>> np.allclose(batch_x, x), np.allclose(batch_y.reshape(10,), y)
+    (True, True)
+
+    Batch extraction also supports shuffling via the `shuffle` keyword argument:
+
+    >>> import numpy as np
+    >>> N, D = 10, 3  # 10 datapoints with 3 features each
+    >>> x = np.asarray([np.random.uniform(-10, 10, D) for _ in range(N)])
+    >>> y = np.asarray([np.random.choice([0., 1.]) for _ in range(N)])
+    >>> x.shape, y.shape
+    ((10, 3), (10,))
+    >>> batch_size = 20
+    >>> batch_generator = generate_batches(x, y, batch_size, shuffle=True)  # shuffle data prior to batch extraction.
+    >>> batch_x, batch_y = next(batch_generator)
+    >>> batch_x.shape, batch_y.shape
+    ((10, 3), (10, 1))
 
     """
 
