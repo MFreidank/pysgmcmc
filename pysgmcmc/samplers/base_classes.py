@@ -2,7 +2,7 @@ import typing
 import numpy as np
 from keras import backend as K
 from keras.optimizers import TFOptimizer
-from tensorflow.python.training.optimizer import Optimizer as tf_optimizer
+from tensorflow.python.training.optimizer import Optimizer as tensorflow_optimizer
 from pysgmcmc.custom_typing import KerasTensor, KerasVariable
 
 
@@ -13,16 +13,16 @@ def sampler_from_optimizer(optimizer_cls):
                      params: typing.List[KerasVariable],
                      inputs=None,
                      **optimizer_args) -> None:
-            is_tf_optimizer = False
+            is_tensorflow_optimizer = False
             super().__init__(**optimizer_args)
-            if issubclass(optimizer_cls, tf_optimizer):
-                is_tf_optimizer = True
-                self.optimizer_obj = TFOptimizer(super())
+            if issubclass(optimizer_cls, tensorflow_optimizer):
+                is_tensorflow_optimizer = True
+                self.optimizer_object = TFOptimizer(super())
             self.loss = loss
             self.params = params
 
-            if is_tf_optimizer:
-                self.updates = self.optimizer_obj.get_updates(
+            if is_tensorflow_optimizer:
+                self.updates = self.optimizer_object.get_updates(
                     self.loss, self.params
                 )
             else:
