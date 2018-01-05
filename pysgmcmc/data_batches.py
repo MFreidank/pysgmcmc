@@ -120,7 +120,9 @@ def generate_batches(x: np.ndarray, y: np.ndarray,
                       "Batchsize was set to %s", batch_size)
 
     while True:
-        # `np.random.randint` is end-exclusive => for n_examples == batch_size, start == 0 holds
+        # `np.random.randint` is end-exclusive
+        # => for n_examples == batch_size, start == 0 holds
+
         start = rng.randint(0, (n_examples - batch_size + 1))
 
         minibatch_x = x[start:start + batch_size]

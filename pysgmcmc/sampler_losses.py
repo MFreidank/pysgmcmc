@@ -73,7 +73,7 @@ class SamplerLoss(object):
         Parameters
         ----------
         samples : KerasTensor
-            TODO
+            1-d tensor containing a chain of samples for a single dimension/parameter.
 
         Returns
         ----------
@@ -83,15 +83,17 @@ class SamplerLoss(object):
         """
         raise NotImplementedError
 
-    def apply_nd(self, current_samples):
+    def apply_nd(self, current_samples: typing.List[KerasTensor]):
         diagnostic_values = K.map_fn(
             fn=self.apply_1d,
             elems=K.squeeze(K.transpose(current_samples), axis=0)
         )
         return diagnostic_values
 
-    def __call__(self, new_sample, iteration):
-        """TODO: Docstring for __call__.
+    def __call__(self, new_sample: KerasTensor, iteration: KerasTensor):
+        """ Update this loss with a `new_sample` recorded at a given `iteration`.
+            Will update internal state, recompute the loss value and return
+            a new loss.
 
         Parameters
         ----------
@@ -140,8 +142,7 @@ class SamplerLoss(object):
 
 
 class EffectiveSampleSize(SamplerLoss):
-    def apply_1d(self, samples):
-        # for a chain of samples for one single dimension/one single parameter
+    def apply_1d(self, samples: KerasTensor):
         n, = K.int_shape(samples)
 
         n_tensor = K.constant(n, dtype=INTEGER_DTYPE)
@@ -184,7 +185,10 @@ class EffectiveSampleSize(SamplerLoss):
 
 
 class Autocorrelation(SamplerLoss):
-    def __init__(self, parameter_shape, n_iterations, lag=1, aggregation_function=K.min):
+    def __init__(self,
+                 parameter_shape: typing.Tuple[int, ...],
+                 n_iterations: int, lag: int=1,
+                 aggregation_function: typing.Callable[[KerasTensor], KerasTensor]=K.min) -> None:
         super().__init__(
             parameter_shape=parameter_shape,
             n_iterations=n_iterations,
@@ -193,7 +197,7 @@ class Autocorrelation(SamplerLoss):
 
         self.lag = lag
 
-    def apply_1d(self, samples):
+    def apply_1d(self, samples: KerasTensor):
         autocovariance = K.mean(
             (samples[:-self.lag] - K.mean(samples[:-self.lag])) *
             (samples[self.lag:] - K.mean(samples[self.lag:]))

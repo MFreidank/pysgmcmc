@@ -220,6 +220,16 @@ class BayesianNeuralNetwork(object):
         self.sampled_weights = []  # type: typing.List[typing.List[np.ndarray]]
 
     def _extract_samples(self, epoch: int, logs: typing.Dict[str, typing.Any]):
+        """ Extract current sampled network weights at a given `epoch` and store them internally.
+
+        Parameters
+        ----------
+        epoch: int
+            Keras training epoch.
+        logs: typing.Dict[str, typing.Any]
+            Keras logs recorded at `epoch`.
+
+        """
         if epoch >= self.burn_in_steps:
             sample_t = epoch - self.burn_in_steps
             if sample_t % self.keep_every == 0:
@@ -326,15 +336,14 @@ class BayesianNeuralNetwork(object):
 
     @property
     def incumbent(self):
-        """
-        Returns the best observed point and its function value
+        """ Returns the best observed point and its function value.
 
         Returns
         ----------
         incumbent: ndarray (D,)
-            current incumbent
+            Current Incumbent.
         incumbent_value: ndarray (N,)
-            the observed value of the incumbent
+            Observed value of the current incumbent.
         """
         if self.normalize_input:
             x = zero_mean_unit_var_unnormalization(
