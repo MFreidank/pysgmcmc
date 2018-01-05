@@ -53,7 +53,7 @@ class Banana(object):
         ----------
 
         >>> optimum, f_opt = (0, 10), 0.
-        >>> np.allclose(banana_log_likelihood(optimum), f_opt)
+        >>> np.allclose(Banana()(optimum), f_opt)
         True
 
         """
