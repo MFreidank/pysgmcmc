@@ -13,3 +13,4 @@ sympy>=1.1.1
 nbval
 arspy
 moviepy>=0.2.3.2
+seaborn>=0.8.0
