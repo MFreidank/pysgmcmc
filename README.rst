@@ -44,6 +44,13 @@ The quick way::
 
     pip3 install git+https://github.com/MFreidank/pysgmcmc
 
+Try me
+=======
+
+Try our notebooks interactively directly in your browser, no installation 
+required:
+
+.. image:: https://mybinder.org/badge.svg :target: https://mybinder.org/v2/gh/MFreidank/pysgmcmc/keras
 
 Documentation
 =============
