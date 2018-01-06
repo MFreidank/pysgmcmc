@@ -36,7 +36,7 @@ def supports_backends(supported_backends: typing.Iterable[str]):
 
     Returns
     ----------
-    TODO DOKU FOR DECORATOR?
+    TODO
 
     """
     def backend_decorator(function):

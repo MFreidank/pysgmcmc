@@ -105,8 +105,7 @@ class GaussianMixture(object):
 
     def plot(self, ax=None):
         x = np.linspace(-10, 10, num=1000)
-        y = np.asarray([self.__call__(x_) for x_ in x])
-        plt.scatter(x, y)
+        plt.plot(x, np.asarray([np.exp(self.__call__(x_)) for x_ in x]))
 
 
 class Gmm1(GaussianMixture):
