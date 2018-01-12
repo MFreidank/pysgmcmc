@@ -117,6 +117,7 @@ class SamplerLoss(object):
         For only a single sample, effective sample size cannot be computed
         properly, which we catch by returning `0.0`:
 
+        >>> from numpy import allclose
         >>> x = K.ones((20000, 1))
         >>> ess = EffectiveSampleSize(parameter_shape=K.int_shape(x), n_iterations=2)
         >>> K.get_value(ess(x, iteration=0))
@@ -124,8 +125,8 @@ class SamplerLoss(object):
 
         For multiple samples, we get reasonable (negative) effective sample sizes:
 
-        >>> K.get_value(ess(K.zeros((20000, 1)), iteration=1))
-        -0.66666669
+        >>> allclose(K.get_value(ess(K.zeros((20000, 1)), iteration=1)), -0.66666669)
+        True
 
         """
         current_samples = self.add_sample(

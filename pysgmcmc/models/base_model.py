@@ -25,7 +25,6 @@ class BaseModel(object):
         y: np.ndarray (N,)
             The corresponding target values of the input data points.
         """
-        pass
 
     def update(self, X, y):
         """
@@ -61,7 +60,6 @@ class BaseModel(object):
         var: ndarray (N,)
             Predictive variance of the test data points
         """
-        pass
 
     def _check_shapes_train(func):
         def func_wrapper(self, X, y, *args, **kwargs):
@@ -106,6 +104,10 @@ class BaseModel(object):
         return self.X[best_idx], self.y[best_idx]
 
 
+def safe_division(x, y, small_constant=1e-16):
+    return np.true_divide(x, np.sign(y) * small_constant + y)
+
+
 def zero_one_normalization(X, lower=None, upper=None):
 
     if lower is None:
@@ -113,7 +115,12 @@ def zero_one_normalization(X, lower=None, upper=None):
     if upper is None:
         upper = np.max(X, axis=0)
 
-    X_normalized = np.true_divide((X - lower), (upper - lower))
+    lower_val, upper_val = np.asarray(lower), np.asarray(upper)
+
+    if (lower_val == upper_val).all():
+        X_normalized = safe_division(X - lower, 1e-16)
+    else:
+        X_normalized = np.divide(X - lower, upper - lower)
 
     return X_normalized, lower, upper
 
@@ -128,7 +135,7 @@ def zero_mean_unit_var_normalization(X, mean=None, std=None):
     if std is None:
         std = np.std(X, axis=0)
 
-    X_normalized = (X - mean) / std
+    X_normalized = safe_division(X - mean, std)
 
     return X_normalized, mean, std
 

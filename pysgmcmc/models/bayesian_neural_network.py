@@ -18,7 +18,8 @@ from pysgmcmc.models.base_model import (
 from pysgmcmc.optimizers import get_optimizer
 from pysgmcmc.optimizers.sghmc import SGHMC
 from pysgmcmc.custom_typing import (
-    KerasLossFunction, KerasModelLoss, KerasNetworkFactory, KerasOptimizer,
+    KerasPrior, KerasLossFunction, KerasModelLoss,
+    KerasNetworkFactory, KerasOptimizer,
     KerasTensor, KerasVariable
 )
 
@@ -108,9 +109,11 @@ def default_network(input_dimension: int,
 
 def negative_log_likelihood(model: Sequential,
                             n_datapoints: int,
-                            batch_size: int=20) -> KerasLossFunction:
+                            batch_size: int=20,
+                            log_variance_prior: KerasPrior=log_variance_prior,
+                            weight_prior: KerasPrior=weight_prior) -> KerasLossFunction:
 
-    def cost_function(y_true: KerasTensor, y_pred: KerasTensor):
+    def loss_function(y_true: KerasTensor, y_pred: KerasTensor):
         with K.name_scope("negative_log_likelihood"):
             f_mean = K.reshape(y_pred[:, 0], shape=(-1, 1))
             mean_squared_error = K.square(y_true - f_mean)
@@ -145,7 +148,7 @@ def negative_log_likelihood(model: Sequential,
             )
 
             return -log_likelihood
-    return cost_function
+    return loss_function
 
 #  }}} Loss function (Negative Log Likelihood) #
 
@@ -219,7 +222,43 @@ class BayesianNeuralNetwork(object):
 
         self.sampled_weights = []  # type: typing.List[typing.List[np.ndarray]]
 
-    def _extract_samples(self, epoch: int, logs: typing.Dict[str, typing.Any]):
+    def _keep_sample(self, epoch: int) -> bool:
+        """ Check if we should store a sample extracted at a given `epoch`.
+            Samples are stored after burn-in and only every `self.keep_every` steps.
+
+        Parameters
+        ----------
+        epoch: int
+            Current training epoch.
+
+        Returns
+        ----------
+        should_keep: bool
+            `True` if and only if a `epoch` fits our criteria for sampling.
+
+        Examples
+        ----------
+
+        During burn-in, we do not keep any sampled networks:
+
+        >>> bnn = BayesianNeuralNetwork(burn_in_steps=3000, keep_every=10)
+        >>> epoch = 0
+        >>> bnn.burn_in_steps > epoch
+        True
+        >>> bnn._keep_sample(0)
+        False
+
+        After burn-in, we keep every `bnn.keep_every`th network:
+
+        """
+        if epoch < self.burn_in_steps:
+            return False
+        sample_t = epoch - self.burn_in_steps
+        return (sample_t % self.keep_every) == 0
+
+    def _extract_samples(self,
+                         epoch: int,
+                         logs: typing.Dict[str, typing.Any]) -> None:
         """ Extract current sampled network weights at a given `epoch` and store them internally.
 
         Parameters
@@ -230,11 +269,9 @@ class BayesianNeuralNetwork(object):
             Keras logs recorded at `epoch`.
 
         """
-        if epoch >= self.burn_in_steps:
-            sample_t = epoch - self.burn_in_steps
-            if sample_t % self.keep_every == 0:
-                weight_values = K.batch_get_value(self.model.trainable_weights)
-                self.sampled_weights.append(weight_values)
+        if self._keep_sample(epoch):
+            weight_values = K.batch_get_value(self.model.trainable_weights)
+            self.sampled_weights.append(weight_values)
 
     def log_learning_rate(self, epoch: int, logs: typing.Dict[str, typing.Any]):
         if hasattr(self.optimizer, "lr"):
@@ -245,7 +282,7 @@ class BayesianNeuralNetwork(object):
                 " ensure the corresponding parameter is named 'lr'."
             )
 
-    def train(self, x_train: np.ndarray, y_train: np.ndarray):
+    def train(self, x_train: np.ndarray, y_train: np.ndarray) -> None:
         self.sampled_weights.clear()
 
         self.x_train, self.y_train = x_train, y_train

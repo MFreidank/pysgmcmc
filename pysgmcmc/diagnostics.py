@@ -285,7 +285,7 @@ class PYSGMCMCTrace(object):
         >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
         >>> trace = PYSGMCMCTrace(chain_id=0, samples=dummy_samples, varnames=names)
         >>> trace.get_values(varname="x_1:0"), trace.get_values(varname="y_1:0")
-        (array([ 0. ,  0.2,  0.3,  0.1]), array([ 0. , -0.2, -0.5,  0. ]))
+        (array([0. , 0.2, 0.3, 0.1]), array([ 0. , -0.2, -0.5,  0. ]))
 
         If a queried name does not correspond to any parameter in the trace,
         a `ValueError` is raised:

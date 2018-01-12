@@ -17,6 +17,7 @@ KerasPredictions = KerasTensor
 KerasLoss = KerasTensor
 KerasLossFunction = Callable[[KerasLabels, KerasPredictions], KerasLoss]
 
+KerasPrior = Callable[[KerasTensor], KerasTensor]
 KerasModelLoss = Callable[[Model, int, int], KerasLossFunction]
 
 InputDimension = int

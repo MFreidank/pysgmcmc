@@ -66,9 +66,28 @@ def n_dimensions(tensors: typing.List[KerasTensor]) -> int:
 
     Examples
     ----------
-    TODO
+
+    For a list with a single tensor we get the number of dimensions of that tensor:
+
+    >>> tensor = K.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    >>> K.int_shape(tensor)
+    (3, 2)
+    >>> n_dimensions([tensor]) == 3 * 2
+    True
+
+    For a list of multiple tensors we get the sum of their individual number of dimensions:
+
+    >>> tensor1 = K.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    >>> tensor2 = K.constant([1.0, 2.0, 3.0])
+    >>> tensor3 = K.constant([[[1.0, 2.0]], [[3.0, 4.0]], [[1.0, 2.0]], [[3.0, 4.0]]])
+    >>> tensors = [tensor1, tensor2, tensor3]
+    >>> [K.int_shape(tensor) for tensor in tensors]
+    [(3, 2), (3,), (4, 1, 2)]
+    >>> n_dimensions(tensors) == 3 * 2 + 3 + 4 * 1 * 2
+    True
 
     """
+
     dimensions = sum(prod(K.int_shape(tensor)) for tensor in tensors)
 
     is_integer = dimensions % 1 == 0
@@ -93,7 +112,14 @@ def tensor_size(tensor: KerasTensor) -> int:
 
     Examples
     ----------
-    TODO
+
+    This is just a shorthand for `pysgmcmc.keras_utils.n_dimensions([tensor])`:
+
+    >>> tensor = K.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    >>> K.int_shape(tensor)
+    (3, 2)
+    >>> tensor_size(tensor) == n_dimensions([tensor]) == 3 * 2
+    True
 
     """
     return n_dimensions([tensor])
@@ -128,7 +154,15 @@ def keras_split(tensor: KerasTensor,
                 num_or_size_splits: typing.Union[int, typing.Iterable[int]],
                 axis: int=0,
                 name: str="split") -> typing.List[tf.Tensor]:
-    """ TODO DOKU FROM TF
+    """ Split a tensor into sub tensors.
+        If `num_or_size_splits` is an integer type, then split `tensor`
+        along dimension `axis` into `num_or_size_splits` smaller tensors.
+        This requires that `num_or_size_splits` evenly divides `tensor.shape[axis]`.
+
+        If `num_or_size_splits` is not an integer type, it is presumed to be a
+        tensor and `tensor` is split into `len(num_or_size_splits)` pieces.
+        The shape of the `i`-th piece has the same size as `tensor` except
+        along dimension `axis` where the size is `num_or_size_splits[i]`.
 
     Parameters
     ----------
@@ -149,7 +183,9 @@ def keras_split(tensor: KerasTensor,
     Returns
     ----------
     subtensors: typing.List[KerasTensor]
-        TODO DOKU FROM TF
+        If `num_or_size_splits` is a scalar, returns `num_or_size_splits` tensors.
+        If `num_or_size_splits` is a 1-d tensor, returns `num_or_size_splits.get_shape[0]`
+        tensor objects resulting from splitting `tensor`.
 
     Examples
     ----------
@@ -256,17 +292,33 @@ def keras_control_dependencies(control_inputs: typing.List[KerasTensor]):
     """ Allows specifying control dependencies for keras tensors.
         Equivalent to `tf.control_dependencies`, and a no-op for
         other backends.
+
         NOTE: This implies that this operation fixes control order only for
         tensorflow, for other backends it does not do anything.
 
     Parameters
     ----------
     control_dependencies: typing.List[KerasTensor]
-        TODO: DOKU FROM TENSORFLOW
+        List of tensorflow tensors that should be evaluated prior to
+        evaluating any tensors inside this context manager.
 
     Examples
     ----------
-    TODO
+
+    One frequent use case is to ensure that a variable update happens after
+    a earlier access to that variable:
+
+    >>> from keras import backend as K
+    >>> v = K.variable(1.0)
+    >>> b = v + 2.0
+    >>> with keras_control_dependencies([b]): v_t = K.update_add(v, 1.0)
+    >>> K.batch_get_value([b, v_t])
+    [3.0, 2.0]
+
+    In this example, the value of `b` is only guaranteed to be `3.0` due
+    to our control dependency; otherwise execution order of the statements
+    that assign `b` and `v_t` is not fixed and `b` could have either value `4.0`
+    or value `3.0`!
 
     """
     if K.backend() == "tensorflow":
@@ -351,13 +403,60 @@ def sympy_to_keras(sympy_expression: sympy.expr.Expr,
 
 
 @supports_backends(("tensorflow",))
-def while_loop(condition, body, loop_variables, shape_invariants=None, parallel_iterations=10):
+def while_loop(condition, body, loop_variables, parallel_iterations=10):
+    """ Repeat `body` while `condition` is true.
+
+    Parameters
+    ----------
+    condition : typing.Callable[[], KerasTensor]
+        Callable returning a boolean scalar tensor.
+    body : typing.Callable
+        Callable returning a (possibly nested) tuple, namedtuple or list of tensors
+        of the same arity and types as `loop_vars`.
+    loop_variables : typing.Tuple[KerasTensor]
+        (Possibly nested) tuple, namedtuple or list of tensors that is passed
+        to both `condition` and `body`.
+    parallel_iterations : int, optional
+        Integer that controls the maximum number of parallel iterations.
+
+    Returns
+    ----------
+    output_tensors: typing.Tuple[KerasTensor]
+        Output tensors for `loop_vars` after the loop.
+        When length of `loop_vars` is `1` this is a tensor  and when
+        length of `loop_vars` is greater than `1` it returns a list.
+
+    Examples
+    ----------
+
+    Simple case:
+
+    >>> from keras import backend as K
+    >>> i = K.constant(0)
+    >>> c = lambda i: K.less(i, 10)
+    >>> b = lambda i: i + 1
+    >>> K.get_value(while_loop(c, b, [i]))
+    10.0
+
+    Example with nesting and a namedtuple:
+
+    >>> from keras import backend as K
+    >>> import collections
+    >>> Pair = collections.namedtuple('Pair', 'j, k')
+    >>> ijk_0 = (K.constant(0), Pair(K.constant(1), K.constant(2)))
+    >>> c = lambda i, p: i < 10
+    >>> b = lambda i, p: (i + 1, Pair((p.j + p.k), (p.j - p.k)))
+    >>> K.batch_get_value(while_loop(c, b, ijk_0))
+    (10.0, Pair(j=32.0, k=64.0))
+
+    """
+
     if K.backend() == "tensorflow":
         return tf.while_loop(
             cond=condition,
             body=body,
             loop_vars=loop_variables,
-            shape_invariants=shape_invariants,
+            shape_invariants=None,
             parallel_iterations=parallel_iterations
         )
 

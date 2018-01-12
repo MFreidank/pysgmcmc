@@ -120,3 +120,8 @@ class Gmm2(GaussianMixture):
 class Gmm3(GaussianMixture):
     def __init__(self):
         super().__init__(var=[1. / 0.3, 0.3, 1. / 0.3])
+
+
+class MoGL2HMC(GaussianMixture):
+    def __init__(self):
+        super().__init__(var=(0.1, 0.1), mu=(0., 4.), weights=(1. / 2., 1. / 2.))
