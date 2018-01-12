@@ -3,7 +3,6 @@ from os.path import dirname, realpath, join as path_join
 
 import numpy as np
 from scipy.stats import norm
-from scipy.optimize import minimize as scipy_minimize
 import logging
 
 sys.path.insert(0, path_join(dirname(realpath(__file__)), "..", ".."))
@@ -18,7 +17,9 @@ def ei(x, model):
         return np.array([0])
     else:
         z = (model.incumbent - mean) / standard_deviation
-        return standard_deviation * (z * norm.cdf(z) + norm.pdf(z))
+
+        r = standard_deviation * (z * norm.cdf(z) + norm.pdf(z))
+        return r
 
 
 def random_points(num_points, parameter_bounds, seed=None):
@@ -36,19 +37,13 @@ def random_points(num_points, parameter_bounds, seed=None):
     return x
 
 
-def scipy_maximizer(model, parameter_bounds, acquisition_function=ei, seed=None):
-    # XXX: Something here is broken and does not work, find it and fix it
-    # Somehow x0 has a proper shape and bounds look okay as well, but scipy
-    # moves to 1d x-values after evaluating x0 for some reason
-    print("asking scipy what to do next")
-    x0 = random_points(num_points=1, seed=seed, parameter_bounds=parameter_bounds)[0]
-    print("X0:", x0)
-    n_dims, *_ = x0.shape
-    fun = lambda x: -acquisition_function(model=model, x=np.reshape(x, (1, n_dims)))
-    bounds = list(zip(*parameter_bounds))
-    x = scipy_minimize(fun=fun, x0=np.reshape(x0, (1, n_dims)), bounds=bounds)
-    print("X:", x)
-    return x
+def scipy_maximizer(model, parameter_bounds, acquisition_function=ei, restarts=10, seed=None, **scipy_args):
+    from scipydirect import minimize
+
+    return minimize(
+        func=lambda x: -acquisition_function(model=model, x=x.reshape((1, x.shape[0]))),
+        bounds=parameter_bounds
+    )
 
 
 def random_sample_maximizer(model, parameter_bounds, acquisition_function=ei, num_samples=100, seed=None):
@@ -86,7 +81,7 @@ def initial_design(num_points, parameter_bounds, objective_function, seed=None):
 def bayesian_optimization(objective_function, parameter_bounds, model_function,
                           num_iterations=30, train_every=1,
                           acquisition_function=ei,
-                          acquisition_maximizer=random_sample_maximizer,
+                          acquisition_maximizer=scipy_maximizer,
                           num_initial_points=3, seed=None, **model_args):
     """ Run a bayesian optimization loop to minimize a given `objective_function`.
         Parameter bounds specifies the space of all valid inputs

@@ -23,7 +23,7 @@ def main():
     from os.path import dirname, realpath, join as path_join
     import logging
 
-    from bayesian_optimizer import bayesian_optimization, ei, random_sample_maximizer
+    from bayesian_optimizer import bayesian_optimization, ei
     sys.path.insert(0, path_join(dirname(realpath(__file__)), "..", ".."))
     from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
 
@@ -38,8 +38,8 @@ def main():
                                     model_function=BayesianNeuralNetwork,
                                     num_iterations=30, train_every=1,
                                     acquisition_function=ei,
-                                    acquisition_maximizer=random_sample_maximizer,
-                                    num_initial_points=3, seed=None, learning_rate=1e-2)
+                                    num_initial_points=3, seed=None, learning_rate=1e-2,
+                                    )
     print(results)
 
 if __name__ == "__main__":
