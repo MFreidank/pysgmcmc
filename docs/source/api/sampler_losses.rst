@@ -2,7 +2,7 @@
 Sampler Losses
 **************
 
-.. currentmodule:: pysgmcmc.diagnostics.sampler_losses
+.. currentmodule:: pysgmcmc.sampler_losses
 
-.. automodule:: pysgmcmc.diagnostics.sampler_losses
+.. automodule:: pysgmcmc.sampler_losses
    :members:
