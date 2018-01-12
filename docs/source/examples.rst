@@ -11,7 +11,7 @@ Samplers
 .. toctree::
    :maxdepth: 3
 
-   notebooks/Sampler Comparison on Energy Functions (Chain Plots).ipynb
+   notebooks/Sampler_Comparison_on_Energy_Functions_(Chain_Plots).ipynb
 
 Bayesian Neural Networks
 ========================
