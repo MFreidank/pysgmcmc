@@ -21,3 +21,11 @@ Base Model
    :private-members:
    :special-members:
    :members:
+
+Objective Functions
+^^^^^^^^^^^^^^^^^^^
+.. currentmodule:: pysgmcmc.models.objective_functions
+.. automodule:: pysgmcmc.models.objective_functions
+    :private-members:
+    :special-members:
+    :members:

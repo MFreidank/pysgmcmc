@@ -7,10 +7,10 @@ API Reference
 .. toctree::
    :maxdepth: 2
 
-   api/models
-   api/diagnostics
    api/samplers
+   api/diagnostics
+   api/models
+   api/optimizers
+   api/sampler_losses
    api/data_batches
-   api/tensor_utils
-
-.. XXX: Add necessary stuff here
+   api/keras_utils

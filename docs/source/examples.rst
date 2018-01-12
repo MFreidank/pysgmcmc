@@ -5,18 +5,18 @@ Examples
 ********
 
 
-Samplers On Various Functions
-=============================
+Samplers 
+========
 
 .. toctree::
    :maxdepth: 3
 
-   notebooks/Relativistic_SGHMC.ipynb
-   notebooks/SVGD.ipynb
+   notebooks/Sampler Comparison on Energy Functions (Chain Plots).ipynb
 
-Sampler Performance Comparisons
-===============================
+Bayesian Neural Networks
+========================
 .. toctree::
    :maxdepth: 3
 
-   notebooks/Effective_Sample_Sizes.ipynb
+   notebooks/BNN on hpolib functions.ipynb
+   notebooks/SGHMCHD - BNN on sinc.ipynb
