@@ -33,7 +33,7 @@ Features
 * Modern MCMC solutions applicable when fitting Bayesian models to 
   sub-sampled datasets.
 
-* Tensorflow as the computational backend, which allows for efficient 
+* Keras (Tensorflow) as the computational backend, which allows for efficient 
   numeric calculation, possibly on GPUs and automatic gradient calculation.
 
 * Flexible: painless application of any of our samplers to your estimation

@@ -17,7 +17,8 @@ Features
 
    sample, cost = next(sampler)
 
-* Based on `tensorflow <https://www.tensorflow.org/>`_ that provides:
+* Based on `keras <https://www.keras.io/>`_ that provides:
+    * flexible computational backends (tensorflow, theano, cnntk)
     * efficient numerical computation via data flow graphs
     * flexible computation environments (CPU/GPU support, desktop/server/mobile device support)
     * Linear algebra operations
