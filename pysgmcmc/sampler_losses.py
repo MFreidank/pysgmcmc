@@ -18,6 +18,7 @@ class SamplerLoss(object):
         for example for effective sample size ess:
             `loss_tensor = ess(new_sample, iteration)`
         Now, minimizing `loss_tensor` maximizes effective sample size.
+
     """
 
     __metaclass__ = abc.ABCMeta
