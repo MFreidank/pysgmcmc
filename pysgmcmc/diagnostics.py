@@ -4,8 +4,10 @@ our samplers into `pymc3.MultiTrace` objects.
 This allows us to directly apply `pymc3.diagnostics` and `pymc3.plots` to
 any of our chains.
 """
-import numpy as np
+import typing
 import logging
+
+import numpy as np
 
 
 class PYSGMCMCTrace(object):
@@ -31,7 +33,7 @@ class PYSGMCMCTrace(object):
             a `pysgmcmc.MCMCSampler` instance.
 
         varnames : List[String] or NoneType, optional
-            TODO: doku
+            Parameter names for all dimensions of `samples`.
 
         Examples
         ----------
@@ -95,30 +97,28 @@ class PYSGMCMCTrace(object):
 
     @classmethod
     def from_sampler(cls, chain_id, sampler, n_samples, keep_every=1, varnames=None):
-        """
-        Instantiate a trace with id `chain_id` by extracting `n_samples`
-        from `sampler`.
+        """ Instantiate a trace with id `chain_id` by extracting `n_samples` from `sampler`.
 
         Parameters
         ----------
-        chain_id : int
+        chain_id: int
             A numeric id that uniquely identifies this chain/trace.
 
-        sampler : pysgmcmc.sampling.MCMCSampler subclass
+        sampler: pysgmcmc.sampling.MCMCSampler
             A sampler used to generate samples for this trace.
 
-        n_samples : int
-            Number of samples to extract from `sampler` for this chain/trace.
+        n_samples: int
+            Number of samples to extract for this chain/trace.
 
-        keep_every : int
-            Keep every `keep_every`th sample in each chain.
+        keep_every: int
+            Keep every `keep_every` th sample in each chain.
 
-        varnames : List[String] or NoneType, optional
-            TODO: DOKU
+        varnames: List[String] or NoneType, optional
+            Parameter names for all dimensions of `samples`.
 
         Returns
         ----------
-        trace : PYSGMCMCTrace
+        trace: PYSGMCMCTrace
             A wrapper around `n_samples` samples for variables with names
             `varnames` extracted from `sampler`.
             (Unique) chain id of this trace will be `chain_id`.
@@ -217,16 +217,18 @@ class PYSGMCMCTrace(object):
             varnames=self.varnames[slice_]
         )
 
-    def point(self, index):
-        """TODO: Docstring for point.
+    def point(self, index: int) -> typing.Dict[str, np.ndarray]:
+        """ Returns values of all parameters this chain at a given iteration `index`.
 
         Parameters
         ----------
-        index : TODO
+        index : int
+            Sampling iteration to query values for.
 
         Returns
         ----------
-        TODO
+        sampled_point : typing.Dict[str, np.ndarray]
+            Dictionary mapping variable name to values at given iteration `index`.
 
         """
         sample = self.samples[index]
