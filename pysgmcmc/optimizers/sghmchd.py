@@ -96,11 +96,11 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
         """
         self.sghmcd_updates = [K.update_add(self.iterations, 1)]
 
-        n_params = n_dimensions(params)
+        num_params = n_dimensions(params)
 
         #  Initialize internal sampler parameters {{{ #
-        self._initialize_parameters(n_params=n_params)
-        self.dxdlr = K.zeros((n_params,), name="dxdlr")
+        self._initialize_parameters(num_params=num_params)
+        self.dxdlr = K.zeros((num_params,), name="dxdlr")
 
         #  }}} Initialize internal sampler parameters #
 
