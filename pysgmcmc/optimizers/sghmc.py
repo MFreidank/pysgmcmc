@@ -113,7 +113,7 @@ class SGHMC(Optimizer):
     def _during_burn_in(self,
                         variable: KerasVariable,
                         update_value: KerasTensor) -> KerasTensor:
-        """TODO: Docstring for _during_burn_in.
+        """ Return `update_value` during burn-in phase else `keras.backend.identity(variable)`.
 
         Parameters
         ----------
@@ -125,36 +125,37 @@ class SGHMC(Optimizer):
         Returns
         ----------
         update_tensor: KerasTensor
-            TODO
+            `update_value` if `self._burning_in()` is true,
+            `keras.backend.identity(variable)` otherwise.
 
         """
         return K.switch(self._burning_in(), update_value, K.identity(variable))
 
-    def _initialize_parameters(self, n_params: int):
-        """TODO: Docstring for _initialize_parameters.
+    def _initialize_parameters(self, num_target_params: int):
+        """ Initialize all internal parameters of this sampler.
 
         Parameters
         ----------
-        n_params: int
-            TODO
+        num_target_params: int
+            Number of target parameters of this sampler.
 
         """
         if not self._initialized:
             self._initialized = True
-            self.tau = K.ones((n_params,), name="tau", dtype=FLOAT_DTYPE)
+            self.tau = K.ones((num_target_params,), name="tau", dtype=FLOAT_DTYPE)
             self.r = K.variable(
                 1. / (self.tau.initialized_value() + 1),
                 name="r",
                 dtype=FLOAT_DTYPE
             )
-            self.g = K.ones((n_params,), name="g", dtype=FLOAT_DTYPE)
-            self.v_hat = K.ones((n_params,), name="v_hat", dtype=FLOAT_DTYPE)
+            self.g = K.ones((num_target_params,), name="g", dtype=FLOAT_DTYPE)
+            self.v_hat = K.ones((num_target_params,), name="v_hat", dtype=FLOAT_DTYPE)
             self.minv = K.variable(
                 1. / K.sqrt(self.v_hat.initialized_value()),
                 dtype=FLOAT_DTYPE
             )
-            self.momentum = K.zeros((n_params,), name="momentum", dtype=FLOAT_DTYPE)
-            self.dxdlr = K.zeros((n_params,), name="dxdlr", dtype=FLOAT_DTYPE)
+            self.momentum = K.zeros((num_target_params,), name="momentum", dtype=FLOAT_DTYPE)
+            self.dxdlr = K.zeros((num_target_params,), name="dxdlr", dtype=FLOAT_DTYPE)
             self.random_sample = K.random_normal(
                 shape=self.momentum.shape, seed=self.seed, dtype=FLOAT_DTYPE
             )
@@ -176,18 +177,19 @@ class SGHMC(Optimizer):
         Returns
         ----------
         updates: typing.List[KerasTensor]
-            TODO
+            List of tensors that specify assignments to all internal and
+            target parameters of this sampler.
 
         Examples
         ----------
-        TODO GIVE EXAMPLE OF A SINGLE SGHMCHD STEP
+        TODO GIVE EXAMPLE OF A SINGLE SGHMC STEP
 
         """
         self.updates = [K.update_add(self.iterations, 1)]
 
-        n_params = n_dimensions(params)
+        num_params = n_dimensions(params)
 
-        self._initialize_parameters(n_params=n_params)
+        self._initialize_parameters(num_target_params=num_params)
 
         x = to_vector(params)
         gradient = to_vector(K.gradients(loss, params))
