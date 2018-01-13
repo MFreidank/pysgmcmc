@@ -99,7 +99,7 @@ class SGHMCHD(Hyperoptimizer, SGHMC):
         num_params = n_dimensions(params)
 
         #  Initialize internal sampler parameters {{{ #
-        self._initialize_parameters(num_params=num_params)
+        self._initialize_parameters(num_target_params=num_params)
         self.dxdlr = K.zeros((num_params,), name="dxdlr")
 
         #  }}} Initialize internal sampler parameters #
