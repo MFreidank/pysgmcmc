@@ -281,7 +281,7 @@ class PYSGMCMCTrace(object):
         ('x_1:0', 'y_1:0')
 
         These names can be used to index the trace and obtain all sampled
-        values for the corresponding target parameter:
+        values for a corresponding target parameter:
 
         >>> names = [variable.name for variable in params]
         >>> dummy_samples = [[0., 0.], [0.2, -0.2], [0.3, -0.5], [0.1, 0.]]
