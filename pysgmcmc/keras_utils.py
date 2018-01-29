@@ -36,7 +36,7 @@ def supports_backends(supported_backends: typing.Iterable[str]):
 
     Returns
     ----------
-    TODO
+    TODO: LOOK UP DOKU IN TYPING FOR DECORATORS
 
     """
     def backend_decorator(function):
@@ -143,7 +143,21 @@ def to_vector(tensors: typing.List[KerasTensor]) -> tf.Tensor:
 
     Examples
     ----------
-    TODO
+
+    For 1-d input tensors, this performs a simple concatenation:
+
+    >>> from keras import backend as K
+    >>> tensors = [K.constant([1.0, 2.0, 3.0]), K.constant([4.0,]), K.constant([5.0, 6.0])]
+    >>> K.get_value(to_vector(tensors))
+    array([1., 2., 3., 4., 5., 6.], dtype=float32)
+
+    Multi-dimensional input tensors are first reshaped into 1-d tensors and then
+    concatenated as in the previous example:
+
+    >>> from keras import backend as K
+    >>> tensors = [K.constant([[1.0, 2.0], [3.0, 4.0]]), K.constant([[[5.0], [6.0]]])]
+    >>> K.get_value(to_vector(tensors))
+    array([1., 2., 3., 4., 5., 6.], dtype=float32)
 
     """
     return tf.concat([K.reshape(tensor, [-1]) for tensor in tensors], axis=0)
@@ -152,8 +166,7 @@ def to_vector(tensors: typing.List[KerasTensor]) -> tf.Tensor:
 @supports_backends({"tensorflow"})
 def keras_split(tensor: KerasTensor,
                 num_or_size_splits: typing.Union[int, typing.Iterable[int]],
-                axis: int=0,
-                name: str="split") -> typing.List[tf.Tensor]:
+                axis: int=0) -> typing.List[tf.Tensor]:
     """ Split a tensor into sub tensors.
         If `num_or_size_splits` is an integer type, then split `tensor`
         along dimension `axis` into `num_or_size_splits` smaller tensors.
@@ -169,38 +182,55 @@ def keras_split(tensor: KerasTensor,
     tensor: KerasTensor
         Tensor to split into smaller subtensors.
 
-    num_or_size_splits: typing.Union[int : TODO
-        TODO: Copy doku from tensorflow
+    num_or_size_splits: typing.Union[int, typing.Iterable[int]]
+      Either a 0-D integer `Tensor` indicating the number of
+      splits along split_dim or a 1-D integer `Tensor` integer tensor containing
+      the sizes of each output tensor along split_dim. If a scalar then it must
+      evenly divide `tensor.shape[axis]`; otherwise the sum of sizes along the
+      split dimension must match that of the `tensor`.
 
     axis: int, optional
-        TODO: Copy doku from tensorflow
-        Defaults to `0`.
-
-    name: str, optional
-        TODO: Copy doku from tensorflow
-        Defaults to `"split"`.
+      The dimension along which to split.
+      Must be in the range `[0, rank(tensor))`. Defaults to 0.
 
     Returns
     ----------
     subtensors: typing.List[KerasTensor]
         If `num_or_size_splits` is a scalar, returns `num_or_size_splits` tensors.
-        If `num_or_size_splits` is a 1-d tensor, returns `num_or_size_splits.get_shape[0]`
-        tensor objects resulting from splitting `tensor`.
+        If `num_or_size_splits` is a 1-d tensor, returns
+        `num_or_size_splits.get_shape[0]` tensor objects resulting from splitting `tensor`.
 
     Examples
     ----------
-    TODO
+
+    This can be used to undo a previous `pysgmcmc.keras_utils.to_vector`
+    by calling `pysgmcmc.keras_utils.keras_split` and reshaping appropriately afterwards:
+
+    >>> from numpy import allclose
+    >>> from keras import backend as K
+    >>> tensors = [K.constant([1.0, 2.0, 3.0]), K.constant([4.0,]), K.constant([5.0, 6.0])]
+    >>> vectorized_tensor = to_vector(tensors)
+    >>> param_sizes = tuple(tensor_size(tensor) for tensor in tensors)
+    >>> split_tensors = keras_split(vectorized_tensor, param_sizes)
+    >>> tensors_recovered = [
+    ...     K.reshape(split_tensor, original_tensor.shape)
+    ...     for split_tensor, original_tensor in zip(tensors, split_tensors)
+    ... ]
+    >>>
+    >>> all(
+    ...     allclose(*tensor_pair)
+    ...     for tensor_pair in zip(K.batch_get_value(tensors), K.batch_get_value(tensors_recovered))
+    ... )
+    True
 
     """
-    return tf.split(
-        tensor, num_or_size_splits, axis=axis, name=name
-    )
+    return tf.split(tensor, num_or_size_splits=num_or_size_splits, axis=axis)
 
 
 @supports_backends({"tensorflow"})
 def updates_for(parameters: typing.List[KerasVariable],
                 update_tensor: KerasTensor) -> typing.List[KerasTensor]:
-    """ Split appropriately shaped sub-tensors from `update_tensor` to assign to all `parameters`.
+    """ Split appropriately sized sub-tensors from `update_tensor` to assign to all `parameters`.
 
     Parameters
     ----------
@@ -219,7 +249,24 @@ def updates_for(parameters: typing.List[KerasVariable],
 
     Examples
     ----------
-    TODO
+
+    A simple example:
+
+    >>> from keras import backend as K
+    >>> parameters = [K.variable([1.0, 2.0, 3.0]), K.variable([4.0, 5.0])]
+    >>> update_tensor = K.constant([10.0, 10.0, 10.0, 10.0, 10.0])
+    >>> update_values = updates_for(parameters=parameters, update_tensor=update_tensor)
+    >>> K.batch_get_value(update_values)
+    [array([10., 10., 10.], dtype=float32), array([10., 10.], dtype=float32)]
+
+    These can now simply be assigned to parameters with `keras.backend.update` nodes:
+
+    >>> updates = [
+    ...     K.update(parameter, update_value)
+    ...     for parameter, update_value in zip(parameters, update_values)
+    ... ]
+    >>> K.batch_get_value(updates)
+    [array([10., 10., 10.], dtype=float32), array([10., 10.], dtype=float32)]
 
     """
     param_sizes = tuple(tensor_size(parameter) for parameter in parameters)

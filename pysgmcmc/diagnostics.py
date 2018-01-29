@@ -210,7 +210,6 @@ class PYSGMCMCTrace(object):
             A new trace that keeps only variable indices in the given `slice_`.
 
         """
-        # XXX: Set chain_id to something unique, instead of self.chain
         return PYSGMCMCTrace(
             chain_id=self.chain,
             samples=self.samples[slice_],
