@@ -4,7 +4,9 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
+from torch.optim import Adam
 
+from pysgmcmc.optimizers.sghmc import SGHMC
 from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork as BNN
 from pysgmcmc.diagnostics.objective_functions import sinc
 from pysgmcmc.tests.utils import init_random_uniform
@@ -13,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    num_datapoints = 50000
+    num_datapoints = 100
     batch_size = 20
 
     X = init_random_uniform(
@@ -25,12 +27,11 @@ def main():
     x_test = np.linspace(0, 1, 100)[:, None]
     y_test = sinc(x_test)
 
-
-    sampler_name = "SGD"
     bnn = BNN(
         batch_size=batch_size,
-        burn_in_steps=3000, num_nets=100, keep_every=1,
-        lr=1e-3
+        burn_in_steps=10000, num_nets=100, keep_every=100,
+        optimizer=SGHMC,  # scale_grad=num_datapoints, lr=1e-2,
+        metrics=(),
     )
 
     bnn.train(x_train=X, y_train=y)
@@ -44,7 +45,7 @@ def main():
     plt.plot(x_test[:, 0], y_test, label="true", color="black")
     plt.plot(X[:, 0], y, "ro")
 
-    plt.plot(x_test[:, 0], mean_prediction, label=sampler_name, color="blue")
+    plt.plot(x_test[:, 0], mean_prediction, label="SGHMC", color="blue")
     plt.fill_between(x_test[:, 0], mean_prediction + prediction_std, mean_prediction - prediction_std, alpha=0.2, color="blue")
 
     plt.legend()
