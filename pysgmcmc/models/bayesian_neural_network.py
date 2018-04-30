@@ -1,6 +1,6 @@
 # vim:foldmethod=marker
 import logging
-# import typing
+import typing
 from itertools import islice
 
 import numpy as np
@@ -14,13 +14,12 @@ from pysgmcmc.data.utils import InfiniteDataLoader
 
 #  Helpers {{{ #
 
-def default_network(input_dimensionality: int, seed: int=None):
-    # TODO: Use seed
+def default_network(input_dimensionality: int):
     class AppendLayer(nn.Module):
-        def __init__(self, output_features=1, bias=True):
+        def __init__(self, bias=True):
             super().__init__()
             if bias:
-                self.bias = nn.Parameter(torch.Tensor(output_features, 1))
+                self.bias = nn.Parameter(torch.Tensor(1, 1))
             else:
                 self.register_parameter('bias', None)
 
@@ -31,7 +30,7 @@ def default_network(input_dimensionality: int, seed: int=None):
         if type(module) == AppendLayer:
             nn.init.constant_(module.bias, val=np.log(1e-3))
         elif type(module) == nn.Linear:
-            nn.init.kaiming_normal_(module.weight, a=1.0)
+            nn.init.kaiming_normal_(module.weight, nonlinearity="tanh")
             nn.init.constant_(module.bias, val=0.0)
 
     return nn.Sequential(
@@ -187,7 +186,6 @@ class BayesianNeuralNetwork(object):
                  metrics=(nn.MSELoss(),),
                  num_steps=50000, burn_in_steps=3000,
                  keep_every=100, num_nets=100, batch_size=20,
-                 seed: int=None,
                  progress=True,
                  optimizer=torch.optim.SGD, **optimizer_kwargs) -> None:
 
@@ -207,10 +205,10 @@ class BayesianNeuralNetwork(object):
         self.num_steps = min(
             self.num_steps, self.keep_every * self.num_nets
         )
+
+        self.num_iterations = self.num_steps + self.burn_in_steps
         logging.info(
-            "Performing '{}' iterations in total.".format(
-                self.num_steps + self.burn_in_steps
-            )
+            "Performing '{}' iterations in total.".format(self.num_iterations)
         )
 
         assert isinstance(normalize_input, bool)
@@ -219,8 +217,6 @@ class BayesianNeuralNetwork(object):
         assert isinstance(normalize_output, bool)
         self.normalize_output = normalize_output
 
-        self.seed = seed
-
         self.network_architecture = network_architecture
 
         self.optimizer = optimizer
@@ -228,7 +224,7 @@ class BayesianNeuralNetwork(object):
 
         self.metric_functions = list(metrics)
 
-        self.sampled_weights = []  # type: typing.List[typing.List[np.ndarray]]
+        self.sampled_weights = []  # type: typing.List[typing.Tuple[typing.Any, ...]]
 
         self.optimizer_kwargs = optimizer_kwargs
 
@@ -259,19 +255,18 @@ class BayesianNeuralNetwork(object):
 
         self.model = self.network_architecture(
             input_dimensionality=input_dimensionality,
-            seed=self.seed
         )
 
         optimizer = self.optimizer(
             self.model.parameters(), **self.optimizer_kwargs
-
         )
+
         train_dataset = data_utils.TensorDataset(
             torch.Tensor(self.x_train), torch.Tensor(self.y_train)
         )
 
         train_loader = InfiniteDataLoader(
-            dataset=train_dataset, batch_size=self.batch_size, shuffle=True
+            dataset=train_dataset, batch_size=self.batch_size, shuffle=False
         )
 
         loss_function = self.loss_function(
@@ -280,12 +275,12 @@ class BayesianNeuralNetwork(object):
 
         if self.progress:
             progress_bar = tqdm(
-                islice(enumerate(train_loader), self.num_steps + self.burn_in_steps),
-                total=self.num_steps + self.burn_in_steps,
+                islice(enumerate(train_loader), self.num_iterations),
+                total=self.num_iterations,
                 bar_format="{n_fmt}/{total_fmt}[{bar}] - {remaining} - {postfix}"
             )
         else:
-            progress_bar = islice(train_loader, self.num_steps + self.burn_in_steps)
+            progress_bar = islice(train_loader, self.num_iterations)
 
         for epoch, (x_batch, y_batch) in progress_bar:
             # properly handle partial batches with less than `self.batch_size`
@@ -295,33 +290,37 @@ class BayesianNeuralNetwork(object):
             loss = loss_function(
                 y_pred=self.model(x_batch), y_true=y_batch, batch_size=batch_size
             )
-            metric_values = [
-                metric_function(input=batch_prediction[:, 0], target=y_batch)
-                for metric_function in self.metric_functions
-            ]
 
-            def get_name(metric):
-                try:
-                    name = metric.__name__
-                except AttributeError:
-                    return metric.__class__.__name__
-                else:
-                    if metric == negative_log_likelihood:
-                        return "NLL"
-                    return name
-
-            metric_names = [
-                get_name(metric)
-                for metric in self.metric_functions + [self.loss_function]
-            ]
+            #  Progress: print metrics {{{ #
 
             if self.progress and epoch % 100 == 0:
+                metric_values = [
+                    metric_function(input=batch_prediction[:, 0], target=y_batch)
+                    for metric_function in self.metric_functions
+                ]
+
+                def get_name(metric):
+                    try:
+                        name = metric.__name__
+                    except AttributeError:
+                        return metric.__class__.__name__
+                    else:
+                        if metric == negative_log_likelihood:
+                            return "NLL"
+                        return name
+
+                metric_names = [
+                    get_name(metric)
+                    for metric in self.metric_functions + [self.loss_function]
+                ]
+
                 progress_bar.set_postfix_str(" - ".join([
                     "{name}: {value}".format(name=name, value=value.detach().numpy())
                     for name, value in zip(
                         metric_names, metric_values + [loss]
                     )
                 ]))
+            #  }}} Progress: print metrics #
 
             optimizer.zero_grad()
             loss.backward()
@@ -342,6 +341,7 @@ class BayesianNeuralNetwork(object):
         assert self.is_trained
         assert isinstance(return_individual_predictions, bool)
 
+        x_test_ = np.array(x_test)
         if self.normalize_input:
             x_test_, _, _ = zero_mean_unit_var_normalization(
                 x_test, self.x_mean, self.x_std
