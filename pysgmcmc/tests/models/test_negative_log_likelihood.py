@@ -7,6 +7,7 @@ import torch
 
 try:
     import theano as _  # noqa
+    import theano.tensor as T
 except ImportError:
     THEANO_INSTALLED = False
 else:
@@ -28,7 +29,7 @@ if THEANO_INSTALLED and LASAGNE_INSTALLED:
     )
 
     from pysgmcmc.models.bayesian_neural_network import (
-        negative_log_likelihood, default_network
+        NegativeLogLikelihood, default_network
     )
 
 from pysgmcmc.diagnostics.objective_functions import sinc
@@ -72,15 +73,28 @@ def test_nll():
         net, X=X, y=y, n_examples=num_datapoints,
         variance_prior=ReferenceLogVariancePrior(1e-6, 0.01),
         weight_prior=ReferenceWeightPrior(alpha=1., beta=1.)
-    )[0].eval()
+    )[0]
+
+    grads_theano = np.asarray([
+        grad.eval()
+        for grad in T.grad(reference_nll, lasagne.layers.get_all_params(net))
+    ])
 
     train_y = torch.from_numpy(y).float()
 
     model = default_network(input_dimensionality=input_dimensionality)
     y_pred = predict_pytorch(network=model, weights=weights, x_train=X)
 
-    nll = negative_log_likelihood(model, num_datapoints=num_datapoints)(
-        y_true=train_y, y_pred=y_pred
-    ).detach().numpy()
+    nll = NegativeLogLikelihood(tuple(model.parameters()), num_datapoints=num_datapoints)(
+        input=y_pred, target=train_y
+    )
 
-    assert np.allclose(reference_nll, nll)
+    nll.backward()
+    grads = np.asarray([
+        parameter.grad.numpy() for parameter in model.parameters()
+    ])
+
+    for grad_theano, grad_pytorch in zip(grads_theano, grads):
+        assert np.allclose(grad_theano.T, grad_pytorch)
+
+    assert np.allclose(reference_nll.eval(), nll.detach().numpy())

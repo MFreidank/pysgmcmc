@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    num_datapoints = 200
+    num_datapoints = 20
     batch_size = 20
 
     X = init_random_uniform(
@@ -31,8 +31,9 @@ def main():
     # optimizer = SGHMC
 
     bnn = BNN(
+        normalize_input=True, normalize_output=True,
         batch_size=batch_size,
-        optimizer=optimizer,  # scale_grad=num_datapoints, lr=1e-2,
+        optimizer=Adam,  # scale_grad=num_datapoints, lr=1e-2,
     )
 
     bnn.train(x_train=X, y_train=y)
@@ -47,7 +48,7 @@ def main():
     plt.plot(X[:, 0], y, "ro")
 
     plt.plot(x_test[:, 0], mean_prediction, label=optimizer.__name__, color="blue")
-    plt.fill_between(x_test[:, 0], mean_prediction + prediction_std, mean_prediction - prediction_std, alpha=0.2, color="blue")
+    plt.fill_between(x_test[:, 0], mean_prediction + prediction_std, mean_prediction - prediction_std, alpha=0.2, color="indianred")
 
     plt.legend()
     plt.show()

@@ -7,9 +7,48 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils import data as data_utils
+from torch.nn.modules.loss import _Loss, _assert_no_grad
 from tqdm import tqdm
 
 from pysgmcmc.data.utils import InfiniteDataLoader
+
+#  Loss {{{ #
+class NegativeLogLikelihood(_Loss):
+    def __init__(self, parameters, num_datapoints, size_average=False, reduce=True):
+        assert (not size_average) and reduce
+        super().__init__(size_average, reduce)
+        self.parameters = tuple(parameters)
+        self.num_datapoints = num_datapoints
+
+    def forward(self, input, target):
+        _assert_no_grad(target)
+
+        batch_size, *_ = target.shape
+        prediction_mean = input[:, 0].view(-1, 1)
+
+        log_prediction_variance = input[:, 1].view(-1, 1)
+        prediction_variance_inverse = 1. / (torch.exp(log_prediction_variance) + 1e-16)
+
+        mean_squared_error = (target - prediction_mean) ** 2
+
+        log_likelihood = torch.sum(
+            torch.sum(
+                -mean_squared_error * 0.5 * prediction_variance_inverse -
+                0.5 * log_prediction_variance,
+                dim=1
+            )
+        )
+
+        log_likelihood /= batch_size
+
+        log_likelihood += (
+            log_variance_prior(log_prediction_variance) / self.num_datapoints
+        )
+
+        log_likelihood += weight_prior(self.parameters) / self.num_datapoints
+
+        return -log_likelihood
+#  }}} Loss #
 
 
 #  Helpers {{{ #
@@ -30,8 +69,11 @@ def default_network(input_dimensionality: int):
         if type(module) == AppendLayer:
             nn.init.constant_(module.bias, val=np.log(1e-3))
         elif type(module) == nn.Linear:
-            # XXX: This is questionable: does it really do what the other initializers do?
-            nn.init.kaiming_normal_(module.weight, nonlinearity="tanh")
+            # Mode must be `fan_out` (rather than `fan_in` as e.g. in keras),
+            # see pysgmcmc/tests/models/test_weight_initializers.py
+            nn.init.kaiming_normal_(
+                module.weight, mode="fan_out", nonlinearity="linear"
+            )
             nn.init.constant_(module.bias, val=0.0)
 
     return nn.Sequential(
@@ -141,50 +183,17 @@ def weight_prior(parameters,
         log_likelihood += torch.sum(-wdecay * 0.5 * (parameter ** 2))
         num_parameters += np.prod(parameter.shape)
 
-    return log_likelihood / (num_parameters + 1e-6)
+    return log_likelihood / (num_parameters + 1e-16)
 #  }}} Prios #
 
 
-def negative_log_likelihood(model,
-                            num_datapoints: int,
-                            log_variance_prior=log_variance_prior,
-                            weight_prior=weight_prior):
-    def loss_function(y_true, y_pred):
-        batch_size, *_ = y_true.shape
-        prediction_mean = y_pred[:, 0].view(-1, 1)
-
-        log_prediction_variance = y_pred[:, 1].view(-1, 1)
-        prediction_variance_inverse = 1. / (torch.exp(log_prediction_variance) + 1e-16)
-
-        mean_squared_error = (y_true - prediction_mean) ** 2
-
-        log_likelihood = torch.sum(
-            torch.sum(
-                -mean_squared_error * 0.5 * prediction_variance_inverse -
-                0.5 * log_prediction_variance,
-                dim=1
-            )
-        )
-
-        log_likelihood /= batch_size
-
-        log_likelihood += (
-            log_variance_prior(log_prediction_variance) / num_datapoints
-        )
-
-        log_likelihood += weight_prior(model.parameters()) / num_datapoints
-
-        return -log_likelihood
-    return loss_function
-
-#  }}} Loss #
 
 
 class BayesianNeuralNetwork(object):
     def __init__(self, network_architecture=default_network,
                  normalize_input=True, normalize_output=True,
-                 loss=negative_log_likelihood,
-                 metrics=(nn.MSELoss(),),
+                 loss=NegativeLogLikelihood,
+                 metrics=(nn.MSELoss(size_average=False),),
                  num_steps=50000, burn_in_steps=3000,
                  keep_every=100, num_nets=100, batch_size=20,
                  progress=True,
@@ -284,7 +293,7 @@ class BayesianNeuralNetwork(object):
         )
 
         loss_function = self.loss_function(
-            self.model, num_datapoints=num_datapoints
+            parameters=self.network_weights, num_datapoints=num_datapoints
         )
 
         if self.progress:
@@ -298,12 +307,15 @@ class BayesianNeuralNetwork(object):
 
         for epoch, (x_batch, y_batch) in progress_bar:
             batch_prediction = self.model(x_batch)
-            # loss = loss_function(
-            #     y_pred=batch_prediction, y_true=y_batch,
-            # )
-            loss = self.loss_function(self.model, num_datapoints=num_datapoints)(
-                y_pred=batch_prediction, y_true=y_batch
-            )
+            # XXX: What does my loss function do that MSELoss does not?
+            # => That must be the problem..
+            # loss = torch.nn.MSELoss(size_average=False)(batch_prediction[:, 0], y_batch)
+            # loss = torch.nn.MSELoss(size_average=False)(batch_prediction[:, 0], y_batch)
+            loss = loss_function(batch_prediction, y_batch)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
             #  Progress: print metrics {{{ #
 
@@ -319,7 +331,7 @@ class BayesianNeuralNetwork(object):
                     except AttributeError:
                         return metric.__class__.__name__
                     else:
-                        if metric == negative_log_likelihood:
+                        if metric == NegativeLogLikelihood:
                             return "NLL"
                         return name
 
@@ -336,16 +348,13 @@ class BayesianNeuralNetwork(object):
                 ]))
             #  }}} Progress: print metrics #
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
             if self._keep_sample(epoch):
                 sample = tuple(
-                    parameter.detach().numpy()
+                    np.asarray(torch.tensor(parameter.data).numpy())
                     for parameter in self.network_weights
                 )
                 self.sampled_weights.append(sample)
+
 
         self.is_trained = True
 
@@ -371,6 +380,7 @@ class BayesianNeuralNetwork(object):
             network_predict(weights=sample, test_data=test_data)
             for sample in self.sampled_weights
         ]
+        print(len(network_outputs))
         prediction_mean = np.mean(network_outputs, axis=0)
 
         prediction_variance = np.mean(
@@ -382,6 +392,7 @@ class BayesianNeuralNetwork(object):
                 prediction_mean, self.y_mean, self.y_std
             )
             prediction_variance *= self.y_std ** 2
+        print("VARIANCE:", prediction_variance)
 
         return prediction_mean, prediction_variance
     #  }}} Predict #
