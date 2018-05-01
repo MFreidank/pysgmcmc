@@ -75,4 +75,4 @@ def test_predict():
 
     predictions = bnn.predict(np.asarray(x_test))
 
-    assert np.allclose(reference_predictions, predictions)
+    assert np.allclose(reference_predictions, predictions, atol=1e-2)
