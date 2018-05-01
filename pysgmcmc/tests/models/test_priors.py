@@ -53,7 +53,7 @@ def test_log_variance_prior():
 
     reference_result = theano_prior.log_like(theano_log_var).eval()
 
-    torch_result = log_variance_prior(torch.Tensor(f_log_var), 1e-6, 0.01).numpy()
+    torch_result = log_variance_prior(torch.Tensor(f_log_var)).numpy()
 
     assert np.allclose(torch_result, reference_result)
 

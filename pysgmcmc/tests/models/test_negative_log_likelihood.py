@@ -1,18 +1,19 @@
+from os.path import dirname, join as path_join
+
 import numpy as np
 import pytest
 import torch
-from torch.utils import data as data_utils
 
 
 try:
-    import theano as _
+    import theano as _  # noqa
 except ImportError:
     THEANO_INSTALLED = False
 else:
     THEANO_INSTALLED = True
 
 try:
-    import lasagne as _
+    import lasagne
 except ImportError:
     LASAGNE_INSTALLED = False
 else:
@@ -33,18 +34,28 @@ if THEANO_INSTALLED and LASAGNE_INSTALLED:
 from pysgmcmc.diagnostics.objective_functions import sinc
 from pysgmcmc.tests.utils import init_random_uniform
 
+
+def predict_pytorch(network, weights, x_train):
+    x_torch = torch.from_numpy(x_train).float()
+
+    for parameter, sample in zip(network.parameters(), weights):
+        with torch.no_grad():
+            parameter.copy_(torch.from_numpy(sample.T))
+
+    return network(x_torch)
+
+
 @pytest.mark.skipif(
-    # not (THEANO_INSTALLED and LASAGNE_INSTALLED),
-    True,
+    not (THEANO_INSTALLED and LASAGNE_INSTALLED),
     reason="Packages 'theano' and 'lasagne' required!"
 )
 def test_nll():
     bnn = BayesianNeuralNetwork(normalize_input=False, normalize_output=False)
 
-
     num_datapoints = 100
     X = init_random_uniform(
-        lower=np.zeros(1), upper=np.ones(1), n_points=num_datapoints
+        lower=np.zeros(1), upper=np.ones(1), n_points=num_datapoints,
+        rng=np.random.RandomState(1)
     )
 
     y = sinc(X)
@@ -52,29 +63,24 @@ def test_nll():
     _, input_dimensionality = X.shape
     net = bnn.get_net(n_inputs=input_dimensionality)
 
+    weights = np.load(
+        path_join(dirname(__file__), "test_data", "weight_inputs.npy")
+    )
+    lasagne.layers.set_all_param_values(net, weights)
+
     reference_nll = bnn.negativ_log_likelihood(
         net, X=X, y=y, n_examples=num_datapoints,
         variance_prior=ReferenceLogVariancePrior(1e-6, 0.01),
         weight_prior=ReferenceWeightPrior(alpha=1., beta=1.)
     )[0].eval()
 
-    train_dataset = data_utils.TensorDataset(
-        torch.Tensor(X), torch.Tensor(y)
-    )
-
-    train_loader = data_utils.DataLoader(
-        dataset=train_dataset, batch_size=num_datapoints, shuffle=False
-    )
-
-    batch_x, batch_y = next(iter(train_loader))
+    train_y = torch.from_numpy(y).float()
 
     model = default_network(input_dimensionality=input_dimensionality)
-    y_pred = model(batch_x)
-    f = negative_log_likelihood(model, num_datapoints=num_datapoints)
-
+    y_pred = predict_pytorch(network=model, weights=weights, x_train=X)
 
     nll = negative_log_likelihood(model, num_datapoints=num_datapoints)(
-        y_true=batch_y, y_pred=y_pred
+        y_true=train_y, y_pred=y_pred
     ).detach().numpy()
 
     assert np.allclose(reference_nll, nll)

@@ -44,13 +44,8 @@ def predict_pytorch(network, weights, x_train):
     x_torch = torch.from_numpy(x_train).float()
 
     for parameter, sample in zip(network.parameters(), weights):
-        print(parameter.shape, sample.shape)
-    for parameter, sample in zip(network.parameters(), weights):
-        parameter.data.copy_(torch.from_numpy(sample).view(parameter.shape))
-
-    for parameter, sample in zip(network.parameters(), weights):
-        # Assert that weights are assigned properly; this works!
-        assert np.allclose(parameter.view(sample.shape).detach().numpy(), sample)
+        with torch.no_grad():
+            parameter.copy_(torch.from_numpy(sample.T))
 
     return network(x_torch).detach().numpy()
 
@@ -61,13 +56,11 @@ def predict_pytorch(network, weights, x_train):
 )
 def test_simple_architecture():
     x_train = init_random_uniform(
-        lower=np.zeros(1), upper=np.ones(1), n_points=100,
-        rng=np.random.RandomState(1)
+        lower=np.zeros(1), upper=np.ones(1), n_points=np.random.randint(1, 200),
     )
     _, input_dimensionality = x_train.shape
     reference_network = reference_default_network(n_inputs=input_dimensionality)
 
-    # load inputs
     weights = np.load(
         path_join(dirname(__file__), "test_data", "weight_inputs.npy")
     )
@@ -79,6 +72,4 @@ def test_simple_architecture():
     predictions = predict_pytorch(network, weights, x_train)
 
     # Assert that predictions are the same for equal weights and equal input data
-    # TODO: This fails, forward passes seem to have differing behavior!
-
     assert np.allclose(predictions, theano_predictions)

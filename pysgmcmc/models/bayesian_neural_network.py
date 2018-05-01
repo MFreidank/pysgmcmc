@@ -30,6 +30,7 @@ def default_network(input_dimensionality: int):
         if type(module) == AppendLayer:
             nn.init.constant_(module.bias, val=np.log(1e-3))
         elif type(module) == nn.Linear:
+            # XXX: This is questionable: does it really do what the other initializers do?
             nn.init.kaiming_normal_(module.weight, nonlinearity="tanh")
             nn.init.constant_(module.bias, val=0.0)
 
@@ -148,30 +149,30 @@ def negative_log_likelihood(model,
                             num_datapoints: int,
                             log_variance_prior=log_variance_prior,
                             weight_prior=weight_prior):
-    def loss_function(y_true, y_pred, batch_size=20):
-        f_mean = y_pred[:, 0].view(-1, 1)
-        mean_squared_error = (y_true - f_mean) ** 2
-        f_log_var = y_pred[:, 1].view(-1, 1)
-        f_var_inv = 1. / (torch.exp(f_log_var) + 1e-16)
+    def loss_function(y_true, y_pred):
+        batch_size, *_ = y_true.shape
+        prediction_mean = y_pred[:, 0].view(-1, 1)
+
+        log_prediction_variance = y_pred[:, 1].view(-1, 1)
+        prediction_variance_inverse = 1. / (torch.exp(log_prediction_variance) + 1e-16)
+
+        mean_squared_error = (y_true - prediction_mean) ** 2
 
         log_likelihood = torch.sum(
             torch.sum(
-                -mean_squared_error * 0.5 * f_var_inv - 0.5 * f_log_var,
+                -mean_squared_error * 0.5 * prediction_variance_inverse -
+                0.5 * log_prediction_variance,
                 dim=1
             )
         )
 
-        log_likelihood = log_likelihood / batch_size
-
-        log_variance_prior_log_likelihood = log_variance_prior(f_log_var)
+        log_likelihood /= batch_size
 
         log_likelihood += (
-            log_variance_prior_log_likelihood / num_datapoints
+            log_variance_prior(log_prediction_variance) / num_datapoints
         )
 
-        weight_prior_log_likelihood = weight_prior(model.parameters())
-
-        log_likelihood += weight_prior_log_likelihood / num_datapoints
+        log_likelihood += weight_prior(model.parameters()) / num_datapoints
 
         return -log_likelihood
     return loss_function
@@ -230,11 +231,24 @@ class BayesianNeuralNetwork(object):
 
         self.progress = progress
 
+    @property
+    def network_weights(self):
+        return self.model.parameters()
+
+    @network_weights.setter
+    def network_weights(self, weights):
+        for parameter, sample in zip(self.model.parameters(), weights):
+            with torch.no_grad():
+                parameter.copy_(torch.from_numpy(sample))
+
     def _keep_sample(self, epoch: int) -> bool:
         if epoch < self.burn_in_steps:
             return False
         sample_step = epoch - self.burn_in_steps
         return (sample_step % self.keep_every) == 0
+
+    def _log_progress(self, epoch: int) -> bool:
+        return self.progress and (epoch % 100 == 0)
 
     def train(self, x_train: np.ndarray, y_train: np.ndarray):
         self.sampled_weights.clear()
@@ -280,20 +294,20 @@ class BayesianNeuralNetwork(object):
                 bar_format="{n_fmt}/{total_fmt}[{bar}] - {remaining} - {postfix}"
             )
         else:
-            progress_bar = islice(train_loader, self.num_iterations)
+            progress_bar = islice(enumerate(train_loader), self.num_iterations)
 
         for epoch, (x_batch, y_batch) in progress_bar:
-            # properly handle partial batches with less than `self.batch_size`
-            # datapoints.
-            batch_size, *_ = x_batch.shape
             batch_prediction = self.model(x_batch)
-            loss = loss_function(
-                y_pred=self.model(x_batch), y_true=y_batch, batch_size=batch_size
+            # loss = loss_function(
+            #     y_pred=batch_prediction, y_true=y_batch,
+            # )
+            loss = self.loss_function(self.model, num_datapoints=num_datapoints)(
+                y_pred=batch_prediction, y_true=y_batch
             )
 
             #  Progress: print metrics {{{ #
 
-            if self.progress and epoch % 100 == 0:
+            if self._log_progress(epoch):
                 metric_values = [
                     metric_function(input=batch_prediction[:, 0], target=y_batch)
                     for metric_function in self.metric_functions
@@ -328,15 +342,14 @@ class BayesianNeuralNetwork(object):
 
             if self._keep_sample(epoch):
                 sample = tuple(
-                    np.array(parameter.detach().numpy())
-                    for parameter in self.model.parameters()
+                    parameter.detach().numpy()
+                    for parameter in self.network_weights
                 )
                 self.sampled_weights.append(sample)
 
         self.is_trained = True
 
     #  Predict {{{ #
-
     def predict(self, x_test: np.ndarray, return_individual_predictions: bool=False):
         assert self.is_trained
         assert isinstance(return_individual_predictions, bool)
@@ -347,14 +360,15 @@ class BayesianNeuralNetwork(object):
                 x_test, self.x_mean, self.x_std
             )
 
-        def network_predict(weights, test_data):
-            for parameter, sample in zip(self.model.parameters(), weights):
-                parameter.data.copy_(torch.from_numpy(sample))
+        test_data = torch.from_numpy(x_test_).float()
 
-            return self.model(test_data).detach().numpy()[:, 0]
+        def network_predict(weights, test_data):
+            self.network_weights = weights
+            with torch.no_grad():
+                return self.model(test_data).numpy()[:, 0]
 
         network_outputs = [
-            network_predict(weights=sample, test_data=torch.from_numpy(x_test_).float())
+            network_predict(weights=sample, test_data=test_data)
             for sample in self.sampled_weights
         ]
         prediction_mean = np.mean(network_outputs, axis=0)
@@ -367,7 +381,6 @@ class BayesianNeuralNetwork(object):
             prediction_mean = zero_mean_unit_var_unnormalization(
                 prediction_mean, self.y_mean, self.y_std
             )
-            # TODO: Why does this look like this actually?
             prediction_variance *= self.y_std ** 2
 
         return prediction_mean, prediction_variance
