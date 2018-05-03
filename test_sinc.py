@@ -1,58 +1,40 @@
 #!/usr/bin/python3
 # -*- coding: iso-8859-15 -*-
-import logging
-
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from torch.optim import Adam
 
-from pysgmcmc.optimizers.sghmc import SGHMC
-from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork as BNN
-from pysgmcmc.diagnostics.objective_functions import sinc
-from pysgmcmc.tests.utils import init_random_uniform
-
-logging.basicConfig(level=logging.INFO)
+from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
 
 
 def main():
-    num_datapoints = 20
-    batch_size = 20
 
-    X = init_random_uniform(
-        lower=np.zeros(1), upper=np.ones(1), n_points=num_datapoints
-    )
-
-    y = sinc(X)
+    input_dimensionality, num_datapoints = 1, 100
+    x_train = np.array([
+        np.random.uniform(np.zeros(1), np.ones(1), input_dimensionality)
+        for _ in range(num_datapoints)
+    ])
+    y_train = np.sinc(x_train * 10 - 5).sum(axis=1)
 
     x_test = np.linspace(0, 1, 100)[:, None]
-    y_test = sinc(x_test)
+    y_test = np.sinc(x_test * 10 - 5).sum(axis=1)
 
     optimizer = Adam
-    # optimizer = SGHMC
+    bnn = BayesianNeuralNetwork(optimizer=optimizer)
+    bnn.train(x_train, y_train)
 
-    bnn = BNN(
-        normalize_input=True, normalize_output=True,
-        batch_size=batch_size,
-        optimizer=Adam,  # scale_grad=num_datapoints, lr=1e-2,
-    )
-
-    bnn.train(x_train=X, y_train=y)
-
-    mean_prediction, variance_prediction = bnn.predict(x_test=x_test)
-
+    prediction, variance_prediction = bnn.predict(x_test)
     prediction_std = np.sqrt(variance_prediction)
 
     plt.grid()
 
     plt.plot(x_test[:, 0], y_test, label="true", color="black")
-    plt.plot(X[:, 0], y, "ro")
+    plt.plot(x_train[:, 0], y_train, "ro")
 
-    plt.plot(x_test[:, 0], mean_prediction, label=optimizer.__name__, color="blue")
-    plt.fill_between(x_test[:, 0], mean_prediction + prediction_std, mean_prediction - prediction_std, alpha=0.2, color="indianred")
-
+    plt.plot(x_test[:, 0], prediction, label=optimizer.__name__, color="blue")
+    plt.fill_between(x_test[:, 0], prediction + prediction_std, prediction - prediction_std, alpha=0.2, color="indianred")
     plt.legend()
     plt.show()
-
 
 if __name__ == "__main__":
     main()

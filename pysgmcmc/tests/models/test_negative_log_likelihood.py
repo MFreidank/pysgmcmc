@@ -61,7 +61,7 @@ def test_nll():
 
     y = sinc(X)
 
-    _, input_dimensionality = X.shape
+    _, input_dimensionality = X.shape  # noqa
     net = bnn.get_net(n_inputs=input_dimensionality)
 
     weights = np.load(
@@ -94,7 +94,7 @@ def test_nll():
         parameter.grad.numpy() for parameter in model.parameters()
     ])
 
+    assert np.allclose(reference_nll.eval(), nll.detach().numpy())
+
     for grad_theano, grad_pytorch in zip(grads_theano, grads):
         assert np.allclose(grad_theano.T, grad_pytorch)
-
-    assert np.allclose(reference_nll.eval(), nll.detach().numpy())
