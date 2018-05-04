@@ -23,9 +23,7 @@ if THEANO_INSTALLED and LASAGNE_INSTALLED:
     )
 
 
-from pysgmcmc.models.bayesian_neural_network import (
-    default_network
-)
+from pysgmcmc.models.architectures import simple_tanh_network
 from pysgmcmc.tests.utils import init_random_uniform
 
 
@@ -67,7 +65,7 @@ def test_simple_architecture():
 
     theano_predictions = predict_theano(reference_network, weights, x_train)
 
-    network = default_network(input_dimensionality=input_dimensionality)
+    network = simple_tanh_network(input_dimensionality=input_dimensionality)
 
     predictions = predict_pytorch(network, weights, x_train)
 

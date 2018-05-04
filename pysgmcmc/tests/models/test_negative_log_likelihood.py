@@ -28,9 +28,8 @@ if THEANO_INSTALLED and LASAGNE_INSTALLED:
         BayesianNeuralNetwork
     )
 
-    from pysgmcmc.models.bayesian_neural_network import (
-        NegativeLogLikelihood, default_network
-    )
+    from pysgmcmc.models.losses import NegativeLogLikelihood
+    from pysgmcmc.models.architectures import simple_tanh_network
 
 from pysgmcmc.diagnostics.objective_functions import sinc
 from pysgmcmc.tests.utils import init_random_uniform
@@ -82,7 +81,7 @@ def test_nll():
 
     train_y = torch.from_numpy(y).float()
 
-    model = default_network(input_dimensionality=input_dimensionality)
+    model = simple_tanh_network(input_dimensionality=input_dimensionality)
     y_pred = predict_pytorch(network=model, weights=weights, x_train=X)
 
     nll = NegativeLogLikelihood(tuple(model.parameters()), num_datapoints=num_datapoints)(

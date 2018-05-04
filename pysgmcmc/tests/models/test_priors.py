@@ -13,9 +13,7 @@ except ImportError:
 else:
     THEANO_INSTALLED = True
 
-from pysgmcmc.models.bayesian_neural_network import (
-    log_variance_prior, weight_prior
-)
+from pysgmcmc.models.priors import log_variance_prior, weight_prior
 
 
 @pytest.mark.skipif(

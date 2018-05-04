@@ -1,4 +1,5 @@
-1. test negative_log_likelihood 
-2. debug network architecture
-3. check that adam works
-4. debug sghmc
+1. fix problem with loss function; make sure we follow similar interface as 
+pytorch to implement it.
+2. adam should work here
+3. debug sghmc
+4. implement sghmchd

@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+
 def simple_tanh_network(input_dimensionality: int):
     class AppendLayer(nn.Module):
         def __init__(self, bias=True, *args, **kwargs):
@@ -28,7 +29,3 @@ def simple_tanh_network(input_dimensionality: int):
         nn.Linear(50, 1),
         AppendLayer()
     ).apply(init_weights)
-
-
-
-

@@ -20,10 +20,10 @@ def main():
     y_test = np.sinc(x_test * 10 - 5).sum(axis=1)
 
     optimizer = Adam
-    bnn = BayesianNeuralNetwork(optimizer=optimizer)
-    bnn.train(x_train, y_train)
+    import logging
+    bnn = BayesianNeuralNetwork(optimizer=optimizer, logging_configuration={"level": logging.INFO})
+    prediction, variance_prediction = bnn.train(x_train, y_train).predict(x_test)
 
-    prediction, variance_prediction = bnn.predict(x_test)
     prediction_std = np.sqrt(variance_prediction)
 
     plt.grid()

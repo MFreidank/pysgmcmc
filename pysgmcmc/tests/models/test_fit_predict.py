@@ -22,9 +22,8 @@ if THEANO_INSTALLED and LASAGNE_INSTALLED:
         BayesianNeuralNetwork as ReferenceBayesianNeuralNetwork
     )
 
-    from pysgmcmc.models.bayesian_neural_network import (
-        BayesianNeuralNetwork, default_network
-    )
+    from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
+    from pysgmcmc.models.architectures import simple_tanh_network
 
 from pysgmcmc.diagnostics.objective_functions import sinc
 from pysgmcmc.tests.utils import init_random_uniform
@@ -53,7 +52,7 @@ def test_predict():
     samples = reference_bnn.samples
 
     bnn = BayesianNeuralNetwork(normalize_input=True, normalize_output=True)
-    bnn.model = default_network(input_dimensionality=X.shape[1])
+    bnn.model = simple_tanh_network(input_dimensionality=X.shape[1])
 
 
     #  Copy sampled weights of `reference_bnn` over. {{{ #
