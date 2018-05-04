@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from torch.optim import Adam
 
 from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
+from pysgmcmc.optimizers.sghmc import SGHMC
 
 
 def main():
@@ -19,7 +20,7 @@ def main():
     x_test = np.linspace(0, 1, 100)[:, None]
     y_test = np.sinc(x_test * 10 - 5).sum(axis=1)
 
-    optimizer = Adam
+    optimizer = SGHMC
     import logging
     bnn = BayesianNeuralNetwork(optimizer=optimizer, logging_configuration={"level": logging.INFO})
     prediction, variance_prediction = bnn.train(x_train, y_train).predict(x_test)

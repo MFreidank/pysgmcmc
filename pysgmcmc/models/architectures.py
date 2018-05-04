@@ -19,7 +19,7 @@ def simple_tanh_network(input_dimensionality: int):
         if type(module) == AppendLayer:
             nn.init.constant_(module.bias, val=np.log(1e-3))
         elif type(module) == nn.Linear:
-            nn.init.kaiming_normal_(module.weight, nonlinearity="linear")
+            nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="linear")
             nn.init.constant_(module.bias, val=0.0)
 
     return nn.Sequential(

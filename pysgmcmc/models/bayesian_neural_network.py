@@ -8,8 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils import data as data_utils
-from torch.optim import Adam
-from tqdm import tqdm
 
 from pysgmcmc.models.architectures import simple_tanh_network
 from pysgmcmc.data.utils import (
@@ -17,6 +15,7 @@ from pysgmcmc.data.utils import (
     zero_mean_unit_var_normalization,
     zero_mean_unit_var_unnormalization
 )
+from pysgmcmc.optimizers.sghmc import SGHMC
 from pysgmcmc.models.losses import NegativeLogLikelihood, to_bayesian_loss
 from pysgmcmc.progressbar import TrainingProgressbar
 from pysgmcmc.torch_utils import get_name
@@ -34,9 +33,9 @@ class BayesianNeuralNetwork(object):
                  keep_every: int=100,
                  loss=NegativeLogLikelihood,
                  metrics=(nn.MSELoss,),
-                 optimizer=Adam,
+                 optimizer=SGHMC,
                  logging_configuration: typing.Dict[str, typing.Any]={
-                    "level": logging.INFO, "datefmt": "y/m/d"
+                     "level": logging.INFO, "datefmt": "y/m/d"
                  })-> None:
         """TODO: Docstring for __init__.
 
@@ -192,7 +191,12 @@ class BayesianNeuralNetwork(object):
             optimizer_name = str(self.optimizer)
 
         logging.debug("Using optimizer: %s" % optimizer_name)
-        optimizer = self.optimizer(self.model.parameters())
+
+        # TODO: Smarter solution for this
+        if self.optimizer is SGHMC:
+            optimizer = self.optimizer(self.model.parameters(), scale_grad=num_datapoints)
+        else:
+            optimizer = self.optimizer(self.model.parameters())
 
         # TODO: Smarter handling to support arbitrary loss functions.
         loss_function = self.loss(self.model.parameters(), num_datapoints)
@@ -217,7 +221,6 @@ class BayesianNeuralNetwork(object):
             )
         else:
             batch_generator = islice(enumerate(train_loader), self.num_steps)
-
 
         for epoch, (x_batch, y_batch) in batch_generator:
             predictions = self.model(x_batch)
