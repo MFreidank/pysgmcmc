@@ -1,5 +1,4 @@
 # vim: foldmethod=marker
-import numpy as np
 import torch
 from torch.optim import Optimizer
 
@@ -11,7 +10,7 @@ class SGHMC(Optimizer):
 
     def __init__(self,
                  params,
-                 lr: float=0.01,
+                 lr: float=1e-2,
                  num_burn_in_steps: int=3000,
                  mdecay: float=0.05,
                  scale_grad: float=1.) -> None:
@@ -20,9 +19,8 @@ class SGHMC(Optimizer):
         if num_burn_in_steps < 0:
             raise ValueError("Invalid num_burn_in_steps: {}".format(num_burn_in_steps))
 
-
         defaults = dict(
-            lr=lr, scale_grad=scale_grad,
+            lr=lr, scale_grad=float(scale_grad),
             num_burn_in_steps=num_burn_in_steps,
             mdecay=mdecay,
             noise=0.
@@ -41,7 +39,6 @@ class SGHMC(Optimizer):
                 if parameter.grad is None:
                     continue
 
-
                 state = self.state[parameter]
 
                 #  State initialization {{{ #
@@ -57,9 +54,8 @@ class SGHMC(Optimizer):
                 state["iteration"] += 1
 
                 #  Readability {{{ #
-                mdecay, lr = group["mdecay"], group["lr"]
-                noise = group["noise"]
-                scale_grad = torch.tensor(group["scale_grad"]).float()
+                mdecay, noise, lr = group["mdecay"], group["noise"], group["lr"]
+                scale_grad = torch.tensor(group["scale_grad"])
 
                 tau, g, v_hat = state["tau"], state["g"], state["v_hat"]
                 momentum = state["momentum"]
@@ -90,16 +86,15 @@ class SGHMC(Optimizer):
 
                 sigma = torch.sqrt(torch.clamp(noise_scale, min=1e-16))
 
-                sample_t = torch.normal(mean=torch.tensor(0.)) * sigma
+                sample_t = torch.normal(mean=0., std=torch.tensor(1.)) * sigma
                 #  }}} Draw random sample #
 
-
                 #  SGHMC Update {{{ #
-                momentum.add_(
+                momentum_t = momentum.add_(
                     - (lr ** 2) * minv_t * gradient - mdecay * momentum + sample_t
                 )
 
-                parameter.data.add_(momentum)
+                parameter.data.add_(momentum_t)
                 #  }}} SGHMC Update #
 
         return loss

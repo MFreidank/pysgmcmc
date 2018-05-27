@@ -14,7 +14,7 @@ from pysgmcmc.models.losses import to_bayesian_loss
 
 def main():
 
-    input_dimensionality, num_datapoints = 1, 100
+    input_dimensionality, num_datapoints = 1, 20
     x_train = np.array([
         np.random.uniform(np.zeros(1), np.ones(1), input_dimensionality)
         for _ in range(num_datapoints)
@@ -24,7 +24,7 @@ def main():
     x_test = np.linspace(0, 1, 100)[:, None]
     y_test = np.sinc(x_test * 10 - 5).sum(axis=1)
 
-    optimizer = SGLD
+    optimizer = SGHMC
     import logging
     bnn = BayesianNeuralNetwork(
         optimizer=optimizer, logging_configuration={"level": logging.INFO},

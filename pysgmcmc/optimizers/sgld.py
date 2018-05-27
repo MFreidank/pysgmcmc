@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 from torch.optim import Optimizer
 
@@ -15,7 +14,6 @@ class SGLD(Optimizer):
             raise ValueError("Invalid learning rate: {}".format(lr))
         if num_burn_in_steps < 0:
             raise ValueError("Invalid num_burn_in_steps: {}".format(num_burn_in_steps))
-
 
         defaults = dict(
             lr=lr, precondition_decay_rate=precondition_decay_rate,
@@ -36,7 +34,6 @@ class SGLD(Optimizer):
 
                 if parameter.grad is None:
                     continue
-
 
                 state = self.state[parameter]
                 lr = group["lr"]
@@ -80,3 +77,5 @@ class SGLD(Optimizer):
                 )
 
                 parameter.data.add_(-lr * scaled_grad)
+
+        return loss

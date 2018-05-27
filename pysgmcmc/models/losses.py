@@ -18,7 +18,7 @@ class NegativeLogLikelihood(_Loss):
 
         # print(input.size())
         batch_size = input.size(0)
-        # prediction_mean = input[:, 0].view(-1, 1)
+
         prediction_mean = torch.squeeze(input[:, 0])
 
         log_prediction_variance = input[:, 1].view(-1, 1)

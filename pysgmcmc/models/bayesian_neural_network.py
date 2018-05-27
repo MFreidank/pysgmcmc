@@ -29,6 +29,7 @@ from pysgmcmc.torch_utils import get_name
 class BayesianNeuralNetwork(object):
     def __init__(self,
                  network_architecture=simple_tanh_network,
+                 batch_size=20,
                  normalize_input: bool=True,
                  normalize_output: bool=True,
                  num_steps: int=13000,
@@ -70,6 +71,9 @@ class BayesianNeuralNetwork(object):
         assert burn_in_steps >= 0
         assert keep_every >= 1
         assert num_steps > burn_in_steps + keep_every
+        assert batch_size >= 1
+
+        self.batch_size = batch_size
 
         self.num_steps = num_steps
         self.num_burn_in_steps = burn_in_steps
@@ -174,16 +178,12 @@ class BayesianNeuralNetwork(object):
             logging.debug("Normalizing training labels to zero mean and unit variance.")
             y_train_, self.y_mean, self.y_std = zero_mean_unit_var_normalization(y_train)
 
-        # XXX: This breaks badly when having batch_size > 1
-        # for our nll loss (but only for this loss!)
-
-        # XXX: Idea: replace dataloader with custom batch generator (fuck it)
         train_loader = infinite_dataloader(
             data_utils.DataLoader(
                 data_utils.TensorDataset(
                     torch.from_numpy(x_train_).float(),
                     torch.from_numpy(y_train_).float()
-                ), batch_size=20
+                ), batch_size=self.batch_size
             )
         )
 
