@@ -11,7 +11,7 @@ from torch.utils import data as data_utils
 
 from pysgmcmc.models.architectures import simple_tanh_network
 from pysgmcmc.data.utils import (
-    InfiniteDataLoader,
+    infinite_dataloader,
     zero_mean_unit_var_normalization,
     zero_mean_unit_var_unnormalization
 )
@@ -20,6 +20,9 @@ from pysgmcmc.models.losses import NegativeLogLikelihood, to_bayesian_loss
 from pysgmcmc.progressbar import TrainingProgressbar
 from pysgmcmc.torch_utils import get_name
 
+
+# XXX: Setting batch_size of data loader to values > 1 kills performance
+# together with NegativeLogLikelihood loss. Why?
 # TODO: Documentation, doctests and test for fit/predict, then move to SGHMC
 
 
@@ -171,8 +174,17 @@ class BayesianNeuralNetwork(object):
             logging.debug("Normalizing training labels to zero mean and unit variance.")
             y_train_, self.y_mean, self.y_std = zero_mean_unit_var_normalization(y_train)
 
-        train_loader = InfiniteDataLoader(
-            data_utils.TensorDataset(torch.Tensor(x_train_), torch.Tensor(y_train_))
+        # XXX: This breaks badly when having batch_size > 1
+        # for our nll loss (but only for this loss!)
+
+        # XXX: Idea: replace dataloader with custom batch generator (fuck it)
+        train_loader = infinite_dataloader(
+            data_utils.DataLoader(
+                data_utils.TensorDataset(
+                    torch.from_numpy(x_train_).float(),
+                    torch.from_numpy(y_train_).float()
+                ), batch_size=20
+            )
         )
 
         try:
@@ -199,7 +211,10 @@ class BayesianNeuralNetwork(object):
             optimizer = self.optimizer(self.model.parameters())
 
         # TODO: Smarter handling to support arbitrary loss functions.
-        loss_function = self.loss(self.model.parameters(), num_datapoints)
+        if self.loss is NegativeLogLikelihood:
+            loss_function = self.loss(self.model.parameters(), num_datapoints)
+        else:
+            loss_function = self.loss(size_average=True)
 
         if self.use_progressbar:
             logging.info(
@@ -223,13 +238,13 @@ class BayesianNeuralNetwork(object):
             batch_generator = islice(enumerate(train_loader), self.num_steps)
 
         for epoch, (x_batch, y_batch) in batch_generator:
-            predictions = self.model(x_batch)
-            loss = loss_function(input=self.model(x_batch), target=y_batch)
             optimizer.zero_grad()
+            loss = loss_function(input=self.model(x_batch), target=y_batch)
             loss.backward()
             optimizer.step()
 
             if self.use_progressbar:
+                predictions = self.model(x_batch)
                 batch_generator.update(
                     predictions=predictions, y_batch=y_batch, epoch=epoch
                 )

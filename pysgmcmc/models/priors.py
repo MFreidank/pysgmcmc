@@ -4,7 +4,7 @@ import torch
 def log_variance_prior(log_variance, mean: float=1e-6, variance: float=0.01):
     return torch.mean(
         torch.sum(
-            ((-(log_variance - torch.log(torch.tensor(mean))) ** 2) /
+            ((-((log_variance - torch.log(torch.tensor(mean))) ** 2)) /
              ((2. * variance))) - 0.5 * torch.log(torch.tensor(variance)),
             dim=1
         )

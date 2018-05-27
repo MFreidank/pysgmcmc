@@ -55,7 +55,7 @@ def test_nll():
     num_datapoints = 100
     X = init_random_uniform(
         lower=np.zeros(1), upper=np.ones(1), n_points=num_datapoints,
-        rng=np.random.RandomState(1)
+        rng=np.random.RandomState(np.random.randint(0, 200))
     )
 
     y = sinc(X)
@@ -66,6 +66,7 @@ def test_nll():
     weights = np.load(
         path_join(dirname(__file__), "test_data", "weight_inputs.npy")
     )
+
     lasagne.layers.set_all_param_values(net, weights)
 
     reference_nll = bnn.negativ_log_likelihood(
@@ -84,7 +85,7 @@ def test_nll():
     model = simple_tanh_network(input_dimensionality=input_dimensionality)
     y_pred = predict_pytorch(network=model, weights=weights, x_train=X)
 
-    nll = NegativeLogLikelihood(tuple(model.parameters()), num_datapoints=num_datapoints)(
+    nll = NegativeLogLikelihood(model.parameters(), num_datapoints=num_datapoints)(
         input=y_pred, target=train_y
     )
 
@@ -96,4 +97,4 @@ def test_nll():
     assert np.allclose(reference_nll.eval(), nll.detach().numpy())
 
     for grad_theano, grad_pytorch in zip(grads_theano, grads):
-        assert np.allclose(grad_theano.T, grad_pytorch)
+        assert np.allclose(grad_theano.T, grad_pytorch, atol=1e-3)

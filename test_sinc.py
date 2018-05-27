@@ -3,10 +3,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.optim import Adam
+import torch.nn as nn
+from torch.nn import MSELoss
 
 from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
 from pysgmcmc.optimizers.sgld import SGLD
 from pysgmcmc.optimizers.sghmc import SGHMC
+from pysgmcmc.models.losses import to_bayesian_loss
 
 
 def main():
@@ -23,7 +26,11 @@ def main():
 
     optimizer = SGLD
     import logging
-    bnn = BayesianNeuralNetwork(optimizer=optimizer, logging_configuration={"level": logging.INFO})
+    bnn = BayesianNeuralNetwork(
+        optimizer=optimizer, logging_configuration={"level": logging.INFO},
+        # loss=to_bayesian_loss(MSELoss)
+    )
+
     prediction, variance_prediction = bnn.train(x_train, y_train).predict(x_test)
 
     prediction_std = np.sqrt(variance_prediction)
