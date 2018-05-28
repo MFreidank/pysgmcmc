@@ -14,4 +14,4 @@ pandas>=0.20.3
 Theano==0.8
 Lasagne==0.1
 torchvision
-http://download.pytorch.org/whl/cpu/torch-0.4.0-cp35-cp35m-linux_x86_64.whl ; sys_platform == "linux"
+https://download.pytorch.org/whl/cpu/torch-0.4.0-cp35-cp35m-linux_x86_64.whl ; sys_platform == "linux"
