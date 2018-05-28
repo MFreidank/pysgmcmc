@@ -2,8 +2,6 @@
 import torch
 from torch.optim import Optimizer
 
-# XXX: Something is still buggy, maybe try fixing up a test vs theano_mcmc?
-
 
 class SGHMC(Optimizer):
     name = "SGHMC"
@@ -64,7 +62,6 @@ class SGHMC(Optimizer):
                 #  }}} Readability #
 
                 r_t = 1. / (tau + 1.)
-                minv_t = 1. / torch.sqrt(v_hat)
 
                 #  Burn-in updates {{{ #
                 if state["iteration"] <= group["num_burn_in_steps"]:
@@ -74,6 +71,8 @@ class SGHMC(Optimizer):
                     v_hat.add_(-v_hat * r_t + r_t * (gradient ** 2))
                 #  }}} Burn-in updates #
 
+                minv_t = 1. / torch.sqrt(v_hat)
+
                 lr_scaled = lr / torch.sqrt(scale_grad)
 
                 #  Draw random sample {{{ #
@@ -81,12 +80,13 @@ class SGHMC(Optimizer):
                 noise_scale = (
                     2. * (lr_scaled ** 2) * mdecay * minv_t -
                     2. * (lr_scaled ** 3) * (minv_t ** 2) * noise -
-                    lr_scaled ** 4
+                    (lr_scaled ** 4)
                 )
 
                 sigma = torch.sqrt(torch.clamp(noise_scale, min=1e-16))
 
-                sample_t = torch.normal(mean=0., std=torch.tensor(1.)) * sigma
+                # sample_t = torch.normal(mean=0., std=torch.tensor(1.)) * sigma
+                sample_t = torch.normal(mean=0., std=sigma)
                 #  }}} Draw random sample #
 
                 #  SGHMC Update {{{ #

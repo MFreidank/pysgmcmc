@@ -1,9 +1,7 @@
-from collections import OrderedDict
-from pysgmcmc.optimizers.sgld import SGLD
+from pysgmcmc.optimizers.sghmc import SGHMC
 
 
-optimizer_classes = OrderedDict((
-    ("SGLD", SGLD),
-))
-
-__all__ = tuple(optimizer_name for optimizer_name in optimizer_classes)
+def get_optimizer(optimizer_cls, parameters, num_datapoints, **optimizer_kwargs):
+    if optimizer_cls is SGHMC:
+        return SGHMC(parameters, scale_grad=num_datapoints, **optimizer_kwargs)
+    return optimizer_cls(parameters, **optimizer_kwargs)

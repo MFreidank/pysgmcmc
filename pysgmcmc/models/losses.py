@@ -1,5 +1,6 @@
 import torch
 from torch.nn.modules.loss import _Loss, _assert_no_grad
+
 from pysgmcmc.models.priors import log_variance_prior, weight_prior
 
 
@@ -7,8 +8,8 @@ class NegativeLogLikelihood(_Loss):
 
     name = "NLL"
 
-    def __init__(self, parameters, num_datapoints, size_average=False, reduce=True):
-        assert (not size_average) and reduce
+    def __init__(self, parameters, num_datapoints, size_average=True, reduce=False):
+        assert size_average and not reduce
         super().__init__()
         self.parameters = tuple(parameters)
         self.num_datapoints = num_datapoints
@@ -45,6 +46,14 @@ class NegativeLogLikelihood(_Loss):
         log_likelihood += weight_prior(self.parameters) / self.num_datapoints
 
         return -log_likelihood
+
+
+def get_loss(loss_cls, **loss_kwargs):
+    if loss_cls is NegativeLogLikelihood:
+        return NegativeLogLikelihood(**loss_kwargs)
+    loss_kwargs.pop("parameters")
+    loss_kwargs.pop("num_datapoints")
+    return loss_cls(**loss_kwargs)
 
 
 def to_bayesian_loss(torch_loss):

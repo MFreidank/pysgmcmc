@@ -15,15 +15,14 @@ from pysgmcmc.data.utils import (
     zero_mean_unit_var_normalization,
     zero_mean_unit_var_unnormalization
 )
+from pysgmcmc.optimizers import get_optimizer
 from pysgmcmc.optimizers.sghmc import SGHMC
-from pysgmcmc.models.losses import NegativeLogLikelihood, to_bayesian_loss
+from pysgmcmc.models.losses import NegativeLogLikelihood, get_loss, to_bayesian_loss
 from pysgmcmc.progressbar import TrainingProgressbar
 from pysgmcmc.torch_utils import get_name
 
 
-# XXX: Setting batch_size of data loader to values > 1 kills performance
-# together with NegativeLogLikelihood loss. Why?
-# TODO: Documentation, doctests and test for fit/predict, then move to SGHMC
+# TODO: Documentation, doctests and test for fit/predict
 
 
 class BayesianNeuralNetwork(object):
@@ -37,10 +36,11 @@ class BayesianNeuralNetwork(object):
                  keep_every: int=100,
                  loss=NegativeLogLikelihood,
                  metrics=(nn.MSELoss,),
-                 optimizer=SGHMC,
                  logging_configuration: typing.Dict[str, typing.Any]={
                      "level": logging.INFO, "datefmt": "y/m/d"
-                 })-> None:
+                 },
+                 optimizer=SGHMC,
+                 **optimizer_kwargs)-> None:
         """TODO: Docstring for __init__.
 
         Parameters
@@ -60,9 +60,10 @@ class BayesianNeuralNetwork(object):
 
         loss : TODO, optional
 
+        logging_configuration : typing.Dict[str, typing.Any], optional
+
         optimizer : TODO, optional
             Function that returns a `torch.optim.optimizer.Optimizer` subclass.
-        logging_configuration : typing.Dict[str, typing.Any], optional
 
         """
 
@@ -183,7 +184,8 @@ class BayesianNeuralNetwork(object):
                 data_utils.TensorDataset(
                     torch.from_numpy(x_train_).float(),
                     torch.from_numpy(y_train_).float()
-                ), batch_size=self.batch_size
+                ),
+                batch_size=self.batch_size
             )
         )
 
@@ -204,17 +206,18 @@ class BayesianNeuralNetwork(object):
 
         logging.debug("Using optimizer: %s" % optimizer_name)
 
-        # TODO: Smarter solution for this
-        if self.optimizer is SGHMC:
-            optimizer = self.optimizer(self.model.parameters(), scale_grad=num_datapoints)
-        else:
-            optimizer = self.optimizer(self.model.parameters())
+        optimizer = get_optimizer(
+            optimizer_cls=self.optimizer,
+            parameters=self.model.parameters(),
+            num_datapoints=num_datapoints
+        )
 
-        # TODO: Smarter handling to support arbitrary loss functions.
-        if self.loss is NegativeLogLikelihood:
-            loss_function = self.loss(self.model.parameters(), num_datapoints)
-        else:
-            loss_function = self.loss(size_average=True)
+        loss_function = get_loss(
+            self.loss,
+            parameters=self.model.parameters(),
+            num_datapoints=num_datapoints,
+            size_average=True
+        )
 
         if self.use_progressbar:
             logging.info(

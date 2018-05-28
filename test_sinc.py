@@ -2,19 +2,15 @@
 # -*- coding: iso-8859-15 -*-
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam
-import torch.nn as nn
-from torch.nn import MSELoss
 
 from pysgmcmc.models.bayesian_neural_network import BayesianNeuralNetwork
 from pysgmcmc.optimizers.sgld import SGLD
 from pysgmcmc.optimizers.sghmc import SGHMC
-from pysgmcmc.models.losses import to_bayesian_loss
 
 
 def main():
 
-    input_dimensionality, num_datapoints = 1, 20
+    input_dimensionality, num_datapoints = 1, 100
     x_train = np.array([
         np.random.uniform(np.zeros(1), np.ones(1), input_dimensionality)
         for _ in range(num_datapoints)
@@ -24,12 +20,8 @@ def main():
     x_test = np.linspace(0, 1, 100)[:, None]
     y_test = np.sinc(x_test * 10 - 5).sum(axis=1)
 
-    optimizer = SGHMC
-    import logging
-    bnn = BayesianNeuralNetwork(
-        optimizer=optimizer, logging_configuration={"level": logging.INFO},
-        # loss=to_bayesian_loss(MSELoss)
-    )
+    optimizer = SGLD
+    bnn = BayesianNeuralNetwork(optimizer=optimizer)
 
     prediction, variance_prediction = bnn.train(x_train, y_train).predict(x_test)
 
