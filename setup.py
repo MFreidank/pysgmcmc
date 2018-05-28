@@ -26,8 +26,6 @@ DEPENDENCY_LINKS = [
 
 ]
 
-print(INSTALL_REQUIREMENTS)
-
 SETUP_REQUIREMENTS = ["pytest-runner"]
 TEST_REQUIREMENTS = ["pytest", "pytest-cov", "hypothesis"]
 
