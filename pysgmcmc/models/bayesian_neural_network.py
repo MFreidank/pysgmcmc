@@ -83,7 +83,10 @@ class BayesianNeuralNetwork(object):
         self.keep_every = keep_every
         self.normalize_input = normalize_input
         self.normalize_output = normalize_output
+
         self.optimizer = optimizer
+        self.optimizer_kwargs = optimizer_kwargs
+
         self.network_architecture = network_architecture
 
         self.sampled_weights = []  # type: typing.List[typing.Tuple[np.ndarray]]
@@ -209,7 +212,8 @@ class BayesianNeuralNetwork(object):
         optimizer = get_optimizer(
             optimizer_cls=self.optimizer,
             parameters=self.model.parameters(),
-            num_datapoints=num_datapoints
+            num_datapoints=num_datapoints,
+            **self.optimizer_kwargs
         )
 
         loss_function = get_loss(

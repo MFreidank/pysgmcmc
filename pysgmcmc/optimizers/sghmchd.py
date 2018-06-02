@@ -1,10 +1,9 @@
 # vim: foldmethod=marker
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 import sympy
 import torch
 import numpy as np
 from torch.optim import Optimizer
-from pysgmcmc.optimizers.hyperoptimization import hypergradient
 
 
 SympyGraph = namedtuple("SympyGraph", ["update_rule", "symbols"])
@@ -15,6 +14,7 @@ class SGHMCHD(Optimizer):
 
     def __init__(self,
                  params,
+                 hypergradients_for=("lr",),
                  lr: float=1e-2,
                  num_burn_in_steps: int=3000,
                  mdecay: float=0.05,
@@ -38,12 +38,16 @@ class SGHMCHD(Optimizer):
             gradient_sympy = sympy.symbols("gradient")
 
             random_sample_sympy = sympy.symbols("random_sample")
-            symbols = {
-                "tau": tau_sympy, "v_hat": v_hat_sympy,
-                "momentum": momentum_sympy, "lr": lr_sympy,
-                "mdecay": mdecay_sympy, "noise": noise_sympy,
-                "gradient": gradient_sympy, "random_sample": random_sample_sympy
-            }
+            symbols = OrderedDict((
+                ("tau", tau_sympy),
+                ("v_hat", v_hat_sympy),
+                ("momentum", momentum_sympy),
+                ("lr", lr_sympy),
+                ("mdecay", mdecay_sympy),
+                ("noise", noise_sympy),
+                ("gradient", gradient_sympy),
+                ("random_sample", random_sample_sympy)
+            ))
 
             #  }}} Readability #
 
@@ -84,10 +88,35 @@ class SGHMCHD(Optimizer):
 
         #  }}} SGHMC Update #
 
+        burn_in_graph = sympy_graph(burn_in=True)
+        sampling_graph = sympy_graph(burn_in=False)
+
+        from collections import defaultdict
+        self.derivatives = defaultdict(dict)
+
+        for tensorname in hypergradients_for:
+            self.derivatives["burn-in"][tensorname] = sympy.lambdify(
+                args=burn_in_graph.symbols.values(),
+                expr=sympy.diff(
+                    burn_in_graph.update_rule,
+                    burn_in_graph.symbols[tensorname]
+                ),
+                modules={"sqrt": torch.sqrt}
+            )
+
+            self.derivatives["sampling"][tensorname] = sympy.lambdify(
+                args=sampling_graph.symbols.values(),
+                expr=sympy.diff(
+                    sampling_graph.update_rule,
+                    sampling_graph.symbols[tensorname]
+                ),
+                modules={"sqrt": torch.sqrt}
+            )
+
         #  }}} Symbolic Graph for burn-in update #
 
         defaults = dict(
-            lr=torch.tensor(lr, requires_grad=False), scale_grad=float(scale_grad),
+            lr=lr, scale_grad=float(scale_grad),
             num_burn_in_steps=num_burn_in_steps,
             mdecay=mdecay,
             symbolic_graphs={
@@ -119,12 +148,16 @@ class SGHMCHD(Optimizer):
                     state["g"] = torch.ones_like(parameter)
                     state["v_hat"] = torch.ones_like(parameter)
                     state["momentum"] = torch.zeros_like(parameter)
+                    state["lr"] = torch.tensor(
+                        torch.ones_like(parameter) * group["lr"], requires_grad=True
+                    )
+
                 #  }}} State initialization #
 
                 state["iteration"] += 1
 
                 #  Readability {{{ #
-                mdecay, noise, lr = group["mdecay"], group["noise"], group["lr"]
+                mdecay, noise, lr = group["mdecay"], group["noise"], state["lr"]
                 scale_grad = torch.tensor(group["scale_grad"])
 
                 tau, g, v_hat = state["tau"], state["g"], state["v_hat"]
@@ -135,6 +168,42 @@ class SGHMCHD(Optimizer):
 
                 r_t = 1. / (tau + 1.)
 
+                random_sample = torch.normal(mean=0., std=torch.tensor(1.))
+                torch_tensors = OrderedDict((
+                    ("tau", tau),
+                    ("v_hat", v_hat),
+                    ("momentum", momentum),
+                    ("lr", lr),
+                    ("mdecay", mdecay),
+                    ("noise", noise),
+                    ("gradient", gradient),
+                    ("random_sample", random_sample)
+                ))
+
+                if state["iteration"] <= group["num_burn_in_steps"]:
+                    derivatives = self.derivatives["burn-in"]
+                else:
+                    derivatives = self.derivatives["sampling"]
+
+                dxdlr = derivatives["lr"](*torch_tensors.values())
+                # dxdlr_t = torch.reshape(dxdlr, (np.prod(dxdlr.shape),))
+                # gradient_t = torch.reshape(gradient, (np.prod(dxdlr.shape),))
+                # dfdlr = torch.dot(dxdlr_t, gradient_t)
+                dfdlr = dxdlr * gradient
+
+                from torch.optim import Adam
+                if "hyperoptimizer" not in state:
+                    state["hyperoptimizer"] = Adam(
+                        params=(state["lr"],),
+                        lr=1e-5,
+                    )
+                state["hyperoptimizer"].zero_grad()
+                state["lr"].grad = dfdlr
+                state["lr"].grad.data = dfdlr
+
+                state["hyperoptimizer"].step()
+                # print(state["lr"])
+
                 #  Burn-in updates {{{ #
                 if state["iteration"] <= group["num_burn_in_steps"]:
                     # Update state
@@ -142,11 +211,9 @@ class SGHMCHD(Optimizer):
                     g.add_(-g * r_t + r_t * gradient)
                     v_hat.add_(-v_hat * r_t + r_t * (gradient ** 2))
 
-                    symbolic_graph = group["symbolic_graphs"]["burn_in"]
+                    derivatives = self.derivatives["burn-in"]
                 else:
-                    symbolic_graph = group["symbolic_graphs"]["sampling"]
-
-                random_sample = torch.normal(mean=0., std=torch.tensor(1.))
+                    derivatives = self.derivatives["sampling"]
 
                 # XXX: Get this to work efficiently
                 """
@@ -184,7 +251,6 @@ class SGHMCHD(Optimizer):
                 sample_t = random_sample * noise_scale
                 #  }}} Draw random sample #
 
-
                 #  SGHMC Update {{{ #
                 momentum_t = momentum.add_(
                     - (lr ** 2) * minv_t * gradient - mdecay * momentum + sample_t
@@ -192,5 +258,33 @@ class SGHMCHD(Optimizer):
 
                 parameter.data.add_(momentum_t)
                 #  }}} SGHMC Update #
+
+                # XXX: Try splitting apart learning rates by dimension and
+                # optimizing that independently.
+
+                """
+                dxdlr_t = torch.reshape(dxdlr, (np.prod(dxdlr.shape),))
+                # print("DXDLR", dxdlr_t)
+
+                gradient_t = torch.reshape(gradient, (np.prod(dxdlr.shape),))
+
+                print(torch.where(gradient_t > 0, torch.tensor(1.), torch.tensor(-1.)))
+
+                dfdlr = torch.dot(dxdlr_t, gradient_t)
+
+                from torch.optim import Adam
+                if "hyperoptimizer" not in state:
+                    state["hyperoptimizer"] = Adam(
+                        params=(group["lr"],),
+                        lr=1e-5,
+                    )
+
+                state["hyperoptimizer"].zero_grad()
+                group["lr"].grad = dfdlr
+                group["lr"].grad.data = dfdlr
+
+                state["hyperoptimizer"].step()
+                print(group["lr"])
+                """
 
         return loss

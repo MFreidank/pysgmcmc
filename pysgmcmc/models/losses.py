@@ -22,6 +22,7 @@ class NegativeLogLikelihood(_Loss):
 
         prediction_mean = torch.squeeze(input[:, 0])
 
+
         log_prediction_variance = input[:, 1].view(-1, 1)
         prediction_variance_inverse = 1. / (torch.exp(log_prediction_variance) + 1e-16)
 
