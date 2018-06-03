@@ -155,6 +155,84 @@ class BayesianNeuralNetwork(object):
         for parameter, sample in zip(self.model.parameters(), weights):
             parameter.copy_(torch.from_numpy(sample))
 
+    def train_on_dataset(self, torch_dataset):
+        logging.debug("Training started.")
+
+        logging.debug("Clearing list of sampled weights.")
+        self.sampled_weights.clear()
+
+        assert isinstance(torch_dataset, torch.utils.data.Dataset)
+
+        train_loader = infinite_dataloader(
+            data_utils.DataLoader(
+                torch_dataset,
+                batch_size=self.batch_size,
+                shuffle=True
+            )
+        )
+
+        num_datapoints = len(torch_dataset)
+
+        try:
+            architecture_name = self.network_architecture.__name__
+        except AttributeError:
+            architecture_name = str(self.network_architecture)
+
+        logging.debug("Using network architecture: %s" % architecture_name)
+
+        self.model = self.network_architecture()
+
+        self.model.train()
+
+        optimizer = get_optimizer(
+            optimizer_cls=self.optimizer,
+            parameters=self.model.parameters(),
+            num_datapoints=num_datapoints,
+            **self.optimizer_kwargs
+        )
+
+        # TODO: make more general
+        loss_function = torch.nn.functional.nll_loss
+
+        if self.use_progressbar:
+            logging.info(
+                "Progress bar enabled. To disable pass "
+                "`logging_configuriation={level: debug.WARN}`."
+            )
+
+            losses = OrderedDict(((get_name(self.loss), loss_function),))
+
+            batch_generator = TrainingProgressbar(
+                iterable=islice(enumerate(train_loader), self.num_steps),
+                update_every=1,
+                losses=losses,
+                total=self.num_steps,
+                bar_format="{n_fmt}/{total_fmt}[{bar}] - {remaining} - {postfix}"
+            )
+        else:
+            batch_generator = islice(enumerate(train_loader), self.num_steps)
+
+        for epoch, (x_batch, y_batch) in batch_generator:
+            optimizer.zero_grad()
+            loss = loss_function(input=self.model(x_batch), target=y_batch)
+            loss.backward()
+            optimizer.step()
+
+            if self.use_progressbar:
+                predictions = self.model(x_batch)
+                batch_generator.update(
+                    predictions=predictions, y_batch=y_batch, epoch=epoch
+                )
+
+            if self._keep_sample(epoch):
+                logging.debug("Recording sample, epoch = %d " % (epoch))
+                weights = self.network_weights
+                logging.debug("Sampled weights:\n%s" % str(weights))
+                self.sampled_weights.append(weights)
+
+        self.is_trained = True
+        return self
+
     def train(self, x_train: np.ndarray, y_train: np.ndarray):
         logging.debug("Training started.")
 
@@ -217,10 +295,8 @@ class BayesianNeuralNetwork(object):
         )
 
         loss_function = get_loss(
-            self.loss,
-            parameters=self.model.parameters(),
-            num_datapoints=num_datapoints,
-            size_average=True
+            self.loss, parameters=self.model.parameters(),
+            num_datapoints=num_datapoints, size_average=True
         )
 
         if self.use_progressbar:

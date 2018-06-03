@@ -24,7 +24,7 @@ else:
             super().__init__(*args, **kwargs)
 
             self.losses = losses
-            self.update_every = 100
+            self.update_every = update_every
 
             if not losses:
                 self.losses = dict()
