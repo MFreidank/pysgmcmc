@@ -23,6 +23,17 @@ from pysgmcmc.torch_utils import get_name
 
 
 # TODO: Documentation, doctests and test for fit/predict
+# XXX: Optimization: we can probably get decent speed gains by not storing
+# numpy.ndarrays for parameters but copies of torch tensors instead.
+# This will also make our `setter` easier as we do not need `torch.from_numpy` there.
+
+# XXX: Fix: can we remove normalize_input/normalize_output if we simply accept only
+# torch.dataset for train? or maybe we allow optional "data_transforms"
+# argument to train that can be used to transform data.
+# In longer run, it is probably preferable to have the default interface use
+# pytorch datasets.
+# And maybe we don't want to get rid of `zero_mean_unit_var_{un}normalization`
+# because we also need access to the mean and std for unnormalization.
 
 
 class BayesianNeuralNetwork(object):
@@ -46,33 +57,52 @@ class BayesianNeuralNetwork(object):
         Parameters
         ----------
         network_architecture : TODO, optional
+            XXX: Correct this, it is false.
             Function mapping integer input dimensionality to an (initialized) `torch.nn.Module`.
             No explicit initialization is done in this class.
         normalize_input: bool, optional
 
         normalize_output: bool, optional
 
-        num_steps: int : TODO, optional
-
-        burn_in_steps: int : TODO, optional
-
-        keep_every: int : TODO, optional
-
+        num_steps: int, optional
+            Number of sampling steps to perform after burn-in is finished.
+            In total, `num_steps // keep_every` network weights will be sampled.
+            Defaults to `10000`.
+        burn_in_steps: int, optional
+            Number of burn-in steps to perform.
+            This value is passed to the given `optimizer` if it supports special
+            burn-in specific behavior.
+            Networks sampled during burn-in are discarded.
+            Defaults to `3000`.
+        keep_every: int, optional
+            Number of sampling steps (after burn-in) to perform before keeping a sample.
+            In total, `num_steps // keep_every` network weights will be sampled.
+            Defaults to `100`.
         loss : TODO, optional
 
         logging_configuration : typing.Dict[str, typing.Any], optional
-
+            Configuration for pythons `logging` module to use.
+            Specifying `"level"` as `logging.INFO` or lower in this dictionary
+            enables displaying a progressbar for training.
+            If no `"level"` is specified, `logging.INFO` is assumed as default choice.
+            Defaults to `{"level": logging.INFO, "datefmt": "y/m/d"}`.
         optimizer : TODO, optional
             Function that returns a `torch.optim.optimizer.Optimizer` subclass.
+            Defaults to `pysgmcmc.optimizers.sghmc.SGHMC`.
 
         """
 
         # TODO: pretty handling for burn_in_steps, num_steps etc?
 
-        assert burn_in_steps >= 0
-        assert keep_every >= 1
-        assert num_steps > burn_in_steps + keep_every
-        assert batch_size >= 1
+        assert burn_in_steps >= 0, "Invalid value for amount of burn-in steps -- cannot be negative."
+        assert keep_every >= 1, "Invalid value for `keep_every`. Specify how many sampling steps to perform before keeping a sample."
+        assert num_steps > burn_in_steps + keep_every, "Not even a single network would be sampled."
+        assert batch_size >= 1, "Invalid batch size. Batches must contain at least a single sample."
+
+        assert isinstance(logging_configuration, dict), "Given configuration for logging module must be a dictionary."
+
+        assert callable(optimizer)
+        assert callable(loss)
 
         self.batch_size = batch_size
 
@@ -93,10 +123,7 @@ class BayesianNeuralNetwork(object):
 
         logging.basicConfig(**logging_configuration)
 
-        try:
-            self.debug_level = logging_configuration["level"]
-        except KeyError:
-            self.debug_level = logging.INFO
+        if "level" not in logging_configuration:
             logging.warn(
                 "No level specified in 'logging_configuration' argument.\n"
                 "Falling back to 'logging.INFO'."
@@ -107,19 +134,46 @@ class BayesianNeuralNetwork(object):
 
         self.use_progressbar = self.debug_level <= logging.INFO
 
-    def _keep_sample(self, epoch: int) -> bool:
-        if epoch < self.num_burn_in_steps:
-            logging.debug("Skipping burn-in sample, epoch = %d" % epoch)
+    def _keep_sample(self, step: int) -> bool:
+        """ Determine if the network weight sample recorded at `step` should be stored.
+            Samples are recorded after burn-in (`step > self.num_burn_in_steps`),
+            and only every `self.keep_every` th step.
+
+        Parameters
+        ----------
+        step: int
+            Current iteration count.
+
+        Returns
+        ----------
+        should_keep: bool
+            Sentinel that is `True` if and only if network weights should be stored at `step`.
+
+        Examples
+        ----------
+        TODO
+
+        """
+        if step < self.num_burn_in_steps:
+            logging.debug("Skipping burn-in sample, step = %d" % step)
             return False
-        sample_t = epoch - self.num_burn_in_steps
+        sample_t = step - self.num_burn_in_steps
         return sample_t % self.keep_every == 0
 
-    # XXX: Remove this by shifting these decisions into our progressbar.
-    def _log_progress(self, epoch: int):
-        return self.debug_level <= logging.INFO and (epoch % 100 == 0)
-
     @property
-    def network_weights(self):
+    def network_weights(self) -> np.ndarray:
+        """ Extract current network weight values as `np.ndarray`.
+
+        Returns
+        ----------
+        weight_values: np.ndarray
+            Numpy array containing current network weight values.
+
+        Examples
+        ----------
+        TODO
+
+        """
         return tuple(
             np.asarray(torch.tensor(parameter.data).numpy())
             for parameter in self.model.parameters()
@@ -148,7 +202,8 @@ class BayesianNeuralNetwork(object):
         >>> bnn.model = bnn.network_architecture(input_dimensionality)
         >>> dummy_weights = [np.random.rand(parameter.shape) for parameter in bnn.model.parameters()]
         >>> bnn.network_weights = dummy_weights
-        >>> assert np.allclose(bnn.network_weights, dummy_weights)
+        >>> np.allclose(bnn.network_weights, dummy_weights)
+        True
 
         """
         logging.debug("Assigning new network weights: %s" % str(weights))
@@ -197,7 +252,7 @@ class BayesianNeuralNetwork(object):
         if self.use_progressbar:
             logging.info(
                 "Progress bar enabled. To disable pass "
-                "`logging_configuriation={level: debug.WARN}`."
+                "`logging_configuration={level: debug.WARN}`."
             )
 
             losses = OrderedDict(((get_name(self.loss), loss_function),))
@@ -302,7 +357,7 @@ class BayesianNeuralNetwork(object):
         if self.use_progressbar:
             logging.info(
                 "Progress bar enabled. To disable pass "
-                "`logging_configuriation={level: debug.WARN}`."
+                "`logging_configuration={level: debug.WARN}`."
             )
 
             losses = OrderedDict(((get_name(self.loss), loss_function),))
@@ -342,7 +397,6 @@ class BayesianNeuralNetwork(object):
         return self
 
     #  Predict {{{ #
-    # XXX: implement return individual predictions
     def predict(self, x_test: np.ndarray, return_individual_predictions: bool=False):
         logging.debug("Predicting started.")
         x_test_ = np.asarray(x_test)
@@ -403,5 +457,7 @@ class BayesianNeuralNetwork(object):
                 "after unnormalization:\n%s" % str(variance_prediction)
             )
 
+        if return_individual_predictions:
+            return mean_prediction, variance_prediction, network_outputs
         return mean_prediction, variance_prediction
     #  }}} Predict #
