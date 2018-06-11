@@ -342,8 +342,6 @@ class BayesianNeuralNetwork(object):
         assert self.is_trained
         assert isinstance(return_individual_predictions, bool)
 
-        x_test_ = x_test
-
         if self.normalize_input:
             x_test_, _, _ = zero_mean_unit_var_normalization(
                 x_test, self.x_mean, self.x_std
