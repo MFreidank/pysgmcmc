@@ -1,6 +1,6 @@
 from pysgmcmc.optimizers.sghmc import SGHMC
 from pysgmcmc.optimizers.relativistic_sghmc import RelativisticSGHMC
-from pysgmcmc.optimizers.sghmchd import SGHMCHD
+from pysgmcmc.optimizers.sghmchd_new import SGHMCHD
 from pysgmcmc.optimizers.sgld import SGLD
 from tensorflow.python.training import optimizer as tf_optimizer
 from keras.optimizers import TFOptimizer
