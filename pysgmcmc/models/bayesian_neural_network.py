@@ -9,7 +9,6 @@ from keras.layers import Concatenate, Layer, Dense
 from keras.callbacks import LambdaCallback
 from keras.activations import tanh
 from keras.initializers import Constant, VarianceScaling
-from pysgmcmc.keras_utils import safe_division, FLOAT_DTYPE, INTEGER_DTYPE
 from pysgmcmc.data_batches import generate_batches
 from pysgmcmc.models.base_model import (
     zero_mean_unit_var_normalization,
@@ -33,27 +32,24 @@ def log_variance_prior(log_variance: KerasTensor,
                        variance: float=0.01) -> KerasTensor:
 
     with K.name_scope(log_variance_prior.__name__):
-        return K.mean(
-            K.sum(
-                safe_division(
-                    -K.square(log_variance - K.log(mean)),
-                    (2. * variance)
-                ) - 0.5 * K.log(variance), axis=1
-            )
-        )
+        return K.mean(K.sum(
+            -K.square(log_variance - K.log(K.constant(mean, dtype=K.floatx()))) /
+            (2 * K.constant(variance, dtype=K.floatx())) -
+            0.5 * K.log(K.constant(variance, dtype=K.floatx())), axis=1
+        ))
 
 
 def weight_prior(parameters: typing.List[KerasVariable],
                  wdecay: float=1.) -> KerasTensor:
     with K.name_scope(weight_prior.__name__):
-        log_likelihood = K.constant(0., dtype=FLOAT_DTYPE)
-        n_parameters = K.constant(0, dtype=INTEGER_DTYPE)
+        log_likelihood = K.constant(0., dtype=K.floatx())
+        n_parameters = K.constant(0, dtype="int64")
 
         for parameter in parameters:
             log_likelihood += K.sum(-wdecay * 0.5 * K.square(parameter))
-            n_parameters += K.prod(parameter.shape)
+            n_parameters += K.cast(K.prod(parameter.shape), "int64")
 
-        return safe_division(log_likelihood, K.cast(n_parameters, K.floatx()))
+        return log_likelihood / K.cast(n_parameters, K.floatx())
 
 
 #  }}} Priors #
@@ -109,43 +105,33 @@ def default_network(input_dimension: int,
 
 def negative_log_likelihood(model: Sequential,
                             n_datapoints: int,
-                            batch_size: int=20,
                             log_variance_prior: KerasPrior=log_variance_prior,
                             weight_prior: KerasPrior=weight_prior) -> KerasLossFunction:
 
     def loss_function(y_true: KerasTensor, y_pred: KerasTensor):
         with K.name_scope("negative_log_likelihood"):
+            batch_size = K.cast(K.shape(y_true)[0], K.floatx())
+
             f_mean = K.reshape(y_pred[:, 0], shape=(-1, 1))
-            mean_squared_error = K.square(y_true - f_mean)
 
             f_log_var = K.reshape(y_pred[:, 1], shape=(-1, 1))
 
-            f_var_inv = safe_division(1., (K.exp(f_log_var) + 1e-16))
+            f_var_inv = 1. / (K.exp(f_log_var) + K.epsilon())
+
+            mean_squared_error = K.square(y_true - f_mean)
 
             log_likelihood = K.sum(
                 K.sum(
-                    -mean_squared_error * 0.5 * f_var_inv - 0.5 * f_log_var,
+                    -mean_squared_error * (0.5 * f_var_inv) - 0.5 * f_log_var,
                     axis=1
                 )
             )
 
-            log_likelihood = safe_division(log_likelihood, batch_size)
+            log_likelihood /= batch_size
 
-            log_variance_prior_log_likelihood = log_variance_prior(
-                f_log_var
-            )
+            log_likelihood += log_variance_prior(f_log_var) / n_datapoints
 
-            log_likelihood += safe_division(
-                log_variance_prior_log_likelihood, n_datapoints
-            )
-
-            weight_prior_log_likelihood = weight_prior(
-                model.trainable_weights
-            )
-
-            log_likelihood += safe_division(
-                weight_prior_log_likelihood, n_datapoints
-            )
+            log_likelihood += weight_prior(model.trainable_weights) / n_datapoints
 
             return -log_likelihood
     return loss_function
@@ -203,7 +189,6 @@ class BayesianNeuralNetwork(object):
         if train_callbacks is None:
             self.train_callbacks = []  # type: typing.List[keras.callbacks.Callback]
         else:
-
             self.train_callbacks = list(train_callbacks)
 
         self.train_callbacks.append(
@@ -282,7 +267,7 @@ class BayesianNeuralNetwork(object):
                 " ensure the corresponding parameter is named 'lr'."
             )
 
-    def train(self, x_train: np.ndarray, y_train: np.ndarray) -> None:
+    def train(self, x_train: np.ndarray, y_train: np.ndarray, *args, **kwargs) -> None:
         self.sampled_weights.clear()
 
         self.x_train, self.y_train = x_train, y_train
@@ -304,20 +289,22 @@ class BayesianNeuralNetwork(object):
                 input_dimension, self.seed
             )
 
-        if callable(self.optimizer):
-            self.optimizer = get_optimizer(
-                optimizer_name=self.optimizer.__name__,
-                n_datapoints=n_datapoints,
-                batch_size=self.batch_size,
-                burn_in_steps=self.burn_in_steps,
-                learning_rate=self.optimizer_hyperparameters["learning_rate"],
-                seed=self.seed,
-            )
+        assert callable(self.optimizer)
+        # NOTE: Do not reuse the same optimizer instance multiple times -- use a new one on each call to `train`,
+        # otherwise `n_datapoints` does not get updated and scale_grad introduces larger and larger errors
+        self.optimizer_instance = get_optimizer(
+            optimizer_name=self.optimizer.__name__,
+            n_datapoints=n_datapoints,
+            batch_size=self.batch_size,
+            burn_in_steps=self.burn_in_steps,
+            learning_rate=self.optimizer_hyperparameters["learning_rate"],
+            seed=self.seed,
+        )
 
         self.model.compile(
-            optimizer=self.optimizer,
+            optimizer=self.optimizer_instance,
             loss=self.loss_function(
-                self.model, n_datapoints, self.batch_size
+                self.model, n_datapoints
             ),
             metrics=list(self.metrics)
         )
@@ -402,4 +389,7 @@ class BayesianNeuralNetwork(object):
                 incumbent_value, self.y_mean, self.y_std
             )
 
-        return incumbent_value
+        return incumbent, incumbent_value
+
+    def get_incumbent(self):
+        return self.incumbent
