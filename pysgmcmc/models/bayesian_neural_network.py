@@ -9,6 +9,8 @@ from keras.layers import Concatenate, Layer, Dense
 from keras.callbacks import LambdaCallback
 from keras.activations import tanh
 from keras.initializers import Constant, VarianceScaling
+from keras.losses import kullback_leibler_divergence, cosine_proximity
+
 from pysgmcmc.data_batches import generate_batches
 from pysgmcmc.models.base_model import (
     zero_mean_unit_var_normalization,
@@ -105,6 +107,7 @@ def default_network(input_dimension: int,
 
 def negative_log_likelihood(model: Sequential,
                             n_datapoints: int,
+                            hyperloss=None,
                             log_variance_prior: KerasPrior=log_variance_prior,
                             weight_prior: KerasPrior=weight_prior) -> KerasLossFunction:
 
@@ -119,6 +122,11 @@ def negative_log_likelihood(model: Sequential,
             f_var_inv = 1. / (K.exp(f_log_var) + K.epsilon())
 
             mean_squared_error = K.square(y_true - f_mean)
+
+            if hyperloss:
+                hyperloss_tensor = hyperloss(y_true=y_true, y_pred=y_pred)
+                for param in model.trainable_weights:
+                    param.hypergradient = K.gradients(hyperloss_tensor, param)
 
             log_likelihood = K.sum(
                 K.sum(
@@ -149,6 +157,8 @@ class BayesianNeuralNetwork(object):
                  metrics: typing.Tuple[str, ...]=("mse", "mae",),
                  normalize_input: bool=True, normalize_output: bool=True,
                  n_steps: int=50000, burn_in_steps: int=3000,
+                 # hyperloss=lambda y_true, y_pred: kullback_leibler_divergence(y_true=y_true, y_pred=y_pred[:, 0]),
+                 hyperloss=lambda y_true, y_pred: cosine_proximity(y_true=y_true, y_pred=y_pred[:, 0]),
                  keep_every: int=100,
                  n_nets: int=100,
                  batch_size: int=20,
@@ -196,6 +206,8 @@ class BayesianNeuralNetwork(object):
         )
 
         self.seed = seed
+
+        self.hyperloss = hyperloss
 
         self.network_architecture = network_architecture
         self.loss_function = loss_function
@@ -290,6 +302,8 @@ class BayesianNeuralNetwork(object):
             )
 
         assert callable(self.optimizer)
+
+
         # NOTE: Do not reuse the same optimizer instance multiple times -- use a new one on each call to `train`,
         # otherwise `n_datapoints` does not get updated and scale_grad introduces larger and larger errors
         self.optimizer_instance = get_optimizer(
@@ -304,7 +318,7 @@ class BayesianNeuralNetwork(object):
         self.model.compile(
             optimizer=self.optimizer_instance,
             loss=self.loss_function(
-                self.model, n_datapoints
+                self.model, n_datapoints, hyperloss=self.hyperloss
             ),
             metrics=list(self.metrics)
         )
