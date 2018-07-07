@@ -148,17 +148,19 @@ class SGHMCHD(Optimizer):
             )
         )
 
-        from keras.optimizers import Adam
+        from keras.optimizers import Adamax
         import numpy as np
         hyperoptimizers = {
-            theta.name: to_hyperoptimizer(Adam(lr=0.001 / np.sqrt(self.scale_grad_val))) for theta in params
+            theta.name: to_hyperoptimizer(Adamax(lr=0.002 / np.sqrt(self.scale_grad_val))) for theta in params
         }
 
         for (theta, grad) in zip(params, grads):
-            # epsilon = K.constant(self.initial_lr, shape=theta.shape, name="epsilon")
             epsilon = K.variable(
                 K.constant(self.initial_lr, shape=theta.shape, name="epsilon")
             )
+            if K.backend() == "tensorflow":
+                import tensorflow as tf
+                tf.summary.histogram("epsilon", epsilon)
             mdecay = K.constant(self.initial_mdecay, shape=theta.shape, name="mdecay")
             noise = K.constant(self.initial_noise, shape=theta.shape, name="noise")
             xi = K.ones(theta.shape, name="xi")
@@ -168,7 +170,6 @@ class SGHMCHD(Optimizer):
 
             #  Hypergradient Update {{{ #
             dxdh = K.zeros(theta.shape, name="dxdh")
-
 
             random_sample = self.noise_sample(shape=theta.shape)
 
@@ -180,7 +181,10 @@ class SGHMCHD(Optimizer):
             try:
                 dxdlr = theta.hypergradient[0]
             except AttributeError:
-                warnings.warn("No hyperloss given, but SGHMCHD is used as optimizer. Falling back to standard SGHMC behaviour.")
+                warnings.warn(
+                    "No hyperloss given, but SGHMCHD is used as optimizer. "
+                    "Falling back to standard SGHMC behaviour."
+                )
                 # if no hyperloss was set, do not change the stepsize.
                 dxdlr = K.zeros_like(grad)
 
