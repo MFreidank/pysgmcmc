@@ -7,6 +7,10 @@ from keras import backend as K
 import functools
 import matplotlib.pyplot as plt
 from matplotlib.mlab import bivariate_normal
+from matplotlib.colors import ListedColormap
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import seaborn as sns
 
 
 def apply_on_grid(logdensity_function, x, y):
@@ -55,21 +59,40 @@ def to_negative_log_likelihood(log_likelihood_function):
         return -log_likelihood_function(*args, **kwargs)
     return negative_log_likelihood
 
+colors = ["#2166ac", "#67a9cf", "#d1e5f0", "#fddbc7", "#ef8a62", "#b2182b"]
+
 
 class TwoDimensionalDistribution(object, metaclass=abc.ABCMeta):
-    # XXX: Make label show in same color!
     def plot(self,
              grid=(np.arange(-4, 4, 0.05), np.arange(-4, 4, 0.05)),
+             output_filepath=None,
+             color_map=ListedColormap(sns.color_palette(colors)),
+             # color_map=ListedColormap(sns.color_palette("Paired")),
+             # color_map=ListedColormap(sns.light_palette("Navy")),
+             colorbar=True,
              ax=None,
              title=None):
         x, y = grid
         densities = apply_on_grid(self.__call__, x, y)
         if ax is None:
             f, ax = plt.subplots(1)
-        ax.contour(x, y, densities)
+
+        ax.contour(x, y, densities, cmap=color_map)
+
+        if colorbar:
+            mappable = cm.ScalarMappable(
+                cmap=color_map,
+                norm=mcolors.Normalize(vmin=densities.min(), vmax=densities.max(), clip=True)
+            )
+            mappable.set_array(densities)
+            plt.colorbar(mappable)
+
         if title is not None:
             ax.set_title(title)
-            ax.legend()
+
+        if output_filepath is not None:
+            plt.savefig(output_filepath)
+
         return ax
 
 
@@ -87,14 +110,19 @@ class Banana(TwoDimensionalDistribution):
         """
         return -0.5 * (0.01 * x[0] ** 2 + (x[1] + 0.1 * x[0] ** 2 - 10) ** 2)
 
-    def plot(self):
+    def plot(self, output_filepath=None):
         ax = super().plot(
             grid=(np.arange(-25, 25, 0.05), np.arange(-50, 20, 0.05)),
-            title="Banana"
+            title="Banana",
+            output_filepath=None
         )
 
-        ax.set_ylim(ymin=-60, ymax=20)
         ax.set_xlim(xmin=-30, xmax=30)
+        ax.set_ylim(ymin=-40, ymax=20)
+
+        if output_filepath is not None:
+            plt.savefig(output_filepath)
+
         return ax
 
 
@@ -126,16 +154,23 @@ class GaussianMixture(object):
                 for i in range(len(self.mu))
             ])
 
-    def plot(self, ax=None, x=np.linspace(-10, 10, num=1000)):
+    def plot(self, ax=None, title=None, output_filepath=None, x=np.linspace(-10, 10, num=1000)):
         if ax is None:
             f, ax = plt.subplots()
+
         ax.plot(x, np.asarray([np.exp(self.__call__(x_)) for x_ in x]))
+
+        if title is not None:
+            ax.set_title(title)
+
+        if output_filepath is not None:
+            plt.savefig(output_filepath)
         return ax
 
 
 class Gmm1(GaussianMixture):
-    def plot(self, ax=None):
-        ax = super().plot()
+    def plot(self, ax=None, output_filepath=None):
+        ax = super().plot(output_filepath=output_filepath)
         ax.set_title("GMM1")
         return ax
 
@@ -144,20 +179,17 @@ class Gmm2(GaussianMixture):
     def __init__(self):
         super().__init__(var=[1. / 0.5, 0.5, 1. / 0.5])
 
-    def plot(self, ax=None):
-        ax = super().plot()
-        ax.set_title("GMM2")
-        return ax
+    def plot(self, ax=None, output_filepath=None):
+        return super().plot(title="GMM2", output_filepath=output_filepath)
 
 
 class Gmm3(GaussianMixture):
     def __init__(self):
         super().__init__(var=[1. / 0.3, 0.3, 1. / 0.3])
 
-    def plot(self, ax=None):
-        ax = super().plot()
-        ax.set_title("GMM3")
-        return ax
+    def plot(self, ax=None, output_filepath=None):
+        return super().plot(title="GMM3", output_filepath=output_filepath)
+
 #  }}} Distributions from "Relativistic Monte Carlo" paper; https://arxiv.org/abs/1609.04388 #
 
 # XXX: Add more from that paper here.
@@ -168,9 +200,13 @@ class MoGL2HMC(GaussianMixture):
     def __init__(self):
         super().__init__(var=(0.1, 0.1), mu=(0., 4.), weights=(1. / 2., 1. / 2.))
 
-    def plot(self, ax=None):
-        ax = super().plot(ax=ax, x=np.linspace(-2., 6., num=1000))
-        ax.set_title("MoG_L2HMC")
+    def plot(self, ax=None, output_filepath=None):
+        return super().plot(
+            ax=ax,
+            output_filepath=output_filepath,
+            title="MoG_L2HMC",
+            x=np.linspace(-2., 6., num=1000)
+        )
 
 #  }}} Ported from L2HMC paper; https://arxiv.org/abs/1711.09268 #
 
@@ -185,27 +221,38 @@ class BivariateNormal(TwoDimensionalDistribution):
         assert self.cov.shape == (2, 2)
 
     def __call__(self, x):
-        return bivariate_normal(
+        tf_input = any(isinstance(x_, tf.Variable) for x_ in x)
+        if K.backend() == "tensorflow" and tf_input:
+            try:
+                self.distribution
+            except AttributeError:
+                from tensorflow.contrib.distributions import MultivariateNormalFullCovariance
+                self.distribution = MultivariateNormalFullCovariance(
+                    loc=self.mu, covariance_matrix=self.cov
+                )
+            return self.distribution.log_prob(x)
+        return np.log(bivariate_normal(
             *x,
             mux=self.mu[0], muy=self.mu[1],
             sigmax=self.cov[0, 0], sigmay=self.cov[1, 1],
             sigmaxy=self.cov[0, 1]
-        )
+        ))
         # logdensity
         from scipy.stats import multivariate_normal
         return np.asarray([
             multivariate_normal.logpdf(x_, mean=self.mu, cov=self.cov)
             for x_ in zip(*x)
         ])
+
         return multivariate_normal.logpdf(x, mean=self.mu, cov=self.cov)
 
 
 class StandardNormal(BivariateNormal):
     def __init__(self):
-        super().__init__([0, 0], [[1, 0], [0, 1]])
+        super().__init__([0., 0.], [[1., 0.], [0., 1.]])
 
-    def plot(self):
-        return super().plot(title="StandardNormal")
+    def plot(self, output_filepath=None):
+        return super().plot(title="StandardNormal", output_filepath=output_filepath)
 
 
 class MultiModalBivariateNormal(TwoDimensionalDistribution):
@@ -222,18 +269,16 @@ class MultiModalBivariateNormal(TwoDimensionalDistribution):
         ]
 
     def __call__(self, x):
+        tf_input = any(isinstance(x_, tf.Variable) for x_ in x)
+        if K.backend() == "tensorflow" and tf_input:
+                return tf.log(
+                    tf.reduce_sum([
+                        tf.exp(component(x) for component in self.mixture_components)
+                    ])
+                )
         return np.log(
             sum(np.exp(component(x)) for component in self.mixture_components)
         )
-
-    def plot(self):
-        f, ax = plt.subplots()
-        for component in self.mixture_components:
-            ax = component.plot(
-                ax=ax, grid=(np.arange(-4, 4, 0.05), np.arange(-4, 4, 0.05))
-            )
-            ax.set_title("MultiModalNormal")
-        return ax
 
 
 class Donut(TwoDimensionalDistribution):
@@ -241,30 +286,39 @@ class Donut(TwoDimensionalDistribution):
         self.radius, self.sigma2 = radius, sigma2
 
     def __call__(self, x):
-        # log density
-        # FIXME Add tensorflow implementation.
-        r = np.linalg.norm(x)
+        tf_input = any(isinstance(x_, tf.Variable) for x_ in x)
+        if K.backend() == "tensorflow" and tf_input:
+            r = tf.norm(x)
+        else:
+            r = np.linalg.norm(x)
+
         v = -((r - self.radius) ** 2) / self.sigma2
         return v
 
-    def plot(self,):
+    def plot(self, output_filepath=None):
         return super().plot(
             grid=(np.arange(-4, 4, 0.05), np.arange(-4, 4, 0.05)),
             title="Donut",
+            output_filepath=output_filepath,
         )
 
 
 class Squiggle(BivariateNormal):
     def __init__(self):
-        super().__init__(mu=[[0], [0]], cov=[[2, 0.25], [0.25, 0.5]])
+        super().__init__(mu=[0., 0.], cov=[[2., 0.25], [0.25, 0.5]])
 
     def __call__(self, x):
-        y = np.asarray([x[0], x[1] + np.sin(5 * x[0])])
+        tf_input = any(isinstance(x_, tf.Variable) for x_ in x)
+        if K.backend() == "tensorflow" and tf_input:
+            y = [x[0], x[1] + tf.sin(5 * x[0])]
+        else:
+            y = np.asarray([x[0], x[1] + np.sin(5 * x[0])])
         return super().__call__(y)
 
-    def plot(self, ax=None):
+    def plot(self, ax=None, output_filepath=None):
         return super().plot(
             grid=(np.arange(-2, 2, 0.05), np.arange(-2, 2, 0.05)),
+            output_filepath=output_filepath,
             title="Squiggle"
         )
 #  }}} Ported from mcmc-demo; https://github.com/chi-feng/mcmc-demo/blob/master/main/MCMC.js  #
