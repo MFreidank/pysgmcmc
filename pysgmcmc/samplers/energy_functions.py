@@ -316,9 +316,17 @@ class Squiggle(BivariateNormal):
         return super().__call__(y)
 
     def plot(self, ax=None, output_filepath=None):
-        return super().plot(
-            grid=(np.arange(-2, 2, 0.05), np.arange(-2, 2, 0.05)),
-            output_filepath=output_filepath,
+        ax = super().plot(
+            grid=(np.arange(-5, 5, 0.05), np.arange(-5, 5, 0.05)),
+            output_filepath=None,
             title="Squiggle"
         )
+
+        ax.set_xlim(xmin=-4, xmax=4)
+        ax.set_ylim(ymin=-2.5, ymax=2.5)
+
+        if output_filepath is not None:
+            plt.savefig(output_filepath)
+        return ax
+
 #  }}} Ported from mcmc-demo; https://github.com/chi-feng/mcmc-demo/blob/master/main/MCMC.js  #
