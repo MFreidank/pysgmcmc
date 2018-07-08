@@ -272,8 +272,21 @@ def updates_for(parameters: typing.List[KerasVariable],
     param_sizes = tuple(tensor_size(parameter) for parameter in parameters)
     return keras_split(update_tensor, param_sizes, axis=0)
 
+def update_from(parameters, update_tensor):
+    param_sizes = tuple(tensor_size(parameter) for parameter in parameters)
+    updates = keras_split(update_tensor, param_sizes, axis=0)
+    return tuple(
+        (param, K.reshape(update, param.shape))
+        for param, update in zip(parameters, updates)
+    )
 
-def safe_division(x: KerasTensor, y: KerasTensor, small_constant: float=1e-16):
+
+
+def safe_sqrt(x, small_constant=1e-16):
+    return K.sqrt(K.clip(x, min_value=small_constant, max_value=float("inf")))
+
+
+def safe_division(x: KerasTensor, y: KerasTensor, small_constant: float=0.):
     """ Computes `x / y` after adding a small appropriately signed constant to `y`.
         Adding a small constant avoids division-by-zero artefacts that may
         occur due to precision errors.
@@ -324,8 +337,8 @@ def safe_division(x: KerasTensor, y: KerasTensor, small_constant: float=1e-16):
     False
 
     """
-    c = K.constant(small_constant, dtype=FLOAT_DTYPE)
-    return x / (y + (2. * K.cast(K.sign(y), FLOAT_DTYPE) * c + c))
+    c = K.constant(small_constant, dtype=K.floatx())
+    return x / (y + (2. * K.cast(K.sign(y), K.floatx()) * c + c))
 
 
 def optimizer_name(optimizer: typing.Union[str, type]) -> str:
