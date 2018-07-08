@@ -170,8 +170,7 @@ class GaussianMixture(object):
 
 class Gmm1(GaussianMixture):
     def plot(self, ax=None, output_filepath=None):
-        ax = super().plot(output_filepath=output_filepath)
-        ax.set_title("GMM1")
+        ax = super().plot(title="GMM1", output_filepath=output_filepath)
         return ax
 
 
@@ -252,7 +251,7 @@ class StandardNormal(BivariateNormal):
         super().__init__([0., 0.], [[1., 0.], [0., 1.]])
 
     def plot(self, output_filepath=None):
-        return super().plot(title="StandardNormal", output_filepath=output_filepath)
+        return super().plot(title="Standard Normal", output_filepath=output_filepath)
 
 
 class MultiModalBivariateNormal(TwoDimensionalDistribution):
