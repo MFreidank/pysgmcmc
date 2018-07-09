@@ -125,6 +125,13 @@ class Banana(TwoDimensionalDistribution):
 
         return ax
 
+    def to_pymc3(self):
+        import pymc3 as pm
+
+        def logp(x):
+            return -0.5 * (0.01 * x[0] ** 2 + (x[1] + 0.1 * x[0] ** 2 - 10) ** 2)
+        return pm.DensityDist(self.__class__.__name__, logp, shape=(2,))
+
 
 class GaussianMixture(object):
     def __init__(self, mu=(-5., 0., 5.), var=(1., 1., 1.), weights=(1. / 3., 1. / 3., 1. / 3.)):
@@ -153,6 +160,17 @@ class GaussianMixture(object):
                 np.log(self.weights[i]) + normldf(x, self.mu[i], self.var[i])
                 for i in range(len(self.mu))
             ])
+
+    def to_pymc3(self,):
+        import pymc3 as pm
+        return pm.Mixture(
+            self.__class__.__name__,
+            w=self.weights,
+            comp_dists=[
+                pm.Normal.dist(mu=mu_component, sd=np.sqrt(var_component))
+                for mu_component, var_component in zip(self.mu, self.var)
+            ]
+        )
 
     def plot(self, ax=None, title=None, output_filepath=None, x=np.linspace(-10, 10, num=1000)):
         if ax is None:
@@ -245,6 +263,14 @@ class BivariateNormal(TwoDimensionalDistribution):
 
         return multivariate_normal.logpdf(x, mean=self.mu, cov=self.cov)
 
+    def to_pymc3(self):
+        import pymc3 as pm
+        return pm.MvNormal(
+            name=self.__class__.__name__,
+            mu=self.mu, cov=self.cov,
+            shape=(2,)  # bivariate
+        )
+
 
 class StandardNormal(BivariateNormal):
     def __init__(self):
@@ -262,6 +288,9 @@ class MultiModalBivariateNormal(TwoDimensionalDistribution):
                               [[0.5, 0.], [0., 0.5]]]):
         assert len(means) == len(covariances), (len(means), len(covariances))
 
+        self.means = np.asarray(means)
+        self.covariances = np.asarray(covariances)
+
         self.mixture_components = [
             BivariateNormal(mu=mu, cov=cov)
             for mu, cov in zip(means, covariances)
@@ -278,6 +307,26 @@ class MultiModalBivariateNormal(TwoDimensionalDistribution):
         return np.log(
             sum(np.exp(component(x)) for component in self.mixture_components)
         )
+
+    def to_pymc3(self):
+        import pymc3 as pm
+        import theano.tensor as tt
+
+        def logp(x):
+            # assert that we really are given diagonal covariance matrices
+            # with the same diagonal element twice.
+            components = [
+                pm.MvNormal.dist(
+                    mu=mean, cov=cov
+                )
+                for mean, cov in zip(self.means, self.covariances)
+            ]
+
+            return tt.log(
+                sum(tt.exp(component.logp(x)) for component in components)
+            )
+
+        return pm.DensityDist("a", logp, shape=(2,))
 
 
 class Donut(TwoDimensionalDistribution):
@@ -300,6 +349,15 @@ class Donut(TwoDimensionalDistribution):
             title="Donut",
             output_filepath=output_filepath,
         )
+
+    def to_pymc3(self):
+        import pymc3 as pm
+
+        def logp(x):
+            r = x.norm(2)
+            v = -((r - self.radius) ** 2) / self.sigma2
+            return v
+        return pm.DensityDist(self.__class__.__name__, logp, shape=(2,))
 
 
 class Squiggle(BivariateNormal):
@@ -327,5 +385,19 @@ class Squiggle(BivariateNormal):
         if output_filepath is not None:
             plt.savefig(output_filepath)
         return ax
+
+    def to_pymc3(self):
+        import pymc3 as pm
+        import theano.tensor as tt
+
+        def logp(x, mu=[0., 0.], cov=[[2., 0.25], [0.25, 0.5]]):
+
+            y = tt.stack([x[0], x[1] + pm.math.sin(5 * x[0])])
+
+            return pm.MvNormal.dist(
+                mu=np.asarray(mu), cov=np.asarray(cov), shape=(2,)
+            ).logp(y)
+
+        return pm.DensityDist("Squiggle", logp, shape=(2,))
 
 #  }}} Ported from mcmc-demo; https://github.com/chi-feng/mcmc-demo/blob/master/main/MCMC.js  #
