@@ -301,7 +301,7 @@ class MultiModalBivariateNormal(TwoDimensionalDistribution):
         if K.backend() == "tensorflow" and tf_input:
                 return tf.log(
                     tf.reduce_sum([
-                        tf.exp(component(x) for component in self.mixture_components)
+                        tf.exp(component(x)) for component in self.mixture_components
                     ])
                 )
         return np.log(
