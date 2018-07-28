@@ -44,15 +44,6 @@ The quick way::
 
     pip3 install git+https://github.com/MFreidank/pysgmcmc/pytorch.zip
 
-Try me
-=======
-
-Try our notebooks interactively directly in your browser, no installation 
-required:
-
-.. image:: https://mybinder.org/badge.svg 
-   :target: https://mybinder.org/v2/gh/MFreidank/pysgmcmc/pytorch
-
 Documentation
 =============
 Our documentation can be found at http://pysgmcmc.readthedocs.io/en/pytorch/.
