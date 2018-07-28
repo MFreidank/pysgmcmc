@@ -17,7 +17,7 @@ Features
 
    sample, cost = next(sampler)
 
-* Based on `pytorch <https://www.keras.io/>`_ that provides:
+* Based on `pytorch <https://www.pytorch.org/>`_ that provides:
     * efficient numerical computation via data flow graphs
     * flexible computation environments (CPU/GPU support, desktop/server/mobile device support)
     * Linear algebra operations
