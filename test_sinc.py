@@ -10,7 +10,7 @@ from pysgmcmc.optimizers.sghmc import SGHMC
 
 def main():
 
-    input_dimensionality, num_datapoints = 1, 100
+    input_dimensionality, num_datapoints = 1, 20
     x_train = np.array([
         np.random.uniform(np.zeros(1), np.ones(1), input_dimensionality)
         for _ in range(num_datapoints)
@@ -20,7 +20,7 @@ def main():
     x_test = np.linspace(0, 1, 100)[:, None]
     y_test = np.sinc(x_test * 10 - 5).sum(axis=1)
 
-    optimizer, lr = SGHMC, 1e-2
+    optimizer, lr = SGLD, 1e-2
     bnn = BayesianNeuralNetwork(optimizer=optimizer, lr=lr)
 
     prediction, variance_prediction = bnn.train(x_train, y_train).predict(x_test)

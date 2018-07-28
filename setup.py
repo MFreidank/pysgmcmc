@@ -27,7 +27,7 @@ DEPENDENCY_LINKS = [
 ]
 
 SETUP_REQUIREMENTS = ["pytest-runner"]
-TEST_REQUIREMENTS = ["pytest", "pytest-cov", "hypothesis"]
+TEST_REQUIREMENTS = ["pytest", "pytest-cov"]
 
 
 if __name__ == "__main__":
