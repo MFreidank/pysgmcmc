@@ -1,6 +1,6 @@
 ********
-Samplers
-********
+Optimizers
+**********
 .. currentmodule:: pysgmcmc.samplers
 
 .. automodule:: pysgmcmc.samplers
