@@ -15,6 +15,9 @@ except ImportError:
         def __init__(self, iterable, *args, **kwargs):
             self.iterable = iterable
 
+        def update(self, *args, **kwargs):
+            pass
+
         def __iter__(self):
             return self
 
