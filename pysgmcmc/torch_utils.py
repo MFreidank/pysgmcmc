@@ -27,14 +27,14 @@ def get_name(object_: typing.Any) -> str:
     >>> get_name(Adam) == Adam.__name__
     True
 
-    XXX: Example with pysgmcmc optimizers and losses
+    If an object sets a `name` attribute, that is used instead:
+
+    >>> from pysgmcmc.models.losses import NegativeLogLikelihood
+    >>> get_name(NegativeLogLikelihood) == "NLL" != NegativeLogLikelihood.__name__
+    True
 
     """
     try:
         return object_.name
     except AttributeError:
         return object_.__name__
-
-
-def heaviside(x):
-    return torch.ones_like(x) * (x > 0).float() + (0.5 * (x == 0).float())

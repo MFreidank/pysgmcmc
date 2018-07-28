@@ -6,12 +6,14 @@ except ImportError:
     logging.warn(
         "`tqdm` package could not be found. No progressbar is available!\n"
         "Do `pip install tqdm` to display a progressbar."
-    )  # XXX: Warn that tqdm is not installed and that no progressbar will be displayed as a result.
+    )
 
     class TrainingProgressbar(object):
+        """ Dummy progressbar that displays nothing and simply iterates the iterable.
+            Used as placeholder if `tqdm` is not installed.
+        """
         def __init__(self, iterable, *args, **kwargs):
             self.iterable = iterable
-            pass
 
         def __iter__(self):
             return self
@@ -20,7 +22,20 @@ except ImportError:
             return next(self.iterable)
 else:
     class TrainingProgressbar(tqdm):
+        """ Slightly customized `tqdm` progressbar. """
         def __init__(self, losses=None, update_every=100, *args, **kwargs):
+            """ Set up progressbar to track `losses` and update in a given interval.
+
+            Parameters
+            ----------
+            losses : TODO, optional
+                Iterable of `torch.nn.modules.loss._Loss` subclasses to display.
+                Default: `None`, do not display additional loss metrics.
+            update_every : int, optional
+                Interval to update this progressbar.
+                Default: `100`, update every `100` iterations.
+
+            """
             super().__init__(*args, **kwargs)
 
             self.losses = losses
@@ -30,6 +45,19 @@ else:
                 self.losses = dict()
 
         def update(self, predictions, y_batch, epoch):
+            """ Check this progressbar for update.
+                Recompute loss values and prettyprints them.
+
+            Parameters
+            ----------
+            predictions:
+                BNN predictions on current batch.
+            y_batch:
+                Labels of current batch.
+            epoch: int
+                Current epoch count.
+
+            """
             if epoch % self.update_every != 0:
                 return
 

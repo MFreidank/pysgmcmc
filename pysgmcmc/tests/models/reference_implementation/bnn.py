@@ -267,6 +267,7 @@ class BayesianNeuralNetwork(object):
         # prior for the weights
         params = lasagne.layers.get_all_params(f_net, trainable=True)
         log_like += weight_prior.log_like(params) / tn_examples
+        print(f_mean.shape.eval(), f_log_var.shape.eval(), mse.shape.eval())
 
         return -log_like, T.mean(mse)
 

@@ -23,13 +23,6 @@ full-test:
 # typo safety/convenience
 full-tests: full-test
 
-# Run mutation testing. Note that this may take a long time (> 2h).
-# Will construct mutations of our code and check if the tests detect the
-# mutations. This allows for some validation of our test suite 
-# to see how well it tracks our codebase.
-mutation-tests:
-	cd .. && cosmic-ray run --timeout 20 pysgmcmc tests | tee mutation_test_results.txt
-
 doc:
 	make -C ../docs html
 

@@ -45,7 +45,10 @@ def predict_pytorch(network, weights, x_train):
     return network(x_torch)
 
 
-@pytest.mark.xfail(reason="Don't understand why, but if we make this test pass our network breaks.")
+@pytest.mark.skipif(
+    not (THEANO_INSTALLED and LASAGNE_INSTALLED),
+    reason="Packages 'theano' and 'lasagne' required!"
+)
 def test_nll():
     bnn = BayesianNeuralNetwork(normalize_input=False, normalize_output=False)
 
@@ -91,7 +94,9 @@ def test_nll():
         parameter.grad.numpy() for parameter in model.parameters()
     ])
 
+    print("THEANO:", reference_nll.eval(), "TORCH:", nll.detach().numpy())
     assert np.allclose(reference_nll.eval(), nll.detach().numpy())
 
     for grad_theano, grad_pytorch in zip(grads_theano, grads):
+        print(grad_theano.shape, grad_pytorch.shape)
         assert np.allclose(grad_theano.T, grad_pytorch, atol=1e-3)
