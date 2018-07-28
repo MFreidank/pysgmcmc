@@ -17,21 +17,20 @@ Features
 
    sample, cost = next(sampler)
 
-* Based on `keras <https://www.keras.io/>`_ that provides:
-    * flexible computational backends (tensorflow, theano, cnntk)
+* Based on `pytorch <https://www.keras.io/>`_ that provides:
     * efficient numerical computation via data flow graphs
     * flexible computation environments (CPU/GPU support, desktop/server/mobile device support)
     * Linear algebra operations
 
-.. |Build Status| image:: https://travis-ci.org/MFreidank/pysgmcmc.svg?branch_master
+.. |Build Status| image:: https://travis-ci.org/MFreidank/pysgmcmc.svg?branch_pytorch
    :target: https://travis-ci.org/MFreidank/pysgmcmc
 
 .. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=pytorch
    :target: http://pysgmcmc.readthedocs.io/en/pytorch/
    :alt: Docs
 
-.. |Coverage_| image:: https://coveralls.io/repos/github/MFreidank/pysgmcmc/badge.svg
-   :target: https://coveralls.io/github/MFreidank/pysgmcmc
+.. |Coverage_| image:: https://coveralls.io/repos/github/MFreidank/pysgmcmc/badge.svg?branch=pytorch
+   :target: https://coveralls.io/github/MFreidank/pysgmcmc?branch=pytorch
    :alt: Coverage
 
 .. |Codacy_| image:: https://api.codacy.com/project/badge/Grade/94a3778e36814055ad7b12875857d15e    
@@ -56,4 +55,4 @@ required:
 
 Documentation
 =============
-Our documentation can be found at http://pysgmcmc.readthedocs.io/en/latest/.
+Our documentation can be found at http://pysgmcmc.readthedocs.io/en/pytorch/.
