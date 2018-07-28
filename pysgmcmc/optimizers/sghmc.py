@@ -4,6 +4,20 @@ from torch.optim import Optimizer
 
 
 class SGHMC(Optimizer):
+    """ Stochastic Gradient Hamiltonian Monte-Carlo Sampler that uses a burn-in
+        procedure to adapt its own hyperparameters during the initial stages
+        of sampling.
+
+        See [1] for more details on this burn-in procedure.\n
+        See [2] for more details on Stochastic Gradient Hamiltonian Monte-Carlo.
+
+        [1] J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
+            In Advances in Neural Information Processing Systems 29 (2016).\n
+            `Bayesian Optimization with Robust Bayesian Neural Networks. <http://aad.informatik.uni-freiburg.de/papers/16-NIPS-BOHamiANN.pdf>`_
+        [2] T. Chen, E. B. Fox, C. Guestrin
+            In Proceedings of Machine Learning Research 32 (2014).\n
+            `Stochastic Gradient Hamiltonian Monte Carlo <https://arxiv.org/pdf/1402.4102.pdf>`_
+    """
     name = "SGHMC"
 
     def __init__(self,
@@ -13,6 +27,34 @@ class SGHMC(Optimizer):
                  noise: float=0.,
                  mdecay: float=0.05,
                  scale_grad: float=1.) -> None:
+        """ Set up a SGHMC Optimizer.
+
+        Parameters
+        ----------
+        params : iterable
+            Parameters serving as optimization variable.
+        lr: float, optional
+            Base learning rate for this optimizer.
+            Must be tuned to the specific function being minimized.
+            Default: `1e-2`.
+        num_burn_in_steps: int, optional
+            Number of burn-in steps to perform. In each burn-in step, this
+            sampler will adapt its own internal parameters to decrease its error.
+            Set to `0` to turn scale adaption off.
+            Default: `3000`.
+        noise: float, optional
+            (Constant) per-parameter noise level.
+            Default: `0.`.
+        mdecay:float, optional
+            (Constant) momentum decay per time-step.
+            Default: `0.05`.
+        scale_grad: float, optional
+            Value that is used to scale the magnitude of the noise used
+            during sampling. In a typical batches-of-data setting this usually
+            corresponds to the number of examples in the entire dataset.
+            Default: `1.0`.
+
+        """
         if lr < 0.0:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if num_burn_in_steps < 0:

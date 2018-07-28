@@ -21,7 +21,7 @@ class SGLD(Optimizer):
 
         Parameters
         ----------
-        params : TODO
+        params : iterable
             Parameters serving as optimization variable.
         lr : float, optional
             Base learning rate for this optimizer.
