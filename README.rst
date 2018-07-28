@@ -26,8 +26,8 @@ Features
 .. |Build Status| image:: https://travis-ci.org/MFreidank/pysgmcmc.svg?branch_master
    :target: https://travis-ci.org/MFreidank/pysgmcmc
 
-.. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=latest
-   :target: http://pysgmcmc.readthedocs.io/en/latest/
+.. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=pytorch
+   :target: http://pysgmcmc.readthedocs.io/en/pytorch/
    :alt: Docs
 
 .. |Coverage_| image:: https://coveralls.io/repos/github/MFreidank/pysgmcmc/badge.svg
