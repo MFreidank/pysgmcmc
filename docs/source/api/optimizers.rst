@@ -12,6 +12,4 @@ Samplers
    :maxdepth: 2
 
    optimizers/sghmc
-   optimizers/sghmchd
    optimizers/sgld
-   optimizers/hyperoptimization

@@ -14,18 +14,26 @@ Bayesian Neural Network
     :special-members:
     :members:
 
-Base Model
-^^^^^^^^^^
-.. currentmodule:: pysgmcmc.models.base_model
-.. autoclass:: pysgmcmc.models.base_model.BaseModel
-   :private-members:
-   :special-members:
-   :members:
+Losses
+^^^^^^
+.. currentmodule:: pysgmcmc.models.losses
+.. automodule:: pysgmcmc.models.losses
+    :private-members:
+    :special-members:
+    :members:
 
-Objective Functions
-^^^^^^^^^^^^^^^^^^^
-.. currentmodule:: pysgmcmc.models.objective_functions
-.. automodule:: pysgmcmc.models.objective_functions
+Architectures
+^^^^^^^^^^^^^
+.. currentmodule:: pysgmcmc.models.architectures
+.. automodule:: pysgmcmc.models.architectures
+    :private-members:
+    :special-members:
+    :members:
+
+Priors
+^^^^^^
+.. currentmodule:: pysgmcmc.models.priors
+.. automodule:: pysgmcmc.models.priors
     :private-members:
     :special-members:
     :members:
