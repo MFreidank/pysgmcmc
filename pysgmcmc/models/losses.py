@@ -1,6 +1,12 @@
+import typing
+
 import torch
 from torch.nn.modules.loss import _Loss, _assert_no_grad
 
+from pysgmcmc.torch_typing import (
+    VariancePrior, WeightPrior, Predictions, Targets,
+    TorchLoss, TorchLossFunction
+)
 from pysgmcmc.models.priors import log_variance_prior, weight_prior
 
 
@@ -9,27 +15,25 @@ class NegativeLogLikelihood(_Loss):
 
     name = "NLL"
 
-    def __init__(self, parameters, num_datapoints,
-                 variance_prior=log_variance_prior, weight_prior=weight_prior,
-                 size_average=True, reduce=False):
+    def __init__(self, parameters: typing.Iterable[torch.Tensor],
+                 num_datapoints: int,
+                 variance_prior: VariancePrior=log_variance_prior,
+                 weight_prior: WeightPrior=weight_prior,
+                 size_average: bool=True, reduce: bool=False) -> None:
         """ Instantiate a loss object for given network `parameters`.
             Requires `num_datapoints` of the entire regression dataset
             for proper scaling.
 
         Parameters
         ----------
-        parameters : TODO
+        parameters : typing.Iterable[torch.Tensor]
             Pytorch variables of BNN parameters.
-        num_datapoints : TODO
+        num_datapoints : int
             Total number of datapoints of the entire regression dataset to process.
-        variance_prior : TODO, optional
+        variance_prior : pysgmcmc.torch_typing.VariancePrior, optional
             Prior for BNN variance. Default: `pysgmcmc.models.priors.log_variance_prior`.
-        weight_prior : TODO, optional
+        weight_prior : pysgmcmc.torch_typing.WeightPrior, optional
             Prior for BNN weights. Default: `pysgmcmc.models.priors.weight_prior`.
-        size_average : TODO, optional
-            TODO: DOKU
-        reduce : TODO, optional
-            TODO: DOKU
 
         """
         assert size_average and not reduce
@@ -41,20 +45,19 @@ class NegativeLogLikelihood(_Loss):
         self.log_variance_prior = log_variance_prior
         self.weight_prior = weight_prior
 
-    def forward(self, input, target):
+    def forward(self, input: Predictions, target: Targets) -> torch.Tensor:
         """ Compute NLL for 2d-network predictions `input` and (batch) labels `target`.
 
         Parameters
         ----------
-        input : TODO
+        input : pysgmcmc.torch_typing.Predictions
             Network predictions.
-        target : TODO
+        target : pysgmcmc.torch_typing.Targets
             Labels for each datapoint in the current batch.
-            Shape:
 
         Returns
         ----------
-        nll: TODO
+        nll: torch.Tensor
             Scalar value.
             NLL of BNN predictions given as `input` with respect to labels `target`.
         """
@@ -81,7 +84,7 @@ class NegativeLogLikelihood(_Loss):
         return -log_likelihood
 
 
-def get_loss(loss_cls, **loss_kwargs):
+def get_loss(loss_cls: TorchLoss, **loss_kwargs) -> TorchLossFunction:
     """ Wrapper to use `NegativeLogLikelihood` interchangeably with other pytorch losses.
         `loss_kwargs` is expected to be a dict with key `parameters` mapped to
         network parameters and key `num_datapoints` mapped to an integer
@@ -89,16 +92,16 @@ def get_loss(loss_cls, **loss_kwargs):
 
     Parameters
     ----------
-    loss_cls : TODO
+    loss_cls : pysgmcmc.torch_typing.TorchLoss
         Class type of a loss, e.g. `pysgmcmc.models.losses.NegativeLogLikelihood`.
-    loss_kwargs : TODO
+    loss_kwargs : dict
         Keyword arguments to be passed to `loss_cls`.
         Must contain keys `parameters` for BNN parameters and `num_datapoints`
         for the amount of datapoints in the entire regression dataset.
 
     Returns
     ----------
-    loss_instance:
+    loss_instance: pysgmcmc.torch_typing.TorchLossFunction
         Instance of `loss_cls`.
 
     """
@@ -116,7 +119,7 @@ def to_bayesian_loss(torch_loss):
 
     Parameters
     ----------
-    torch_loss:
+    torch_loss: pysgmcmc.torch_typing.TochLoss
         Class type of a pytorch loss to evaluate on our BNN, e.g. `torch.nn.MSELoss`.
 
     Returns

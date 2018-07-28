@@ -1,3 +1,5 @@
+import typing
+
 import numpy as np
 import torch
 
@@ -13,8 +15,10 @@ class SamplerMixin(object):
 
         Parameters
         ----------
-        negative_log_likelihood : TODO
-        params : TODO
+        negative_log_likelihood : typing.Callable[[typing.Iterable[torch.Tensor]], torch.Tensor]
+            Callable mapping parameters to a NLL value.
+        params : iterable
+            Iterable of parameters used to construct samples.
 
         See also
         ----------
@@ -27,12 +31,12 @@ class SamplerMixin(object):
         super().__init__(params=self.params, *args, **kwargs)
 
     @property
-    def parameters(self):
+    def parameters(self) -> typing.Tuple[np.ndarray, ...]:
         """ Return last sample as tuple of numpy arrays.
 
         Returns
         ----------
-        current_parameters: TODO
+        current_parameters: typing.Tuple[numpy.ndarray, ...]
             Tuple of numpy arrays containing last sampled values.
         """
         return tuple(
@@ -45,7 +49,12 @@ class SamplerMixin(object):
 
         Returns
         ----------
-        step_results: TODO
+        parameters: typing.Tuple[numpy.ndarray, ...]
+            Current parameters.
+        cost: torch.Tensor
+            NLL value associated with `parameters`.
+        next_parameters: typing.Tuple[numpy.ndarray, ...]
+            Parameters to evaluate on a subsequent call.
 
         """
         self.zero_grad()
@@ -62,10 +71,10 @@ class SamplerMixin(object):
 
         Returns
         ----------
-        parameters: TODO
-
-        cost: TODO
-            NLL associated with `parameters`.
+        parameters: typing.Tuple[numpy.ndarray, ...]
+            Current parameters.
+        cost: torch.Tensor
+            NLL value associated with `parameters`.
         """
         parameters, cost, _ = self.sample_step()
         return parameters, cost

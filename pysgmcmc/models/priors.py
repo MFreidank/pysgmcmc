@@ -1,7 +1,9 @@
+from typing import Iterable
+
 import torch
 
 
-def log_variance_prior(log_variance, mean: float=1e-6, variance: float=0.01):
+def log_variance_prior(log_variance: torch.Tensor, mean: float=1e-6, variance: float=0.01) -> torch.Tensor:
     return torch.mean(
         torch.sum(
             ((-((log_variance - torch.log(torch.tensor(mean))) ** 2)) /
@@ -11,7 +13,7 @@ def log_variance_prior(log_variance, mean: float=1e-6, variance: float=0.01):
     )
 
 
-def weight_prior(parameters, wdecay: float=1.):
+def weight_prior(parameters: Iterable[torch.Tensor], wdecay: float=1.) -> torch.Tensor:
     num_parameters = torch.sum(torch.tensor([
         torch.prod(torch.tensor(parameter.size()))
         for parameter in parameters

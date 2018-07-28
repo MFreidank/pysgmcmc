@@ -55,12 +55,12 @@ class BayesianNeuralNetwork(object):
 
         Parameters
         ----------
-        network_architecture : TODO, optional
+        network_architecture : pysgmcmc.torch_typing.NetworkFactory, optional
             Function mapping integer input dimensionality to an (initialized) `torch.nn.Module`.
         normalize_input: bool, optional
-
+            Specifies if inputs should be normalized to zero mean and unit variance.
         normalize_output: bool, optional
-
+            Specifies whether outputs should be unnormalized.
         num_steps: int, optional
             Number of sampling steps to perform after burn-in is finished.
             In total, `num_steps // keep_every` network weights will be sampled.
@@ -75,15 +75,16 @@ class BayesianNeuralNetwork(object):
             Number of sampling steps (after burn-in) to perform before keeping a sample.
             In total, `num_steps // keep_every` network weights will be sampled.
             Defaults to `100`.
-        loss : TODO, optional
-
+        loss : pysgmcmc.torch_typing.TorchLoss, optional
+            Loss to use.
+            Default: `pysgmcmc.models.losses.NegativeLogLikelihood`
         logging_configuration : typing.Dict[str, typing.Any], optional
             Configuration for pythons `logging` module to use.
             Specifying `"level"` as `logging.INFO` or lower in this dictionary
             enables displaying a progressbar for training.
             If no `"level"` is specified, `logging.INFO` is assumed as default choice.
             Defaults to `{"level": logging.INFO, "datefmt": "y/m/d"}`.
-        optimizer : TODO, optional
+        optimizer : `torch.optim.Optimizer`, optional
             Function that returns a `torch.optim.optimizer.Optimizer` subclass.
             Defaults to `pysgmcmc.optimizers.sghmc.SGHMC`.
 
@@ -160,10 +161,6 @@ class BayesianNeuralNetwork(object):
         weight_values: np.ndarray
             Numpy array containing current network weight values.
 
-        Examples
-        ----------
-        TODO
-
         """
         return tuple(
             np.asarray(torch.tensor(parameter.data).numpy())
@@ -199,7 +196,6 @@ class BayesianNeuralNetwork(object):
         logging.debug("Assigning new network weights: %s" % str(weights))
         for parameter, sample in zip(self.model.parameters(), weights):
             parameter.copy_(torch.from_numpy(sample))
-
 
     def train(self, x_train: np.ndarray, y_train: np.ndarray):
         """ Train a BNN using input datapoints `x_train` with corresponding labels `y_train`.

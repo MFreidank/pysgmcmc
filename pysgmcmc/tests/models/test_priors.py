@@ -20,9 +20,6 @@ from pysgmcmc.models.priors import log_variance_prior, weight_prior
     not THEANO_INSTALLED, reason="Package 'theano' not installed!"
 )
 def test_log_variance_prior():
-    # XXX: State where this reference implementation comes from exactly
-    # (sgmcmc @some commit)
-
     # intermediate value for f_log_var taken from running RoBo/models/bnn.py to fit sinc
     f_log_var = [[-11.25474104],
                  [-11.25474104],

@@ -28,7 +28,7 @@ else:
 
             Parameters
             ----------
-            losses : TODO, optional
+            losses : typing.Iterable[pysgmcmc.torch_typing.TorchLossFunction], optional
                 Iterable of `torch.nn.modules.loss._Loss` subclasses to display.
                 Default: `None`, do not display additional loss metrics.
             update_every : int, optional
@@ -50,9 +50,9 @@ else:
 
             Parameters
             ----------
-            predictions:
+            predictions: pysgmcmc.torch_typing.Predictions
                 BNN predictions on current batch.
-            y_batch:
+            y_batch: pysgmcmc.torch_typing.Targets
                 Labels of current batch.
             epoch: int
                 Current epoch count.

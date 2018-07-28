@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 
-def simple_tanh_network(input_dimensionality: int):
+def simple_tanh_network(input_dimensionality: int) -> torch.nn.Module:
     class AppendLayer(nn.Module):
         def __init__(self, bias=True, *args, **kwargs):
             super().__init__(*args, **kwargs)
