@@ -5,4 +5,5 @@ Getting started
 ***************
 
 .. toctree::
-    notebooks/api_quickstart.ipynb
+    notebooks/Samplers.ipynb
+    notebooks/BNN_on_sinc.ipynb

@@ -12,7 +12,6 @@ Stochastic Gradient Markov Chain Monte Carlo sampling methods for pytorch.
 
    intro
    getting_started
-   examples
    api
 
 
