@@ -43,7 +43,7 @@ Install
 
 The quick way::
 
-    pip3 install git+https://github.com/MFreidank/pysgmcmc
+    pip3 install git+https://github.com/MFreidank/pysgmcmc/pytorch.zip
 
 Try me
 =======
