@@ -1,8 +1,8 @@
 # vim:foldmethod=marker
 from collections import OrderedDict
+from itertools import islice
 import logging
 import typing
-from itertools import islice
 
 import numpy as np
 import torch
@@ -38,14 +38,25 @@ class BayesianNeuralNetwork(object):
                  },
                  optimizer=SGHMC,
                  **optimizer_kwargs)-> None:
-        """TODO: Docstring for __init__.
+        """ Bayesian Neural Network for regression problems.
+
+        Bayesian Neural Networks use Bayesian methods to estimate the posterior
+        distribution of a neural network's weights. This allows to also
+        predict uncertainties for test points and thus makes Bayesian Neural
+        Networks suitable for Bayesian optimization.
+        This module uses stochastic gradient MCMC methods to sample
+        from the posterior distribution.
+
+        See [1] for more details.
+
+        [1] J. T. Springenberg, A. Klein, S. Falkner, F. Hutter
+            Bayesian Optimization with Robust Bayesian Neural Networks.
+            In Advances in Neural Information Processing Systems 29 (2016).
 
         Parameters
         ----------
         network_architecture : TODO, optional
-            XXX: Correct this, it is false.
             Function mapping integer input dimensionality to an (initialized) `torch.nn.Module`.
-            No explicit initialization is done in this class.
         normalize_input: bool, optional
 
         normalize_output: bool, optional
@@ -77,8 +88,6 @@ class BayesianNeuralNetwork(object):
             Defaults to `pysgmcmc.optimizers.sghmc.SGHMC`.
 
         """
-
-        # TODO: pretty handling for burn_in_steps, num_steps etc?
 
         assert burn_in_steps >= 0, "Invalid value for amount of burn-in steps -- cannot be negative."
         assert keep_every >= 1, "Invalid value for `keep_every`. Specify how many sampling steps to perform before keeping a sample."
@@ -135,10 +144,6 @@ class BayesianNeuralNetwork(object):
         should_keep: bool
             Sentinel that is `True` if and only if network weights should be stored at `step`.
 
-        Examples
-        ----------
-        TODO
-
         """
         if step < self.num_burn_in_steps:
             logging.debug("Skipping burn-in sample, step = %d" % step)
@@ -165,7 +170,6 @@ class BayesianNeuralNetwork(object):
             for parameter in self.model.parameters()
         )
 
-    # XXX: Why is this doctest never triggered/executed?
     @network_weights.setter
     def network_weights(self, weights: typing.List[np.ndarray]) -> None:
         """ Assign new `weights` to our neural networks parameters.
@@ -196,7 +200,16 @@ class BayesianNeuralNetwork(object):
         for parameter, sample in zip(self.model.parameters(), weights):
             parameter.copy_(torch.from_numpy(sample))
 
+
     def train(self, x_train: np.ndarray, y_train: np.ndarray):
+        """ Train a BNN using input datapoints `x_train` with corresponding labels `y_train`.
+        Parameters
+        ----------
+        x_train : numpy.ndarray (N, D)
+            Input training datapoints.
+        y_train : numpy.ndarray (N,)
+            Input training labels.
+        """
         logging.debug("Training started.")
 
         logging.debug("Clearing list of sampled weights.")
