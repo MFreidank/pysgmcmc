@@ -3,4 +3,4 @@ from pysgmcmc.optimizers.sghmc import SGHMC as SGHMCOptimizer
 
 
 class SGHMC(SamplerMixin, SGHMCOptimizer):
-    """ SGHMC Sampler. """
+    """ SGHMC Sampler that performs updates like `pysgmcmc.optimizers.sghmc.SGHMCOptimizer`. """

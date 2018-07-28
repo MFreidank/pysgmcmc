@@ -10,6 +10,7 @@ class SGHMC(Optimizer):
                  params,
                  lr: float=1e-2,
                  num_burn_in_steps: int=3000,
+                 noise: float=0.,
                  mdecay: float=0.05,
                  scale_grad: float=1.) -> None:
         if lr < 0.0:
@@ -21,7 +22,7 @@ class SGHMC(Optimizer):
             lr=lr, scale_grad=float(scale_grad),
             num_burn_in_steps=num_burn_in_steps,
             mdecay=mdecay,
-            noise=0.
+            noise=noise
         )
         super().__init__(params, defaults)
 
@@ -62,6 +63,7 @@ class SGHMC(Optimizer):
                 #  }}} Readability #
 
                 r_t = 1. / (tau + 1.)
+                minv_t = 1. / torch.sqrt(v_hat)
 
                 #  Burn-in updates {{{ #
                 if state["iteration"] <= group["num_burn_in_steps"]:
@@ -70,8 +72,6 @@ class SGHMC(Optimizer):
                     g.add_(-g * r_t + r_t * gradient)
                     v_hat.add_(-v_hat * r_t + r_t * (gradient ** 2))
                 #  }}} Burn-in updates #
-
-                minv_t = 1. / torch.sqrt(v_hat)
 
                 lr_scaled = lr / torch.sqrt(scale_grad)
 
