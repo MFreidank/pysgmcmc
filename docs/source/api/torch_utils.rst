@@ -1,5 +1,5 @@
-Keras Utils
-============
+Torch Utils
+===========
 
 .. currentmodule:: pysgmcmc.torch_utils
 
