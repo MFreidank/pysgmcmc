@@ -1,0 +1,5 @@
+pytest>=3.0.7
+nbval
+Theano==0.8
+Lasagne==0.1
+matplotlib>=2.0.2
