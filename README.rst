@@ -22,7 +22,7 @@ Features
     * flexible computation environments (CPU/GPU support, desktop/server/mobile device support)
     * Linear algebra operations
 
-.. |Build Status| image:: https://travis-ci.org/MFreidank/pysgmcmc.svg?branch_pytorch
+.. |Build Status| image:: https://travis-ci.org/MFreidank/pysgmcmc.svg?branch=pytorch
    :target: https://travis-ci.org/MFreidank/pysgmcmc
 
 .. |Docs_| image:: https://readthedocs.org/projects/pysgmcmc/badge/?version=pytorch
