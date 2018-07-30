@@ -110,6 +110,7 @@ def generate_batches(x: np.ndarray, y: np.ndarray,
     rng = np.random.RandomState()
     rng.seed(seed)
 
+
     # Check if we have enough data points to form a minibatch
     # otherwise set the batchsize equal to the number of input points
     initial_batch_size = batch_size
@@ -124,8 +125,9 @@ def generate_batches(x: np.ndarray, y: np.ndarray,
         # => for n_examples == batch_size, start == 0 holds
 
         start = rng.randint(0, (n_examples - batch_size + 1))
+        print(start)
 
-        minibatch_x = x[start:start + batch_size]
+        minibatch_x = x[..., start:start + batch_size]
         minibatch_y = y[start:start + batch_size, None]
 
         yield (minibatch_x, minibatch_y)

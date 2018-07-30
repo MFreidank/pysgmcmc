@@ -39,7 +39,12 @@ class SGHMC(Optimizer):
         return K.random_normal(shape=shape, seed=self.seed)
 
     def get_updates(self, loss, params):
-        grads = self.get_gradients(loss, params)
+        import tensorflow as tf
+        grads = [
+            tf.convert_to_tensor(grad) for grad in
+            self.get_gradients(loss, params)
+        ]
+        print("GRADS", grads)
 
         self.updates = [K.update_add(self.iterations, 1)]
 

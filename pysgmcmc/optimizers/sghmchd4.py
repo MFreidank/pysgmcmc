@@ -137,7 +137,11 @@ class SGHMCHD(Optimizer):
 
     def get_updates(self, loss, params):
         print(loss, loss.shape)
-        grads = self.get_gradients(loss, params)
+        import tensorflow as tf
+        grads = [
+            tf.convert_to_tensor(grad) for grad in
+            self.get_gradients(loss, params)
+        ]
 
         self.updates = [K.update_add(self.iterations, 1)]
 

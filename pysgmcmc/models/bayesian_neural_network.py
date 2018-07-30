@@ -4,11 +4,8 @@ import typing
 import numpy as np
 import keras
 from keras import backend as K
-from keras.models import Sequential
-from keras.layers import Concatenate, Layer, Dense
 from keras.callbacks import LambdaCallback
-from keras.activations import tanh
-from keras.initializers import Constant, VarianceScaling
+from keras.models import Sequential
 from keras.losses import kullback_leibler_divergence, cosine_proximity
 
 from pysgmcmc.data_batches import generate_batches
@@ -23,6 +20,7 @@ from pysgmcmc.custom_typing import (
     KerasNetworkFactory, KerasOptimizer,
     KerasTensor, KerasVariable
 )
+from pysgmcmc.models.network_architectures import simple_tanh_network
 
 #  Utils {{{ #
 
@@ -56,51 +54,6 @@ def weight_prior(parameters: typing.List[KerasVariable],
 
 #  }}} Priors #
 
-#  Network Architecture {{{ #
-
-def default_network(input_dimension: int,
-                    seed: int=None) -> Sequential:
-    class AppendLayer(Layer):
-        def __init__(self, b, **kwargs):
-            self.b = b
-            self.concat = Concatenate(axis=1)
-            super().__init__(**kwargs)
-
-        def build(self, input_shape):
-            self.bias = self.add_weight(
-                name="bias",
-                shape=(1, 1),
-                initializer=Constant(value=self.b)
-            )
-            super().build(input_shape)
-
-        def call(self, x):
-            return self.concat([x, self.bias * K.ones_like(x)])
-
-        def compute_output_shape(self,
-                                 input_shape: typing.Tuple[int, int])-> typing.Tuple[int, int]:
-            return (input_shape[0], input_shape[1] * 2)
-
-    model = Sequential([
-        Dense(
-            units=50, input_dim=input_dimension, activation=tanh,
-            kernel_initializer=VarianceScaling(seed=seed)
-        ),
-        Dense(
-            units=50, activation=tanh,
-            kernel_initializer=VarianceScaling(seed=seed),
-        ),
-        Dense(
-            units=50, activation=tanh,
-            kernel_initializer=VarianceScaling(seed=seed),
-        ),
-        Dense(units=1, kernel_initializer=VarianceScaling(seed=seed)),
-        AppendLayer(b=np.log(1e-3))
-    ])
-
-    return model
-
-#  }}} Network Architecture #
 
 #  Loss function (Negative Log Likelihood) {{{ #
 
@@ -151,7 +104,7 @@ def negative_log_likelihood(model: Sequential,
 
 class BayesianNeuralNetwork(object):
     def __init__(self,
-                 network_architecture: KerasNetworkFactory=default_network,
+                 network_architecture: KerasNetworkFactory=simple_tanh_network,
                  train_callbacks: typing.List[keras.callbacks.Callback]=None,
                  loss_function: KerasModelLoss=negative_log_likelihood,
                  metrics: typing.Tuple[str, ...]=("mse", "mae",),
@@ -159,6 +112,7 @@ class BayesianNeuralNetwork(object):
                  n_steps: int=50000, burn_in_steps: int=3000,
                  # hyperloss=lambda y_true, y_pred: kullback_leibler_divergence(y_true=y_true, y_pred=y_pred[:, 0]),
                  hyperloss=lambda y_true, y_pred: cosine_proximity(y_true=y_true, y_pred=y_pred[:, 0]),
+                 batch_generator=generate_batches,
                  keep_every: int=100,
                  n_nets: int=100,
                  batch_size: int=20,
@@ -218,6 +172,8 @@ class BayesianNeuralNetwork(object):
         self.metrics = metrics
 
         self.sampled_weights = []  # type: typing.List[typing.List[np.ndarray]]
+
+        self.batch_generator = batch_generator
 
     def _keep_sample(self, epoch: int) -> bool:
         """ Check if we should store a sample extracted at a given `epoch`.
@@ -294,26 +250,32 @@ class BayesianNeuralNetwork(object):
                 self.y_train
             )
 
-        n_datapoints, input_dimension = self.x_train.shape
+        if not isinstance(self.x_train, np.ndarray) or len(self.x_train.shape) == 1:
+            n_datapoints, *_ = self.y_train.shape
+            input_dimension = None
+        else:
+            n_datapoints, input_dimension = self.x_train.shape
 
         with K.name_scope("neural_network"):
             self.model = self.network_architecture(
                 input_dimension, self.seed
             )
 
-        assert callable(self.optimizer)
-
-
         # NOTE: Do not reuse the same optimizer instance multiple times -- use a new one on each call to `train`,
         # otherwise `n_datapoints` does not get updated and scale_grad introduces larger and larger errors
-        self.optimizer_instance = get_optimizer(
-            optimizer_name=self.optimizer.__name__,
-            n_datapoints=n_datapoints,
-            batch_size=self.batch_size,
-            burn_in_steps=self.burn_in_steps,
-            learning_rate=self.optimizer_hyperparameters["learning_rate"],
-            seed=self.seed,
-        )
+        if callable(self.optimizer):
+            self.optimizer_instance = get_optimizer(
+                optimizer_name=self.optimizer.__name__,
+                n_datapoints=n_datapoints,
+                batch_size=self.batch_size,
+                burn_in_steps=self.burn_in_steps,
+                learning_rate=self.optimizer_hyperparameters["learning_rate"],
+                seed=self.seed,
+            )
+        elif isinstance(self.optimizer, str):
+            self.optimizer_instance = str(self.optimizer)
+        else:
+            raise ValueError()
 
         self.model.compile(
             optimizer=self.optimizer_instance,
@@ -322,15 +284,15 @@ class BayesianNeuralNetwork(object):
             ),
             metrics=list(self.metrics)
         )
-
         self.model.fit_generator(
-            generate_batches(
+            self.batch_generator(
                 self.x_train, self.y_train,
                 batch_size=self.batch_size, seed=self.seed
             ),
             epochs=1,
             steps_per_epoch=self.n_steps + self.burn_in_steps,
             callbacks=self.train_callbacks + [LambdaCallback(on_batch_end=self.log_learning_rate)],
+            # validation_data=(self.x_train, self.y_train)
         )
 
         self.is_trained = True
@@ -343,6 +305,7 @@ class BayesianNeuralNetwork(object):
         assert self.is_trained
         assert isinstance(return_individual_predictions, bool)
 
+        x_test_ = x_test.copy()
         if self.normalize_input:
             x_test_, _, _ = zero_mean_unit_var_normalization(
                 x_test, self.x_mean, self.x_std
