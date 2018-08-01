@@ -7,16 +7,7 @@ import torch
 from torch.optim import Optimizer
 from pysgmcmc.optimizers.sghmc import SGHMC
 
-# XXX: heaviside, sqrt and max?
-
-
-def heaviside(x):
-    return (x < 0).float() * torch.zeros_like(x) + (x >= 0).float() * torch.ones_like(x)
-
-
-def maximum(a, b):
-    # XXX: max takes single tensor
-    return (a >= b).float() * a + (a < b).float() * b
+from pysgmcmc.torch_utils import heaviside, maximum
 
 
 def sympy_derivative(with_respect_to: str, tensor_names: typing.List[str], delta=1e-7):

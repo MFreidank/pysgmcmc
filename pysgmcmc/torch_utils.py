@@ -38,3 +38,12 @@ def get_name(object_: typing.Any) -> str:
         return object_.name
     except AttributeError:
         return object_.__name__
+
+
+# XXX: Docs
+def heaviside(x):
+    return (x < 0).float() * torch.zeros_like(x) + (x >= 0).float() * torch.ones_like(x)
+
+
+def maximum(a, b):
+    return (a >= b).float() * a + (a < b).float() * b
