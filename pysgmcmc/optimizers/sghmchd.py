@@ -90,14 +90,31 @@ class SGHMCHD(Optimizer):
                     state["g"] = torch.ones_like(parameter)
                     state["v_hat"] = torch.ones_like(parameter)
                     state["momentum"] = torch.zeros_like(parameter)
-                    state["lr"] = torch.tensor(group["lr"], requires_grad=True)
+                    state["lr"] = torch.tensor(
+                        torch.ones_like(parameter) * group["lr"], requires_grad=True
+                    )
 
                     state["dxdh"] = torch.zeros_like(parameter)
+
+                    state["dxdh_function"] = sympy_derivative(
+                        with_respect_to="epsilon",
+                        tensor_names=(
+                            "g2", "p", "epsilon", "mdecay", "noise",
+                            "grad", "scale_grad", "random_sample"
+                        )
+                    )
+
+                    import numpy as np
+                    from torch.optim import Adamax
+                    state["hyperoptimizer"] = Adamax(
+                        params=(state["lr"],),
+                        lr=0.002 / np.sqrt(group["scale_grad"])
+                    )
 
                 #  }}} State initialization #
 
                 #  Readability {{{ #
-                mdecay, noise, lr = group["mdecay"], group["noise"], group["lr"]
+                mdecay, noise, lr = group["mdecay"], group["noise"], state["lr"]
                 scale_grad = torch.tensor(group["scale_grad"])
 
                 tau, g, v_hat = state["tau"], state["g"], state["v_hat"]
@@ -107,18 +124,24 @@ class SGHMCHD(Optimizer):
                 #  }}} Readability #
 
                 random_sample = torch.normal(mean=0., std=torch.ones_like(parameter))
+
+                #  Hypergradient Update {{{ #
                 # Update derivative of parameters with respect to hyperparameter
                 torch_tensors = (
                     v_hat, momentum, lr, mdecay, noise,
                     gradient, scale_grad, random_sample
 
                 )
-                # dxdh_t = sympy_derivative(
-                #     with_respect_to="epsilon", tensor_names=(
-                #         "g2", "p", "epsilon", "mdecay", "noise",
-                #         "grad", "scale_grad", "random_sample"
-                #     )
-                # )(*torch_tensors)
+                dxdh_t = state["dxdh_function"](*torch_tensors)
+
+                state["hyperoptimizer"].zero_grad()
+                dxdlr = gradient * state["dxdh"]
+                # XXX: How to use other hyperloss functions except nll here?
+                state["lr"].grad = dxdlr
+                state["lr"].grad.data = dxdlr
+                state["hyperoptimizer"].step()
+
+                #  }}} Hypergradient Update #
 
                 r_t = 1. / (tau + 1.)
                 minv_t = 1. / torch.sqrt(v_hat)
@@ -158,6 +181,6 @@ class SGHMCHD(Optimizer):
                 #  }}} SGHMC Update #
 
                 # Update gradient of parameters with respect to hyperparameter.
-                # state["dxdh"].copy_(dxdh_t)
+                state["dxdh"].copy_(dxdh_t)
 
         return loss
