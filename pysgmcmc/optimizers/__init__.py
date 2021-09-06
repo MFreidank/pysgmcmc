@@ -1,4 +1,5 @@
 from pysgmcmc.optimizers.sghmc import SGHMC
+from pysgmcmc.optimizers.sgld import SGLD
 
 
 def get_optimizer(optimizer_cls, parameters, num_datapoints, **optimizer_kwargs):
